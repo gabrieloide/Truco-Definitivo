@@ -47,7 +47,7 @@ public class MyNetworkingManager : NetworkManager
         }
 
         playerController.AssignPlayer(player);
-        FindObjectOfType<Lobby>().AddPlayerToLobby($"player{count}");
+        FindAnyObjectByType<Lobby>().AddPlayerToLobby($"player{count}");
     }
 
     public override void OnClientDisconnect()

@@ -11,13 +11,13 @@ namespace Code.Cards
         [SerializeField] private GameObject handPrefab;
         private GameObject _handInGame;
         public Player player;
-        public PlayerInput playerInput;
+        private PlayerInput _playerInput;
 
         private void Start()
         {
-            playerInput = new PlayerInput();
-            playerInput.Player.ResetScene.performed += ReloadScene;
-            playerInput.Enable();
+            _playerInput = new PlayerInput();
+            _playerInput.Player.ResetScene.performed += ReloadScene;
+            _playerInput.Enable();
         }
 
         void ReloadScene(InputAction.CallbackContext context)

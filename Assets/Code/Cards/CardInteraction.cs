@@ -1,9 +1,6 @@
-using System;
-using Code.GameLogic;
 using DG.Tweening;
 using Mirror;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 namespace Code.Cards
 {
@@ -34,7 +31,7 @@ namespace Code.Cards
                 Debug.Log("This is not your current turn, wait until all players have been played");
             }
         }
-
+        
         private void OnMouseEnter()
         {
             if (_isOnHand)
