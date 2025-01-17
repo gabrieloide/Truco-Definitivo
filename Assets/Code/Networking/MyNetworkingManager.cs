@@ -53,6 +53,5 @@ public class MyNetworkingManager : NetworkManager
     public override void OnClientDisconnect()
     {
         base.OnClientDisconnect();
-        Debug.Log("A player has disconnected");
     }
 }

@@ -1,3 +1,4 @@
+using Mirror;
 using UnityEngine;
 
 namespace Code.GameLogic
@@ -6,29 +7,33 @@ namespace Code.GameLogic
     {
         [SerializeField] private GameObject notLocalPlayerPrefab;
         private Canvas _canvas;
-        private Camera _camera;
-        [SerializeField] private int indexPlayer;
+
 
         private void Start()
         {
-            var serverPlayersCount = indexPlayer;
             _canvas = FindAnyObjectByType<Canvas>();
-            _camera = FindAnyObjectByType<Camera>();
+            PlacingLocalPlayer();
+        }
 
-            for (var i = 0; i < serverPlayersCount; i++)
+        private void PlacingLocalPlayer()
+        {
+            for (var i = 0; i < GameManager.Instance.playerCount - 1; i++)
             {
                 var c = Instantiate(notLocalPlayerPrefab, _canvas.transform);
 
                 c.GetComponent<RectTransform>().anchoredPosition =
                     CalculateNextNotLocalPlayerPosition(i, c.GetComponent<RectTransform>());
+                
+                Debug.Log("Creating new player");
             }
         }
 
         private Vector3 CalculateNextNotLocalPlayerPosition(int indexPlayer, RectTransform _c)
         {
             const float offset = 20f;
-            var bottomLeft = _camera.ViewportToWorldPoint(new Vector3(0, 0, _camera.nearClipPlane));
-            var topRight = _camera.ViewportToWorldPoint(new Vector3(1, 1, _camera.nearClipPlane));
+
+            var bottomLeft = Camera.main.ViewportToWorldPoint(new Vector3(0, 0, Camera.main.nearClipPlane));
+            var topRight = Camera.main.ViewportToWorldPoint(new Vector3(1, 1, Camera.main.nearClipPlane));
 
             var right = topRight.x;
             var top = topRight.y;

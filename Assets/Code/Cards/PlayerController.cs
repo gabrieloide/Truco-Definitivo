@@ -3,21 +3,31 @@ using Code.GameLogic;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 namespace Code.Cards
 {
     public class PlayerController : NetworkBehaviour
     {
-        [SerializeField] private GameObject handPrefab;
-        private GameObject _handInGame;
         public Player player;
         private PlayerInput _playerInput;
+        public CardsHandler cardsHandler;
+        private bool _isGameScene;
+
+        private void Awake()
+        {
+            if (cardsHandler == null)
+                cardsHandler = GetComponent<CardsHandler>();
+
+            cardsHandler.enabled = false;
+        }
 
         private void Start()
         {
             _playerInput = new PlayerInput();
             _playerInput.Player.ResetScene.performed += ReloadScene;
             _playerInput.Enable();
+            DontDestroyOnLoad(gameObject);
         }
 
         void ReloadScene(InputAction.CallbackContext context)
@@ -30,9 +40,23 @@ namespace Code.Cards
         {
             if (!isLocalPlayer)
                 return;
-            //Debug.Log($"Player {player.playerName} has been started");
+        }
 
-            //_handInGame = Instantiate(handPrefab, transform, true);
+        private void Update()
+        {
+            if (!isLocalPlayer)
+                return;
+            InitializedHand();
+        }
+
+        private void InitializedHand()
+        {
+            var s = SceneManager.GetActiveScene();
+
+            if (s.name != "GameScene" || _isGameScene) return;
+
+            _isGameScene = true;
+            cardsHandler.enabled = true;
         }
 
         public override void OnStopClient()
@@ -49,7 +73,6 @@ namespace Code.Cards
         public void RpcRequestChangeTurn(NetworkConnection conn, bool turn)
         {
             player.canPlayCard = turn;
-            Debug.Log("next player");
         }
 
         [Command]

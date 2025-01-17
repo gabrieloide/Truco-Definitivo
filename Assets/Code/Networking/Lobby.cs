@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Code.GameLogic;
 using Mirror;
@@ -5,16 +6,16 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.Serialization;
 
+
 namespace Code.Networking
 {
     public class Lobby : NetworkBehaviour
     {
         [SerializeField] private TMP_Text roomName;
 
-        [FormerlySerializedAs("_lobbyPlayers")] [SerializeField]
-        private TMP_Text[] _lobbyPlayersText;
+        [SerializeField] private TMP_Text[] _lobbyPlayersText;
 
-        string restrictedCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLOPQRSTUVWXYZ0123456789";
+        private string _restrictedCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLOPQRSTUVWXYZ0123456789";
 
 
         [SyncVar] public string _allLobbyPlayers;
@@ -25,12 +26,23 @@ namespace Code.Networking
         {
             if (!gameObject.activeSelf) return;
 
+            if (_lobbyPlayersText == null)
+            {
+                Debug.LogError("LobbyPlayersText is null!");
+                return;
+            }
+
             foreach (var t in _lobbyPlayersText)
             {
                 t.text = string.Empty;
             }
 
             gameObject.SetActive(false);
+        }
+
+        private void Update()
+        {
+            GameManager.Instance.playerCount = _listOfLobbyPlayers.Count;
         }
 
         private void PlayerNames()
@@ -69,11 +81,6 @@ namespace Code.Networking
             }
 
             PlayerNames();
-            foreach (var t in _listOfLobbyPlayers)
-            {
-                Debug.ClearDeveloperConsole();
-                Debug.Log(t);
-            }
         }
 
         [Server]
@@ -84,7 +91,7 @@ namespace Code.Networking
                 Debug.Log("There is no enough players in Lobby.");
                 return;
             }
-
+            
             SceneChanger.Instance.ChangeScene("GameScene");
         }
     }

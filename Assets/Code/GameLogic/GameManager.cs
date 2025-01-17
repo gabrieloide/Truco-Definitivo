@@ -1,7 +1,10 @@
 using System.Collections.Generic;
 using Code.Cards;
+using Code.Networking;
 using Mirror;
+using Unity.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Code.GameLogic
 {
@@ -13,15 +16,15 @@ namespace Code.GameLogic
         {
             get
             {
-                _instance = FindObjectOfType<GameManager>();
+                _instance = FindAnyObjectByType<GameManager>();
 
                 if (_instance == null)
                 {
+                    Debug.Log("New Game Manager has been created!");
                     GameObject obj = new GameObject("GameManager");
                     _instance = obj.AddComponent<GameManager>();
                     DontDestroyOnLoad(obj);
                 }
-
 
                 return _instance;
             }
@@ -29,6 +32,7 @@ namespace Code.GameLogic
 
         public List<PlayerController> serverPlayers = new List<PlayerController>();
         [SyncVar] public int currentPlayerTurn = 0;
+        public int playerCount;
         private bool _gameStarted = false;
 
         private void Awake()
@@ -75,7 +79,7 @@ namespace Code.GameLogic
             }
             else if (_gameStarted)
             {
-                NextPlayer(serverPlayers[currentPlayerTurn]);
+                //NextPlayer(serverPlayers[currentPlayerTurn]);
             }
         }
 
