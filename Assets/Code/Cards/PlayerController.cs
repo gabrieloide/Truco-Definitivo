@@ -1,18 +1,20 @@
 using System;
 using Code.GameLogic;
+using Code.Player;
 using Mirror;
+using TMPro;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using DG.Tweening;
+
 
 namespace Code.Cards
 {
     public class PlayerController : NetworkBehaviour
     {
         public Player player;
-        private PlayerInput _playerInput;
         public CardsHandler cardsHandler;
-        private bool _isGameScene;
+        [SyncVar] private string debugPlayer;
 
         private void Awake()
         {
@@ -20,32 +22,19 @@ namespace Code.Cards
                 cardsHandler = GetComponent<CardsHandler>();
 
             cardsHandler.enabled = false;
-        }
-
-        private void Start()
-        {
-            _playerInput = new PlayerInput();
-            _playerInput.Player.ResetScene.performed += ReloadScene;
-            _playerInput.Enable();
             DontDestroyOnLoad(gameObject);
-        }
-
-        void ReloadScene(InputAction.CallbackContext context)
-        {
-            Debug.Log("Reloading scene...");
-            SceneChanger.Instance.ChangeScene("LobbyScene");
-        }
-
-        public override void OnStartClient()
-        {
-            if (!isLocalPlayer)
-                return;
         }
 
         private void Update()
         {
+            if (GameObject.Find("LogText"))
+            {
+                GameObject.Find("LogText").GetComponent<TMP_Text>().text = debugPlayer;
+            }
+
             if (!isLocalPlayer)
                 return;
+
             InitializedHand();
         }
 
@@ -53,9 +42,9 @@ namespace Code.Cards
         {
             var s = SceneManager.GetActiveScene();
 
-            if (s.name != "GameScene" || _isGameScene) return;
+            if (s.name != "GameScene") return;
 
-            _isGameScene = true;
+            GameManager.Instance.isGameScene = true;
             cardsHandler.enabled = true;
         }
 
@@ -64,23 +53,40 @@ namespace Code.Cards
             Destroy(gameObject);
         }
 
-        public void AssignPlayer(Player player)
-        {
-            this.player = player;
-        }
+        public void AssignPlayer(Player player) => this.player = player;
+
 
         [TargetRpc]
         public void RpcRequestChangeTurn(NetworkConnection conn, bool turn)
         {
             player.canPlayCard = turn;
+            if (FindAnyObjectByType<PlayerHUD>() == null)
+                return;
+
+            PlayerHUD.Instance.ChangeCurrentTurnText(turn);
         }
 
         [Command]
-        public void IncreaseTurn()
+        public void CmdIncreaseTurn(int cardPosition)
         {
             GameManager.Instance.currentPlayerTurn++;
+            RpcMoveCard(new Vector3(0, 0, 0), cardPosition);
+
             if (GameManager.Instance.currentPlayerTurn == GameManager.Instance.serverPlayers.Count)
                 GameManager.Instance.currentPlayerTurn = 0;
+        }
+
+        [ClientRpc]
+        private void RpcMoveCard(Vector3 newPosition, int cardposition)
+        {
+            if (isLocalPlayer)
+                return;
+
+            var notPlayer = GameObject.Find("NotLocalPlayer");
+            if (notPlayer != null)
+            {
+                notPlayer.transform.GetChild(cardposition).DOMove(newPosition, 0.75f);
+            }
         }
     }
 

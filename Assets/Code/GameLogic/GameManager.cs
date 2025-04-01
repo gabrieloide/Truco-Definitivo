@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Code.Cards;
 using Code.Networking;
@@ -33,7 +34,8 @@ namespace Code.GameLogic
         public List<PlayerController> serverPlayers = new List<PlayerController>();
         [SyncVar] public int currentPlayerTurn = 0;
         public int playerCount;
-        private bool _gameStarted = false;
+        public bool isGameScene;
+        [HideInInspector] public PlayerInput _playerInput;
 
         private void Awake()
         {
@@ -51,6 +53,13 @@ namespace Code.GameLogic
             {
                 gameObject.AddComponent<NetworkIdentity>();
             }
+
+            _playerInput = new PlayerInput();
+            _playerInput.Enable();
+        }
+
+        private void Start()
+        {
         }
 
         private void Update()
@@ -64,23 +73,16 @@ namespace Code.GameLogic
                 return;
             }
 
-            ManagePlayerTurn();
+            if (isGameScene)
+            {
+                NextPlayer(serverPlayers[currentPlayerTurn]);
+            }
         }
 
-        void ManagePlayerTurn()
+        [Command]
+        public void Spawneables(GameObject GO)
         {
-            if (serverPlayers.Count % 2 == 0 && !_gameStarted)
-            {
-                _gameStarted = true;
-                if (_gameStarted)
-                {
-                    serverPlayers[currentPlayerTurn].player.canPlayCard = true;
-                }
-            }
-            else if (_gameStarted)
-            {
-                //NextPlayer(serverPlayers[currentPlayerTurn]);
-            }
+            NetworkServer.Spawn(GO);
         }
 
         [Server]
@@ -91,14 +93,7 @@ namespace Code.GameLogic
         }
 
         [Server]
-        public void RemovePlayerFromServer(PlayerController player)
-        {
-            serverPlayers.Remove(player);
-            Debug.Log($"Player {player.player.playerName} removed from the server.");
-        }
-
-        [Server]
-        void NextPlayer(PlayerController player)
+        private void NextPlayer(PlayerController player)
         {
             foreach (var p in serverPlayers)
             {

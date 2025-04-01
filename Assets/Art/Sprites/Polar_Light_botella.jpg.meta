@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Polar_Light_botella_0: -4705824015417805849
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

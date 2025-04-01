@@ -1,17 +1,17 @@
 using System;
 using System.Collections.Generic;
+using Mirror;
 using UnityEngine;
 using UnityEngine.Serialization;
 
 namespace Code.Cards
 {
-    public class CardsHandler : MonoBehaviour
+    public class CardsHandler : NetworkBehaviour
     {
         public float upDuration = 0.98f;
         public Texture2D mouseOverTexture;
         public Texture2D mouseOutTexture;
-
-        List<GameObject> InHandCard = new List<GameObject>();
+        
         public GameObject cardPrefab;
 
         [SerializeField] private Vector2 _offsetCards = new Vector2(2.5f, 5);
@@ -28,9 +28,10 @@ namespace Code.Cards
 
         private void Start()
         {
+            if (Camera.main == null) return;
             var bottomCenter = Camera.main.ViewportToScreenPoint(new Vector3(0.5f, 0f, 0f));
 
-            for (int i = 0; i < 3; i++)
+            for (var i = 0; i < 3; i++)
             {
                 var c = Instantiate(cardPrefab, bottomCenter, Quaternion.identity);
                 Vector2 offset = i switch
@@ -40,13 +41,10 @@ namespace Code.Cards
                     2 => new Vector3(_offsetCards.x, _offsetCards.y),
                     _ => throw new ArgumentOutOfRangeException()
                 };
-
-                Vector3 worldPos = Camera.main.ScreenToWorldPoint(new Vector3(bottomCenter.x, bottomCenter.y, 0f));
+                var worldPos = Camera.main.ScreenToWorldPoint(new Vector3(bottomCenter.x, bottomCenter.y, 0f));
                 c.transform.position = new Vector3(worldPos.x + offset.x, worldPos.y + offset.y, 0f);
                 c.GetComponent<CardInteraction>().CardPosition = i;
                 c.GetComponent<CardInteraction>()._playerController = gameObject.GetComponent<PlayerController>();
-
-                InHandCard.Add(c);
             }
         }
     }

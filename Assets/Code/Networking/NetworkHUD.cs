@@ -1,9 +1,5 @@
-using System;
-using System.Collections;
-using Code.GameLogic;
 using Mirror;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace Code.Networking
@@ -12,6 +8,7 @@ namespace Code.Networking
     {
         private MyNetworkingManager _myNetworkingManager;
         [SerializeField] private GameObject _lobbyObject;
+        [SerializeField] private GameObject _startButtonGame;
 
         private Button _startClientButton;
         private Button _startHostButton;
@@ -28,34 +25,36 @@ namespace Code.Networking
 
         public void StartHost()
         {
-            if (!NetworkClient.active)
-            {
-                _myNetworkingManager.StartHost();
-                ChangeButtonState(false);
-                _lobbyObject.SetActive(true);
-            }
+            if (NetworkClient.active) return;
+            
+            _myNetworkingManager.StartHost();
+            ChangeButtonState(false);
+            _lobbyObject.SetActive(true);
         }
 
-        public void StopHost()
-        {
-            if (NetworkClient.active)
-            {
-                _myNetworkingManager.StopHost();
-                ChangeButtonState(true);
-                _lobbyObject.SetActive(false);
-            }
-        }
+        //public void StopHost()
+        //{
+        //    if (!NetworkClient.active) return;
+        //    
+        //    _myNetworkingManager.StopHost();
+        //    ChangeButtonState(true);
+        //    _lobbyObject.SetActive(false);
+        //}
 
         public void JoinHost()
         {
+            if (_myNetworkingManager.isNetworkActive) return;
+    
             _myNetworkingManager.networkAddress = "localhost";
-            ChangeButtonState(false);
             _myNetworkingManager.StartClient();
+            ChangeButtonState(false);
             _lobbyObject.SetActive(true);
+            _startButtonGame.SetActive(false);
             Debug.Log("Client connected");
         }
 
-        void ChangeButtonState(bool isInteractable)
+
+        private void ChangeButtonState(bool isInteractable)
         {
             _startClientButton.interactable = isInteractable;
             _startHostButton.interactable = isInteractable;

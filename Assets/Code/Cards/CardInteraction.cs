@@ -1,3 +1,4 @@
+using Code.GameLogic;
 using DG.Tweening;
 using Mirror;
 using UnityEngine;
@@ -25,7 +26,7 @@ namespace Code.Cards
                 Cursor.SetCursor(_playerController.cardsHandler.mouseOutTexture, Vector2.zero, CursorMode.Auto);
                 transform.DOMove(GameObject.Find("CardInTable").transform.position, 0.2f);
                 _playerController.player.canPlayCard = false;
-                _playerController.IncreaseTurn();
+                _playerController.CmdIncreaseTurn(CardPosition);
             }
             else
             {

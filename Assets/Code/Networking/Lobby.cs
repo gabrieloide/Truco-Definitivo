@@ -15,7 +15,7 @@ namespace Code.Networking
 
         [SerializeField] private TMP_Text[] _lobbyPlayersText;
 
-        private string _restrictedCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLOPQRSTUVWXYZ0123456789";
+        //private string _restrictedCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLOPQRSTUVWXYZ0123456789";
 
 
         [SyncVar] public string _allLobbyPlayers;

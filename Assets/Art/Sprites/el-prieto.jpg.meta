@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      el-prieto_0: 594025732178553087
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

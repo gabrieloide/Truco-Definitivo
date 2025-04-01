@@ -35,6 +35,15 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""DebugCommand"",
+                    ""type"": ""Button"",
+                    ""id"": ""3803f5c1-d79c-490c-9c2e-a1b31e1c9bbe"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -48,6 +57,17 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
                     ""action"": ""ResetScene"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e4320917-40ad-453a-9cd9-6255f57563b4"",
+                    ""path"": ""<Keyboard>/backquote"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""DebugCommand"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -57,6 +77,7 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
         // Player
         m_Player = asset.FindActionMap("Player", throwIfNotFound: true);
         m_Player_ResetScene = m_Player.FindAction("ResetScene", throwIfNotFound: true);
+        m_Player_DebugCommand = m_Player.FindAction("DebugCommand", throwIfNotFound: true);
     }
 
     ~@PlayerInput()
@@ -124,11 +145,13 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
     private readonly InputActionMap m_Player;
     private List<IPlayerActions> m_PlayerActionsCallbackInterfaces = new List<IPlayerActions>();
     private readonly InputAction m_Player_ResetScene;
+    private readonly InputAction m_Player_DebugCommand;
     public struct PlayerActions
     {
         private @PlayerInput m_Wrapper;
         public PlayerActions(@PlayerInput wrapper) { m_Wrapper = wrapper; }
         public InputAction @ResetScene => m_Wrapper.m_Player_ResetScene;
+        public InputAction @DebugCommand => m_Wrapper.m_Player_DebugCommand;
         public InputActionMap Get() { return m_Wrapper.m_Player; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -141,6 +164,9 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
             @ResetScene.started += instance.OnResetScene;
             @ResetScene.performed += instance.OnResetScene;
             @ResetScene.canceled += instance.OnResetScene;
+            @DebugCommand.started += instance.OnDebugCommand;
+            @DebugCommand.performed += instance.OnDebugCommand;
+            @DebugCommand.canceled += instance.OnDebugCommand;
         }
 
         private void UnregisterCallbacks(IPlayerActions instance)
@@ -148,6 +174,9 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
             @ResetScene.started -= instance.OnResetScene;
             @ResetScene.performed -= instance.OnResetScene;
             @ResetScene.canceled -= instance.OnResetScene;
+            @DebugCommand.started -= instance.OnDebugCommand;
+            @DebugCommand.performed -= instance.OnDebugCommand;
+            @DebugCommand.canceled -= instance.OnDebugCommand;
         }
 
         public void RemoveCallbacks(IPlayerActions instance)
@@ -168,5 +197,6 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
     public interface IPlayerActions
     {
         void OnResetScene(InputAction.CallbackContext context);
+        void OnDebugCommand(InputAction.CallbackContext context);
     }
 }
