@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Code.Cards;
 using Code.Networking;
+using Code.Player;
 using Mirror;
 using Unity.Collections;
 using UnityEngine;
@@ -32,6 +33,7 @@ namespace Code.GameLogic
         }
 
         public List<PlayerController> serverPlayers = new List<PlayerController>();
+
         [SyncVar] public int currentPlayerTurn = 0;
         public int playerCount;
         public bool isGameScene;
@@ -58,8 +60,9 @@ namespace Code.GameLogic
             _playerInput.Enable();
         }
 
-        private void Start()
+        private void OnDisable()
         {
+            _playerInput.Disable();
         }
 
         private void Update()

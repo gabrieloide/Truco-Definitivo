@@ -1,54 +1,94 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using Code.Cards;
+using Mirror;
 using UnityEngine;
+using UnityEngine.Serialization;
+using Random = UnityEngine.Random;
 
 namespace Code.GameLogic
 {
-    public class DeckCreator : MonoBehaviour
+    public class DeckCreator : NetworkBehaviour
     {
-        private readonly string[] _cardType = { "Hearts", "Diamonds", "Clubs", "Spades" };
-        public List<Card> FullDeck = new List<Card>();
+        private readonly string[] _cardType = { "Gold", "Cup", "Sword", "Cudgel" };
+        private List<Card> _fullDeck = new List<Card>();
 
         private void Start()
         {
             CreateDeck();
-            foreach (var card in FullDeck)
-            {
-                Debug.Log(card.Type + " " + card.Value);
-            }
+
+            _fullDeck = _fullDeck.OrderBy(c => c.type).ThenBy(c => c.value).ToList();
         }
 
         private void CreateDeck()
         {
-            foreach (var t in _cardType)
+            foreach (var cardType in _cardType)
             {
-                for (var j = 1; j < 13; j++)
+                // Agregar cartas con números del 1 al 3
+                int earlyRealValue = 8;
+                for (int number = 1; number <= 3; number++)
                 {
-                    if (j is 8 || j == 9)
+                    int assignedRealValue = (number == 1 && cardType == "Cudgel") ? 13 :
+                        (number == 1 && cardType == "Sword") ? 14 :
+                        earlyRealValue;
+
+                    AddCard(cardType, number, assignedRealValue);
+                    earlyRealValue++;
+                }
+
+                // Agregar cartas con números del 4 al 12 (omitiendo 8 y 9)
+                int runningRealValue = 1;
+                for (int number = 4; number <= 12; number++)
+                {
+                    if (number == 8 || number == 9)
                         continue;
 
-                    FullDeck.Add(new Card { Type = t, Value = j });
+                    int assignedRealValue = (number == 7 && cardType == "Gold") ? 11 :
+                        (number == 7 && cardType == "Sword") ? 12 :
+                        runningRealValue;
+
+                    AddCard(cardType, number, assignedRealValue);
+                    runningRealValue++;
                 }
             }
         }
 
-        public void DrawCard()
+        private void AddCard(string cardType, int number, int realValue)
         {
-            var card = GetCard();
-            Debug.Log(card.Type + " " + card.Value);
+            _fullDeck.Add(new Card { type = $"{cardType} #{number}", value = number, realValue = realValue });
         }
 
-        public Card GetCard()
+
+        private void ChangeRealCardValues()
         {
-            var random = Random.Range(0, FullDeck.Count);
-            var card = FullDeck[random];
-            FullDeck.RemoveAt(random);
-            return card;
+            CreateDeck();
+
+            foreach (var card in _fullDeck)
+            {
+            }
+        }
+
+        private void OnMouseDown()
+        {
+            if (!NetworkClient.isConnected) return;
+
+            var localPlayer = NetworkClient.localPlayer;
+            if (localPlayer == null) return;
+
+            var playerController = localPlayer.GetComponent<CardsHandler>();
+            if (playerController == null) return;
+
+
+            playerController.CmdDrawCard(_fullDeck);
         }
     }
 
+    [Serializable]
     public class Card
     {
-        public string Type;
-        public int Value;
+        public string type;
+        public int value;
+        public int realValue;
     }
 }

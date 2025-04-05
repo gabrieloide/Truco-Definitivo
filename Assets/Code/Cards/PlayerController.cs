@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Code.GameLogic;
 using Code.Player;
 using Mirror;
@@ -6,6 +7,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using DG.Tweening;
+using Random = UnityEngine.Random;
 
 
 namespace Code.Cards
@@ -55,6 +57,25 @@ namespace Code.Cards
 
         public void AssignPlayer(Player player) => this.player = player;
 
+        public void AssignCard(Card cardAssigned, int index)
+        {
+            // Verificar que el índice esté dentro del rango de la lista
+            if (index < 0 || index >= cardsHandler.Cards.Count)
+            {
+                Debug.LogError($"Índice {index} fuera de rango. Tamaño de la lista: {cardsHandler.Cards.Count}");
+                return;
+            }
+
+            // Verificar que el elemento no sea null
+            if (cardsHandler.Cards[index] != null)
+            {
+                cardsHandler.Cards[index].GetComponent<CardInteraction>().Card = cardAssigned;
+            }
+            else
+            {
+                Debug.LogError($"La carta en el índice {index} es null");
+            }
+        }
 
         [TargetRpc]
         public void RpcRequestChangeTurn(NetworkConnection conn, bool turn)
@@ -83,10 +104,11 @@ namespace Code.Cards
                 return;
 
             var notPlayer = GameObject.Find("NotLocalPlayer");
-            if (notPlayer != null)
-            {
-                notPlayer.transform.GetChild(cardposition).DOMove(newPosition, 0.75f);
-            }
+
+            if (notPlayer == null) return;
+
+            var notPlayerCard = notPlayer.transform.GetChild(cardposition);
+            notPlayerCard.DOMove(newPosition, 0.2f).SetEase(Ease.InOutElastic);
         }
     }
 
@@ -94,15 +116,15 @@ namespace Code.Cards
     public class Player
     {
         public string playerName;
-        public int playerId;
         public int turnNumber = 0;
         public bool canPlayCard = false;
+        private NetworkConnectionToClient conn;
 
-        public Player(string playerName, int turnNumber, int playerId)
+        public Player(string playerName, int turnNumber, NetworkConnectionToClient conn)
         {
             this.playerName = playerName;
-            this.playerId = playerId;
             this.turnNumber = turnNumber;
+            this.conn = conn;
         }
     }
 }

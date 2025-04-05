@@ -2,6 +2,8 @@ using Code.GameLogic;
 using DG.Tweening;
 using Mirror;
 using UnityEngine;
+using UnityEngine.Serialization;
+using TMPro;
 
 namespace Code.Cards
 {
@@ -9,9 +11,12 @@ namespace Code.Cards
     {
         private Vector3 _startPosition;
         private bool _isOnHand = true;
-        public PlayerController _playerController;
-        public bool IsUp = false;
-        public int CardPosition;
+        public PlayerController playerController;
+        public bool isUp = false;
+        public int cardPosition;
+        public Card Card;
+        public TMP_Text number;
+        public TMP_Text type;
 
         private void Start()
         {
@@ -20,13 +25,13 @@ namespace Code.Cards
 
         private void OnMouseDown()
         {
-            if (_playerController.player.canPlayCard)
+            if (playerController.player.canPlayCard)
             {
                 _isOnHand = false;
-                Cursor.SetCursor(_playerController.cardsHandler.mouseOutTexture, Vector2.zero, CursorMode.Auto);
-                transform.DOMove(GameObject.Find("CardInTable").transform.position, 0.2f);
-                _playerController.player.canPlayCard = false;
-                _playerController.CmdIncreaseTurn(CardPosition);
+                Cursor.SetCursor(playerController.cardsHandler.mouseOutTexture, Vector2.zero, CursorMode.Auto);
+                transform.DOMove(GameObject.Find("CardInTable").transform.position, 0.2f).SetEase(Ease.InOutElastic);;
+                playerController.player.canPlayCard = false;
+                playerController.CmdIncreaseTurn(cardPosition);
             }
             else
             {
@@ -38,18 +43,18 @@ namespace Code.Cards
         {
             if (!_isOnHand) return;
 
-            IsUp = true;
-            transform.DOLocalMoveY(_startPosition.y + 0.5f, _playerController.cardsHandler.upDuration);
-            Cursor.SetCursor(_playerController.cardsHandler.mouseOverTexture, Vector2.zero, CursorMode.Auto);
+            isUp = true;
+            transform.DOLocalMoveY(_startPosition.y + 0.5f, playerController.cardsHandler.upDuration);
+            Cursor.SetCursor(playerController.cardsHandler.mouseOverTexture, Vector2.zero, CursorMode.Auto);
         }
 
         private void OnMouseExit()
         {
             if (!_isOnHand) return;
 
-            IsUp = false;
-            transform.DOLocalMoveY(_startPosition.y, _playerController.cardsHandler.upDuration);
-            Cursor.SetCursor(_playerController.cardsHandler.mouseOutTexture, Vector2.zero, CursorMode.Auto);
+            isUp = false;
+            transform.DOLocalMoveY(_startPosition.y, playerController.cardsHandler.upDuration);
+            Cursor.SetCursor(playerController.cardsHandler.mouseOutTexture, Vector2.zero, CursorMode.Auto);
         }
     }
 }

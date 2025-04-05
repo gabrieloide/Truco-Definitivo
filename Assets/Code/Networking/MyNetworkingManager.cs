@@ -21,7 +21,8 @@ public class MyNetworkingManager : NetworkManager
         var player = new Player(
             playerName: $"player{count}",
             turnNumber: count,
-            playerId: conn.connectionId);
+            conn: conn
+            );
 
         var playerController = conn.identity.gameObject.GetComponent<PlayerController>();
         GameManager.Instance.AddPlayerToServer(playerController);

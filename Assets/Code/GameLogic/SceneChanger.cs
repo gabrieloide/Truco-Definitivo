@@ -37,10 +37,10 @@ namespace Code.GameLogic
             }
         }
         
-        [ClientRpc]
+        [Server]
         public void ChangeScene(string sceneName)
         {
-            SceneManager.LoadScene(sceneName);
+            NetworkManager.singleton.ServerChangeScene(sceneName);
         }
     }
 }

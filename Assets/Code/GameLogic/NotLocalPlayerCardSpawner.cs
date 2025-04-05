@@ -17,7 +17,7 @@ namespace Code.GameLogic
             PlacingLocalPlayer();
             gameObject.SetActive(true);
         }
-        
+
         private void PlacingLocalPlayer()
         {
             for (var i = 0; i < GameManager.Instance.playerCount - 1; i++)
