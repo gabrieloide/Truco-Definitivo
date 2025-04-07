@@ -2,6 +2,7 @@ using System;
 using Code.Cards;
 using Code.GameLogic;
 using Code.Networking;
+using Code.Player;
 using Mirror;
 using UnityEngine;
 
@@ -13,6 +14,12 @@ public class MyNetworkingManager : NetworkManager
         Debug.Log("OnStartHost");
     }
 
+    public override void OnClientDisconnect()
+    {
+        base.OnClientDisconnect();
+        SceneChanger.Instance.ChangeScene("LobbyScene");
+    }
+    
     public override void OnServerAddPlayer(NetworkConnectionToClient conn)
     {
         base.OnServerAddPlayer(conn);
@@ -20,12 +27,12 @@ public class MyNetworkingManager : NetworkManager
 
         var player = new Player(
             playerName: $"player{count}",
-            turnNumber: count,
-            conn: conn
+            turnNumber: count
             );
 
-        var playerController = conn.identity.gameObject.GetComponent<PlayerController>();
+        var playerController = conn.identity.gameObject.GetComponent<PlayerLocal>();
         GameManager.Instance.AddPlayerToServer(playerController);
+        
         if (playerController == null)
         {
             Debug.Log("Player controller is null");

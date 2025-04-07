@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using Code.GameLogic;
+using Code.Player;
+using DG.Tweening;
 using Mirror;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
+using TMPro;
 
 namespace Code.Cards
 {
@@ -19,6 +22,8 @@ namespace Code.Cards
         [SerializeField] private Vector2 _offsetCards = new Vector2(2.5f, 5);
 
         [SerializeField] public List<GameObject> Cards = new List<GameObject>();
+        [FormerlySerializedAs("playerController")] [SerializeField] private PlayerLocal playerLocal;
+        
 
         private void Awake()
         {
@@ -28,6 +33,8 @@ namespace Code.Cards
             {
                 Debug.Log("There is no prefab on cardPrefab.");
             }
+
+            playerLocal = GetComponent<PlayerLocal>();
         }
 
         public void PlayerCardSpawner(int i, Card card, int value, string type)
@@ -36,7 +43,7 @@ namespace Code.Cards
             var bottomCenter = Camera.main.ViewportToScreenPoint(new Vector3(0.5f, 0f, 0f));
 
 
-            var c = Instantiate(cardPrefab, bottomCenter, Quaternion.identity);
+            var c = Instantiate(cardPrefab, bottomCenter, Quaternion.identity, GameManager.Instance.localPlayerLocal.gameObject.transform);
             Vector2 offset = i switch
             {
                 0 => Vector2.up * _offsetCards.y,
@@ -46,16 +53,17 @@ namespace Code.Cards
             };
             var worldPos = Camera.main.ScreenToWorldPoint(new Vector3(bottomCenter.x, bottomCenter.y, 0f));
             c.transform.position = new Vector3(worldPos.x + offset.x, worldPos.y + offset.y, 0f);
-            var cardComponent = c.GetComponent<CardInteraction>(); 
-            
+            var cardComponent = c.GetComponent<CardInteraction>();
+
             if (cardComponent != null)
             {
                 cardComponent.cardPosition = i;
-                cardComponent.playerController = gameObject.GetComponent<PlayerController>();
                 cardComponent.Card = card;
                 cardComponent.number.text = value.ToString();
                 cardComponent.type.text = type;
+                cardComponent.cardOwner = playerLocal;
             }
+
             Cards.Add(c);
         }
 
@@ -66,20 +74,33 @@ namespace Code.Cards
             {
                 for (var j = 0; j < 3; j++)
                 {
-                    var playerObject = player.connectionToClient.identity.gameObject.GetComponent<PlayerController>();
-
-                    GetCard(player.connectionToClient, j, FullDeck, playerObject);
+                    GetCard(player.connectionToClient, j, FullDeck);
                 }
             }
         }
+        [ClientRpc]
+        public void RpcMoveCard(Vector3 newPosition, int cardposition)
+        {
+            if (isLocalPlayer)
+                return;
 
+            var notPlayer = GameObject.Find("NotLocalPlayer");
+
+            if (notPlayer == null) return;
+
+            var notPlayerCard = notPlayer.transform.GetChild(cardposition);
+            notPlayerCard.DOMove(newPosition, 0.2f).SetEase(Ease.InOutElastic);
+        }
 
         [TargetRpc]
-        private void GetCard(NetworkConnection conn, int index, List<Card> fullDeck, PlayerController playerObject)
+        private void GetCard(NetworkConnection conn, int index, List<Card> fullDeck)
         {
             var random = Random.Range(0, fullDeck.Count);
 
             var card = fullDeck[random];
+            card.cardOwner = GameManager.Instance.localPlayerLocal;
+            
+            
             PlayerCardSpawner(index, card, fullDeck[random].value, fullDeck[random].type);
 
             fullDeck.RemoveAt(random);

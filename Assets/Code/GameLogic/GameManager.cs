@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using Code.Cards;
 using Code.Networking;
 using Code.Player;
+using Code.Cards;
 using Mirror;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using TMPro;
+using UnityEngine.Serialization;
 
 namespace Code.GameLogic
 {
@@ -32,12 +35,14 @@ namespace Code.GameLogic
             }
         }
 
-        public List<PlayerController> serverPlayers = new List<PlayerController>();
-
+        public List<PlayerLocal> serverPlayers = new List<PlayerLocal>();
+        [FormerlySerializedAs("localPlayerController")] public PlayerLocal localPlayerLocal;
         [SyncVar] public int currentPlayerTurn = 0;
-        public int playerCount;
+
+        [HideInInspector] public int playerCount;
         public bool isGameScene;
         [HideInInspector] public PlayerInput _playerInput;
+        [SerializeField] public TMP_Text currentTurnText;
 
         private void Awake()
         {
@@ -57,12 +62,8 @@ namespace Code.GameLogic
             }
 
             _playerInput = new PlayerInput();
+            
             _playerInput.Enable();
-        }
-
-        private void OnDisable()
-        {
-            _playerInput.Disable();
         }
 
         private void Update()
@@ -82,6 +83,8 @@ namespace Code.GameLogic
             }
         }
 
+        private bool IsLastCardPlayed() => currentPlayerTurn == serverPlayers.Count - 1 ? true : false;
+
         [Command]
         public void Spawneables(GameObject GO)
         {
@@ -89,26 +92,26 @@ namespace Code.GameLogic
         }
 
         [Server]
-        public void AddPlayerToServer(PlayerController player)
-        {
-            serverPlayers.Add(player);
-            Debug.Log($"Player {player.player.playerName} added to the server.");
-        }
-
-        [Server]
-        private void NextPlayer(PlayerController player)
+        private void NextPlayer(PlayerLocal player)
         {
             foreach (var p in serverPlayers)
             {
                 if (p == player)
                 {
-                    p.RpcRequestChangeTurn(p.connectionToClient, true);
+                    p.RpcRequestChangeTurn(connectionToClient, true);
                 }
                 else
                 {
-                    p.RpcRequestChangeTurn(p.connectionToClient, false);
+                    p.RpcRequestChangeTurn(connectionToClient, false);
                 }
             }
+        }
+
+        [Server]
+        public void AddPlayerToServer(PlayerLocal player)
+        {
+            serverPlayers.Add(player);
+            Debug.Log($"Player {player.player.playerName} added to the server.");
         }
     }
 }

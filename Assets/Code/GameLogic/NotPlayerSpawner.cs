@@ -2,13 +2,15 @@ using System;
 using Mirror;
 using UnityEngine;
 using System.Collections.Generic;
+using Code.Cards;
 
 namespace Code.GameLogic
 {
-    public class NotLocalPlayerCardSpawner : MonoBehaviour
+    public class NotPlayerSpawner : MonoBehaviour
     {
         [SerializeField] private GameObject notLocalPlayerPrefab;
         [HideInInspector] public List<GameObject> allNotLocalPlayer;
+        
         private Canvas _canvas;
 
         private void Start()
@@ -24,12 +26,7 @@ namespace Code.GameLogic
             {
                 var obj = Instantiate(notLocalPlayerPrefab, _canvas.transform);
                 GameManager.Instance.Spawneables(obj);
-
-                if (obj != null)
-                {
-                    Debug.Log($"[SERVER] Objeto instanciado correctamente: {obj.name}");
-                }
-
+                
                 obj.GetComponent<RectTransform>().anchoredPosition =
                     CalculateNextNotLocalPlayerPosition(i, obj.GetComponent<RectTransform>());
 
