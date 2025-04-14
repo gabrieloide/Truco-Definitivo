@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using Code.Cards;
 using Code.Networking;
 using Code.Player;
-using Code.Cards;
 using Mirror;
 using Unity.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using TMPro;
 using UnityEngine.Serialization;
 
@@ -26,7 +24,7 @@ namespace Code.GameLogic
                 if (_instance == null)
                 {
                     Debug.Log("New Game Manager has been created!");
-                    GameObject obj = new GameObject("GameManager");
+                    var obj = new GameObject("GameManager");
                     _instance = obj.AddComponent<GameManager>();
                     DontDestroyOnLoad(obj);
                 }
@@ -36,13 +34,16 @@ namespace Code.GameLogic
         }
 
         public List<PlayerLocal> serverPlayers = new List<PlayerLocal>();
-        [FormerlySerializedAs("localPlayerController")] public PlayerLocal localPlayerLocal;
+        
         [SyncVar] public int currentPlayerTurn = 0;
+        [SyncVar] public int playerCount;
+        [SyncVar] public bool deckIsLocked;
+        [SyncVar] public int round;
 
-        [HideInInspector] public int playerCount;
         public bool isGameScene;
-        [HideInInspector] public PlayerInput _playerInput;
-        [SerializeField] public TMP_Text currentTurnText;
+        [HideInInspector] public PlayerInput playerInput;
+        [SerializeField] private bool _gameSceneStarted = false;
+        public Team[] teams;
 
         private void Awake()
         {
@@ -61,15 +62,20 @@ namespace Code.GameLogic
                 gameObject.AddComponent<NetworkIdentity>();
             }
 
-            _playerInput = new PlayerInput();
-            
-            _playerInput.Enable();
+            playerInput = new PlayerInput();
+            teams = new Team[]
+            {
+                new ("Team 1"),
+                new ("Team 2")
+            };
+
+            playerInput.Enable();
         }
 
         private void Update()
         {
-            if (!isServer)
-                return;
+            if (!isServer) return;
+
 
             if (serverPlayers == null || serverPlayers.Count == 0)
             {
@@ -77,13 +83,19 @@ namespace Code.GameLogic
                 return;
             }
 
-            if (isGameScene)
-            {
-                NextPlayer(serverPlayers[currentPlayerTurn]);
-            }
+            if (!isGameScene) return;
+            NextPlayer(serverPlayers[currentPlayerTurn]);
+            if (_gameSceneStarted) return;
+            round++;
+            RunOnlyOnce();
         }
 
-        private bool IsLastCardPlayed() => currentPlayerTurn == serverPlayers.Count - 1 ? true : false;
+        [Server]
+        private void RunOnlyOnce()
+        {
+            serverPlayers[0].canPlayCard = true;
+            _gameSceneStarted = true;
+        }
 
         [Command]
         public void Spawneables(GameObject GO)
@@ -96,22 +108,18 @@ namespace Code.GameLogic
         {
             foreach (var p in serverPlayers)
             {
-                if (p == player)
-                {
-                    p.RpcRequestChangeTurn(connectionToClient, true);
-                }
-                else
-                {
-                    p.RpcRequestChangeTurn(connectionToClient, false);
-                }
+                var isCurrentPlayer = (p == player);
+                p.RpcRequestChangeTurn(p.connectionToClient, isCurrentPlayer);
             }
         }
 
         [Server]
         public void AddPlayerToServer(PlayerLocal player)
         {
+            if (!isServer)
+                return;
             serverPlayers.Add(player);
-            Debug.Log($"Player {player.player.playerName} added to the server.");
+            playerCount++;
         }
     }
 }

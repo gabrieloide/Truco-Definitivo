@@ -2646,11 +2646,13 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   serverPlayers: []
-  localPlayerLocal: {fileID: 0}
   currentPlayerTurn: 0
   playerCount: 0
+  deckIsLocked: 0
+  round: 0
   isGameScene: 0
-  currentTurnText: {fileID: 0}
+  _gameSceneStarted: 0
+  teams: []
 --- !u!1 &1450965691
 GameObject:
   m_ObjectHideFlags: 0

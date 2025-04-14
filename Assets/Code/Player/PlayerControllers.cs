@@ -11,7 +11,7 @@ namespace Code.Player
 
         private void Start()
         {
-            GameManager.Instance._playerInput.Player.Pause.performed += PauseMenu;
+            GameManager.Instance.playerInput.Player.Pause.performed += PauseMenu;
         }
 
         public void PauseMenu(InputAction.CallbackContext context)

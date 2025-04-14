@@ -34,7 +34,7 @@ public class DebugCommands : MonoBehaviour
 
     private void Start()
     {
-        GameManager.Instance._playerInput.Player.DebugCommand.performed += OpenDebugPanel;
+        GameManager.Instance.playerInput.Player.DebugCommand.performed += OpenDebugPanel;
     }
 
     public void OpenDebugPanel(InputAction.CallbackContext context)

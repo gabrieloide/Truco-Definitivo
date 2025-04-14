@@ -19,27 +19,25 @@ public class MyNetworkingManager : NetworkManager
         base.OnClientDisconnect();
         SceneChanger.Instance.ChangeScene("LobbyScene");
     }
-    
+
     public override void OnServerAddPlayer(NetworkConnectionToClient conn)
     {
         base.OnServerAddPlayer(conn);
-        var count = GameManager.Instance.serverPlayers.Count + 1;
+        var count = GameManager.Instance.serverPlayers.Count;
 
-        var player = new Player(
-            playerName: $"player{count}",
-            turnNumber: count
-            );
+        var playerLocal = conn.identity.gameObject.GetComponent<PlayerLocal>();
 
-        var playerController = conn.identity.gameObject.GetComponent<PlayerLocal>();
-        GameManager.Instance.AddPlayerToServer(playerController);
         
-        if (playerController == null)
+        GameManager.Instance.AddPlayerToServer(playerLocal);
+
+        if (playerLocal == null)
         {
             Debug.Log("Player controller is null");
             return;
         }
 
-        playerController.AssignPlayer(player);
+        Debug.Log("This is the client");
+        
         FindAnyObjectByType<Lobby>().AddPlayerToLobby($"player{count}");
     }
 }

@@ -4,12 +4,14 @@ using Mirror;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 namespace Code.Player
 {
     public class PlayerHUD : MonoBehaviour
     {
         public static PlayerHUD Instance { get; private set; }
+        public GameObject playerFlowerButton;
         public GameObject pauseMenu;
         [SerializeField] private TMP_Text currentTurn;
 
@@ -25,7 +27,15 @@ namespace Code.Player
             {
                 Instance = this;
             }
+
             pauseMenu.SetActive(false);
+            playerFlowerButton.SetActive(false);
+        }
+        
+        public void ChangeScoreText()
+        {
+            currentScore.text =
+                $"{GameManager.Instance.teams[0].teamScore} | {GameManager.Instance.teams[1].teamScore}";
         }
 
         public void PauseMenuButton() =>
@@ -33,8 +43,6 @@ namespace Code.Player
 
         public void ChangeCurrentTurnText(bool yourTurn)
         {
-            currentScore.text =
-                $"Current Turn: {GameManager.Instance.currentPlayerTurn}";
             currentTurn.text = yourTurn ? "Is your turn" : "Is not your turn";
         }
 
@@ -58,7 +66,9 @@ namespace Code.Player
                 NetworkManager.singleton.StopServer();
                 Debug.Log("StopServer called");
             }
+
             SceneChanger.Instance.ChangeScene("LobbyScene");
+            SceneManager.LoadScene("LobbyScene");
         }
     }
 }

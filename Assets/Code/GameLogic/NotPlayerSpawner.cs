@@ -25,7 +25,7 @@ namespace Code.GameLogic
             for (var i = 0; i < GameManager.Instance.playerCount - 1; i++)
             {
                 var obj = Instantiate(notLocalPlayerPrefab, _canvas.transform);
-                GameManager.Instance.Spawneables(obj);
+                //GameManager.Instance.Spawneables(obj);
                 
                 obj.GetComponent<RectTransform>().anchoredPosition =
                     CalculateNextNotLocalPlayerPosition(i, obj.GetComponent<RectTransform>());

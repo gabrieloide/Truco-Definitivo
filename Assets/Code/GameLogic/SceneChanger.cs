@@ -36,7 +36,7 @@ namespace Code.GameLogic
                 Destroy(gameObject);
             }
         }
-        
+
         [Server]
         public void ChangeScene(string sceneName)
         {

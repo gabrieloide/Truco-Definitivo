@@ -22,8 +22,7 @@ namespace Code.Cards
         [SerializeField] private Vector2 _offsetCards = new Vector2(2.5f, 5);
 
         [SerializeField] public List<GameObject> Cards = new List<GameObject>();
-        [FormerlySerializedAs("playerController")] [SerializeField] private PlayerLocal playerLocal;
-        
+
 
         private void Awake()
         {
@@ -33,17 +32,22 @@ namespace Code.Cards
             {
                 Debug.Log("There is no prefab on cardPrefab.");
             }
-
-            playerLocal = GetComponent<PlayerLocal>();
         }
 
-        public void PlayerCardSpawner(int i, Card card, int value, string type)
+        [ClientRpc]
+        private void DeckStatus(bool status)
+        {
+            GameManager.Instance.deckIsLocked = status;
+        }
+
+        private void PlayerCardSpawner(int i, Card card, int value, string type)
         {
             if (Camera.main == null) return;
             var bottomCenter = Camera.main.ViewportToScreenPoint(new Vector3(0.5f, 0f, 0f));
 
 
-            var c = Instantiate(cardPrefab, bottomCenter, Quaternion.identity, GameManager.Instance.localPlayerLocal.gameObject.transform);
+            var c = Instantiate(cardPrefab, bottomCenter, Quaternion.identity,
+                NetworkClient.localPlayer.gameObject.transform);
             Vector2 offset = i switch
             {
                 0 => Vector2.up * _offsetCards.y,
@@ -61,7 +65,6 @@ namespace Code.Cards
                 cardComponent.Card = card;
                 cardComponent.number.text = value.ToString();
                 cardComponent.type.text = type;
-                cardComponent.cardOwner = playerLocal;
             }
 
             Cards.Add(c);
@@ -70,6 +73,9 @@ namespace Code.Cards
         [Command]
         public void CmdDrawCard(List<Card> FullDeck)
         {
+            CreateVira();
+
+            DeckStatus(true);
             foreach (var player in GameManager.Instance.serverPlayers)
             {
                 for (var j = 0; j < 3; j++)
@@ -78,6 +84,20 @@ namespace Code.Cards
                 }
             }
         }
+
+        [ClientRpc]
+        private void CreateVira()
+        {
+            ref var card = ref FindAnyObjectByType<DeckCreator>().cardVira;
+            var fullDeck = FindAnyObjectByType<DeckCreator>()._fullDeck;
+
+            var random = Random.Range(0, fullDeck.Count);
+            card = fullDeck[random];
+
+            fullDeck.Remove(card);
+            Debug.Log($"La vira es {card.value}, {card.suit}");
+        }
+
         [ClientRpc]
         public void RpcMoveCard(Vector3 newPosition, int cardposition)
         {
@@ -98,12 +118,12 @@ namespace Code.Cards
             var random = Random.Range(0, fullDeck.Count);
 
             var card = fullDeck[random];
-            card.cardOwner = GameManager.Instance.localPlayerLocal;
-            
-            
-            PlayerCardSpawner(index, card, fullDeck[random].value, fullDeck[random].type);
+            card.cardOwner = NetworkClient.localPlayer.gameObject.GetComponent<PlayerLocal>();
 
-            fullDeck.RemoveAt(random);
+
+            PlayerCardSpawner(index, card, fullDeck[random].value, fullDeck[random].suit);
+
+            fullDeck.Remove(card);
         }
     }
 }

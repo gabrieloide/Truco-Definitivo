@@ -5,22 +5,30 @@ using Mirror;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-
 namespace Code.Player
 {
     public class PlayerLocal : NetworkBehaviour
     {
-        public Player player;
-        public CardsHandler cardsHandler;
-        public PlayerHUD playerHUD;
-        public PlayerControllers playerControllers;
+        [HideInInspector] public Player player;
+        [HideInInspector] public CardsHandler cardsHandler;
+        [HideInInspector] public PlayerControllers playerControllers;
+        [HideInInspector] public AnnouncementSystem announcementSystem;
+        public bool canPlayCard = false;
 
         private void Awake()
         {
             if (cardsHandler == null)
                 cardsHandler = GetComponent<CardsHandler>();
+
             if (playerControllers == null)
                 playerControllers = gameObject.AddComponent<PlayerControllers>();
+
+            if (announcementSystem == null)
+                announcementSystem = gameObject.AddComponent<AnnouncementSystem>();
+            
+            if (player == null)
+                player = gameObject.AddComponent<Player>();
+
 
             cardsHandler.enabled = false;
             DontDestroyOnLoad(gameObject);
@@ -30,8 +38,11 @@ namespace Code.Player
         {
             if (!isLocalPlayer)
                 return;
-            GameManager.Instance.localPlayerLocal = this;
+
+
+            CmdRequestPlayerFromServer();
         }
+
 
         private void Update()
         {
@@ -44,6 +55,36 @@ namespace Code.Player
                 return;
             if (player == null)
                 return;
+            PlayerHUD.Instance.ChangeCurrentTurnText(canPlayCard);
+        }
+
+        [Command]
+        private void CmdRequestPlayerFromServer()
+        {
+            Debug.Log("This message is to the server");
+            foreach (var localPlayer in GameManager.Instance.serverPlayers)
+            {
+                RpcServerPlayerToClient(localPlayer, localPlayer.player.playerName, localPlayer.player.team.teamName);
+                Debug.Log("[SERVER] Player name: " + localPlayer.player.playerName);
+                Debug.Log("[SERVER] Team name: " + localPlayer.player.team.teamName);
+            }
+        }
+
+        [ClientRpc]
+        private void RpcServerPlayerToClient(PlayerLocal localPlayer, string playerName, string teamName)
+        {
+            if (isServer)
+                return;
+
+            Debug.Log("Adding players to the local");
+
+            //debug player name and team name
+            Debug.Log("Player name: " + playerName);
+            Debug.Log("Team name: " + teamName);
+
+            GameManager.Instance.serverPlayers.Add(localPlayer);
+            //player.playerName = playerName;
+            //player.team.teamName = teamName;
         }
 
         private void InitializedHand()
@@ -61,37 +102,44 @@ namespace Code.Player
             Destroy(gameObject);
         }
 
-        public void AssignPlayer(Player player) => this.player = player;
-
         [Command]
         public void CmdIncreaseTurn(int cardPosition)
         {
-            player.canPlayCard = false;
-            GameManager.Instance.currentPlayerTurn++;
+            canPlayCard = false;
+            LastCard();
             cardsHandler.RpcMoveCard(new Vector3(0, 0, 0), cardPosition);
+        }
 
-            if (GameManager.Instance.currentPlayerTurn == GameManager.Instance.serverPlayers.Count)
+        [ClientRpc]
+        private void LastCard()
+        {
+            GameManager.Instance.currentPlayerTurn++;
+
+            if (GameManager.Instance.currentPlayerTurn == GameManager.Instance.playerCount)
+            {
+                TableManager.Instance.DetermineHighestCard();
+            }
+
+            if (GameManager.Instance.currentPlayerTurn == GameManager.Instance.playerCount)
                 GameManager.Instance.currentPlayerTurn = 0;
         }
 
         [TargetRpc]
         public void RpcRequestChangeTurn(NetworkConnection conn, bool turn)
         {
-            player.canPlayCard = turn;
+            canPlayCard = turn;
         }
     }
 
     [Serializable]
-    public class Player
+    public class Team
     {
-        public string playerName;
-        public int turnNumber = 0;
-        public bool canPlayCard = false;
+        public string teamName;
+        public int teamScore;
 
-        public Player(string playerName, int turnNumber)
+        public Team(string teamName)
         {
-            this.playerName = playerName;
-            this.turnNumber = turnNumber;
+            this.teamName = teamName;
         }
     }
 }
