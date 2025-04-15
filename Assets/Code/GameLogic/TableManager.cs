@@ -29,30 +29,22 @@ namespace Code.GameLogic
             Card highestCard = null;
             Card lowestCard = null;
 
-            // Guard clause for empty table
             if (CardsInTable == null || CardsInTable.Count == 0)
             {
-                Debug.Log("No cards in table to evaluate");
+                Debug.Log("There is no enough cards on the table to evaluate");
                 return;
             }
 
-            // Initialize with the first card
             highestCard = CardsInTable[0];
             lowestCard = CardsInTable[0];
 
             foreach (var card in CardsInTable)
             {
-                // Debug current card being evaluated
-                Debug.Log($"Evaluating Card: Value={card.realValue}, Suit={card.suit}, " +
-                          $"Owner={card.cardOwner}, Team={card.cardOwner.player.team.teamName}");
-
-                // Check for highest card
                 if (card.realValue > highestCard.realValue)
                 {
                     highestCard = card;
                 }
 
-                // Check for lowest card
                 if (card.realValue < lowestCard.realValue)
                 {
                     lowestCard = card;
@@ -60,6 +52,7 @@ namespace Code.GameLogic
             }
 
             RpcHighestCard(highestCard, lowestCard);
+            CardsInTable.Clear();
         }
 
 
@@ -74,16 +67,10 @@ namespace Code.GameLogic
                       $"Owner={highestCard.cardOwner}, Team={highestCard.cardOwner.player.team.teamName}");
             Debug.Log($"Lowest Card: Value={lowestCard.realValue}, Suit={lowestCard.suit}, " +
                       $"Owner={lowestCard.cardOwner}, Team={lowestCard.cardOwner.player.team.teamName}");
-
             
-            
-            Debug.Log("=== ALL CURRENT CARDS ON THE TABLE ===");
-            foreach (var card in CardsInTable)
-            {
-                Debug.Log($"Card: {card.value} of {card.suit}");
-            }
-            
-            highestCard.cardOwner.player.team.teamScore++;
+            FindAnyObjectByType<ScoreManager>().IncreaseScore(highestCard.cardOwner.player.team.teamName);
+            Debug.Log(
+                $"Highest Card {highestCard.cardOwner.player.team.teamName} Score: {highestCard.cardOwner.player.team.teamScore}");
             PlayerHUD.Instance.ChangeScoreText();
         }
     }

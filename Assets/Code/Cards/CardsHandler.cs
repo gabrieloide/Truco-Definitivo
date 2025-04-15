@@ -122,6 +122,13 @@ namespace Code.Cards
 
 
             PlayerCardSpawner(index, card, fullDeck[random].value, fullDeck[random].suit);
+            DeleteCardFromDeck(card);
+        }
+
+        [Server]
+        private void DeleteCardFromDeck(Card card)
+        {
+            ref var fullDeck = ref FindAnyObjectByType<DeckCreator>()._fullDeck;
 
             fullDeck.Remove(card);
         }

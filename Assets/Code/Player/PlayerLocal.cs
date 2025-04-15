@@ -56,6 +56,7 @@ namespace Code.Player
                 return;
             if (player == null)
                 return;
+            
             PlayerHUD.Instance.ChangeCurrentTurnText(canPlayCard);
         }
 
@@ -93,13 +94,7 @@ namespace Code.Player
                     Debug.LogError($"player component is null for localPlayer");
                     continue;
                 }
-
-                // Check if team is null
-                if (localPlayer.player.team == null)
-                {
-                    Debug.LogError($"team is null for player: {localPlayer.player.playerName}");
-                    continue;
-                }
+                
 
                 RpcServerPlayerToClient(localPlayer, localPlayer.player.playerName, localPlayer.player.team.teamName);
                 Debug.Log("[SERVER] Player name: " + localPlayer.player.playerName);
@@ -121,8 +116,8 @@ namespace Code.Player
             Debug.Log("Team name: " + teamName);
 
             GameManager.Instance.serverPlayers.Add(localPlayer);
-            //player.playerName = playerName;
-            //player.team.teamName = teamName;
+            player.playerName = playerName;
+            player.team.teamName = teamName;
         }
 
         private void InitializedHand()
@@ -151,11 +146,13 @@ namespace Code.Player
         [ClientRpc]
         private void LastCard()
         {
+            GameManager.Instance.ExecuteAfterPlayCard();
             GameManager.Instance.currentPlayerTurn++;
 
             if (GameManager.Instance.currentPlayerTurn == GameManager.Instance.playerCount)
             {
                 TableManager.Instance.DetermineHighestCard();
+                
             }
 
             if (GameManager.Instance.currentPlayerTurn == GameManager.Instance.playerCount)
@@ -175,15 +172,5 @@ namespace Code.Player
         }
     }
 
-    [Serializable]
-    public class Team
-    {
-        public string teamName;
-        public int teamScore;
 
-        public Team(string teamName)
-        {
-            this.teamName = teamName;
-        }
-    }
 }

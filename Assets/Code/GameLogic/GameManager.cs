@@ -34,7 +34,7 @@ namespace Code.GameLogic
         }
 
         public List<PlayerLocal> serverPlayers = new List<PlayerLocal>();
-        
+
         [SyncVar] public int currentPlayerTurn = 0;
         [SyncVar] public int playerCount;
         [SyncVar] public bool deckIsLocked;
@@ -43,7 +43,7 @@ namespace Code.GameLogic
         public bool isGameScene;
         [HideInInspector] public PlayerInput playerInput;
         [SerializeField] private bool _gameSceneStarted = false;
-        public Team[] teams;
+        public List<Team> teams = new List<Team>();
 
         private void Awake()
         {
@@ -63,13 +63,11 @@ namespace Code.GameLogic
             }
 
             playerInput = new PlayerInput();
-            teams = new Team[2]
-            {
-                new Team("Team 1"),
-                new Team("Team 2")
-            };
 
             playerInput.Enable();
+            
+            teams.Add(new Team("Team 1"));
+            teams.Add(new Team("Team 2"));
         }
 
         private void Update()
@@ -97,12 +95,15 @@ namespace Code.GameLogic
             _gameSceneStarted = true;
         }
 
-        [Command]
-        public void Spawneables(GameObject GO)
+        public void ExecuteAfterPlayCard()
         {
-            NetworkServer.Spawn(GO);
+            Debug.Log("A card has played");
+            if (currentPlayerTurn == serverPlayers.Count - 1)
+            {
+                round++;
+            }
         }
-
+        
         [Server]
         private void NextPlayer(PlayerLocal player)
         {
