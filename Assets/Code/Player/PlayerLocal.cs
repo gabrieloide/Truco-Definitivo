@@ -9,7 +9,7 @@ namespace Code.Player
 {
     public class PlayerLocal : NetworkBehaviour
     {
-        [HideInInspector] public Player player;
+        public Player player;
         [HideInInspector] public CardsHandler cardsHandler;
         [HideInInspector] public PlayerControllers playerControllers;
         [HideInInspector] public AnnouncementSystem announcementSystem;
@@ -25,9 +25,12 @@ namespace Code.Player
 
             if (announcementSystem == null)
                 announcementSystem = gameObject.AddComponent<AnnouncementSystem>();
-            
+
             if (player == null)
-                player = gameObject.AddComponent<Player>();
+                player = GetComponent<Player>();
+
+            player.playerName = $"player{GameManager.Instance.playerCount}";
+            player.team.teamName = GameManager.Instance.teams[GameManager.Instance.playerCount].teamName;
 
 
             cardsHandler.enabled = false;
@@ -38,8 +41,6 @@ namespace Code.Player
         {
             if (!isLocalPlayer)
                 return;
-
-
             CmdRequestPlayerFromServer();
         }
 
@@ -62,13 +63,50 @@ namespace Code.Player
         private void CmdRequestPlayerFromServer()
         {
             Debug.Log("This message is to the server");
+
+            // Check if GameManager.Instance is null
+            if (GameManager.Instance == null)
+            {
+                Debug.LogError("GameManager.Instance is null");
+                return;
+            }
+
+            // Check if serverPlayers is null
+            if (GameManager.Instance.serverPlayers == null)
+            {
+                Debug.LogError("GameManager.Instance.serverPlayers is null");
+                return;
+            }
+
             foreach (var localPlayer in GameManager.Instance.serverPlayers)
             {
+                // Check if localPlayer is null
+                if (localPlayer == null)
+                {
+                    Debug.LogError("localPlayer is null");
+                    continue;
+                }
+
+                // Check if player component is null
+                if (localPlayer.player == null)
+                {
+                    Debug.LogError($"player component is null for localPlayer");
+                    continue;
+                }
+
+                // Check if team is null
+                if (localPlayer.player.team == null)
+                {
+                    Debug.LogError($"team is null for player: {localPlayer.player.playerName}");
+                    continue;
+                }
+
                 RpcServerPlayerToClient(localPlayer, localPlayer.player.playerName, localPlayer.player.team.teamName);
                 Debug.Log("[SERVER] Player name: " + localPlayer.player.playerName);
                 Debug.Log("[SERVER] Team name: " + localPlayer.player.team.teamName);
             }
         }
+
 
         [ClientRpc]
         private void RpcServerPlayerToClient(PlayerLocal localPlayer, string playerName, string teamName)
@@ -124,6 +162,12 @@ namespace Code.Player
                 GameManager.Instance.currentPlayerTurn = 0;
         }
 
+        [Command]
+        public void AddCardToTheTable(Card card)
+        {
+            TableManager.Instance.CardsInTable.Add(card);
+        }
+        
         [TargetRpc]
         public void RpcRequestChangeTurn(NetworkConnection conn, bool turn)
         {

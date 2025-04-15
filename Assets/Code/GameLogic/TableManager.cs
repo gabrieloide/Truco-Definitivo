@@ -27,29 +27,63 @@ namespace Code.GameLogic
         public void DetermineHighestCard()
         {
             Card highestCard = null;
+            Card lowestCard = null;
+
+            // Guard clause for empty table
+            if (CardsInTable == null || CardsInTable.Count == 0)
+            {
+                Debug.Log("No cards in table to evaluate");
+                return;
+            }
+
+            // Initialize with the first card
+            highestCard = CardsInTable[0];
+            lowestCard = CardsInTable[0];
 
             foreach (var card in CardsInTable)
             {
-                if (highestCard == null || card.realValue > highestCard.realValue)
+                // Debug current card being evaluated
+                Debug.Log($"Evaluating Card: Value={card.realValue}, Suit={card.suit}, " +
+                          $"Owner={card.cardOwner}, Team={card.cardOwner.player.team.teamName}");
+
+                // Check for highest card
+                if (card.realValue > highestCard.realValue)
                 {
                     highestCard = card;
                 }
+
+                // Check for lowest card
+                if (card.realValue < lowestCard.realValue)
+                {
+                    lowestCard = card;
+                }
             }
 
-            RpcHighestCard(highestCard);
+            RpcHighestCard(highestCard, lowestCard);
         }
 
+
         [ClientRpc]
-        private void RpcHighestCard(Card highestCard)
+        private void RpcHighestCard(Card highestCard, Card lowestCard)
         {
             if (highestCard == null)
                 return;
 
-            Debug.Log(
-                $"Highest card: {highestCard.value} of {highestCard.suit} Name of the player is: {highestCard.cardOwner.player.playerName} from the team: {highestCard.cardOwner.player.team.teamName}");
+            Debug.Log("=== Final Results ===");
+            Debug.Log($"Highest Card: Value={highestCard.realValue}, Suit={highestCard.suit}, " +
+                      $"Owner={highestCard.cardOwner}, Team={highestCard.cardOwner.player.team.teamName}");
+            Debug.Log($"Lowest Card: Value={lowestCard.realValue}, Suit={lowestCard.suit}, " +
+                      $"Owner={lowestCard.cardOwner}, Team={lowestCard.cardOwner.player.team.teamName}");
 
-
-            //highestCard.cardOwner.structPlayer.team.teamScore++;
+            
+            
+            Debug.Log("=== ALL CURRENT CARDS ON THE TABLE ===");
+            foreach (var card in CardsInTable)
+            {
+                Debug.Log($"Card: {card.value} of {card.suit}");
+            }
+            
+            highestCard.cardOwner.player.team.teamScore++;
             PlayerHUD.Instance.ChangeScoreText();
         }
     }

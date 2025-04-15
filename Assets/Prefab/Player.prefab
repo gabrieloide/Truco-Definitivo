@@ -44,6 +44,7 @@ GameObject:
   - component: {fileID: 6865452785539412270}
   - component: {fileID: -1080672572160513539}
   - component: {fileID: 8520476753695470551}
+  - component: {fileID: 7562388556402564537}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -99,12 +100,11 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  player:
-    playerName: 
-    playerId: 0
-    turnNumber: 0
-    canPlayCard: 0
+  player: {fileID: 0}
   cardsHandler: {fileID: 0}
+  playerControllers: {fileID: 0}
+  announcementSystem: {fileID: 0}
+  canPlayCard: 0
 --- !u!114 &-1080672572160513539
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -147,8 +147,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a208aa7413404be9908fbe662026d0c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   upDuration: 0.3
   mouseOverTexture: {fileID: 2800000, guid: b1cebafbf60cd5743ac2bc98f2e06fc6, type: 3}
   mouseOutTexture: {fileID: 2800000, guid: 7439e2bdad7276240b7190274d9edde3, type: 3}
   cardPrefab: {fileID: 2225189555247482472, guid: 4391868780d4ed04ebb34be5263f33b5, type: 3}
   _offsetCards: {x: 3, y: 1.5}
+  Cards: []
+--- !u!114 &7562388556402564537
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6288279965579544772}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96ce44cb886a4916b1c8da425306f9dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerName: 
+  team:
+    teamName: 
+    teamScore: 0
+  haveFlower: 0

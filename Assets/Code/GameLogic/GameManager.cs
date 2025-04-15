@@ -63,10 +63,10 @@ namespace Code.GameLogic
             }
 
             playerInput = new PlayerInput();
-            teams = new Team[]
+            teams = new Team[2]
             {
-                new ("Team 1"),
-                new ("Team 2")
+                new Team("Team 1"),
+                new Team("Team 2")
             };
 
             playerInput.Enable();

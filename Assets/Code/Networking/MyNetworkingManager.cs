@@ -25,9 +25,12 @@ public class MyNetworkingManager : NetworkManager
         base.OnServerAddPlayer(conn);
         var count = GameManager.Instance.serverPlayers.Count;
 
+        var player = conn.identity.gameObject.AddComponent<Player>();
         var playerLocal = conn.identity.gameObject.GetComponent<PlayerLocal>();
-
         
+        
+        
+
         GameManager.Instance.AddPlayerToServer(playerLocal);
 
         if (playerLocal == null)
@@ -37,7 +40,7 @@ public class MyNetworkingManager : NetworkManager
         }
 
         Debug.Log("This is the client");
-        
+
         FindAnyObjectByType<Lobby>().AddPlayerToLobby($"player{count}");
     }
 }

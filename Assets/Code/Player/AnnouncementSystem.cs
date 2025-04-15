@@ -8,6 +8,7 @@ namespace Code.Player
 {
     public class AnnouncementSystem : MonoBehaviour
     {
+        
         public void CanDeclareFlower()
         {
             var playerLocal = NetworkClient.localPlayer.GetComponent<PlayerLocal>();

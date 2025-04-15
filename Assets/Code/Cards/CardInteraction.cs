@@ -28,12 +28,12 @@ namespace Code.Cards
             var player = GetComponentInParent<PlayerLocal>();
             if (player.canPlayCard)
             {
-                
                 _isOnHand = false;
                 Cursor.SetCursor(player.cardsHandler.mouseOutTexture, Vector2.zero, CursorMode.Auto);
                 transform.DOMove(GameObject.Find("CardInTable").transform.position, 0.2f).SetEase(Ease.InOutElastic);
                 player.CmdIncreaseTurn(cardPosition);
-                TableManager.Instance.CardsInTable.Add(Card);
+                player.AddCardToTheTable(Card);
+                
             }
             else
             {
