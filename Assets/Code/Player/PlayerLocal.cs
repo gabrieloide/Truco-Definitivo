@@ -4,6 +4,7 @@ using Code.GameLogic;
 using Mirror;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 
 namespace Code.Player
 {
@@ -12,8 +13,8 @@ namespace Code.Player
         public Player player;
         [HideInInspector] public CardsHandler cardsHandler;
         [HideInInspector] public PlayerControllers playerControllers;
-        [HideInInspector] public AnnouncementSystem announcementSystem;
-        public bool canPlayCard = false;
+        [FormerlySerializedAs("announcementSystem")] [HideInInspector] public AnnouncementManager announcementManager;
+
 
         private void Awake()
         {
@@ -23,11 +24,9 @@ namespace Code.Player
             if (playerControllers == null)
                 playerControllers = gameObject.AddComponent<PlayerControllers>();
 
-            if (announcementSystem == null)
-                announcementSystem = gameObject.AddComponent<AnnouncementSystem>();
-
             if (player == null)
                 player = GetComponent<Player>();
+            
 
             player.playerName = $"player{GameManager.Instance.playerCount}";
             player.team.teamName = GameManager.Instance.teams[GameManager.Instance.playerCount].teamName;
@@ -56,8 +55,8 @@ namespace Code.Player
                 return;
             if (player == null)
                 return;
-            
-            PlayerHUD.Instance.ChangeCurrentTurnText(canPlayCard);
+
+            PlayerHUD.Instance.ChangeCurrentTurnText(player.canPlayCard);
         }
 
         [Command]
@@ -94,7 +93,7 @@ namespace Code.Player
                     Debug.LogError($"player component is null for localPlayer");
                     continue;
                 }
-                
+
 
                 RpcServerPlayerToClient(localPlayer, localPlayer.player.playerName, localPlayer.player.team.teamName);
                 Debug.Log("[SERVER] Player name: " + localPlayer.player.playerName);
@@ -138,7 +137,7 @@ namespace Code.Player
         [Command]
         public void CmdIncreaseTurn(int cardPosition)
         {
-            canPlayCard = false;
+            player.canPlayCard = false;
             LastCard();
             cardsHandler.RpcMoveCard(new Vector3(0, 0, 0), cardPosition);
         }
@@ -146,31 +145,26 @@ namespace Code.Player
         [ClientRpc]
         private void LastCard()
         {
-            GameManager.Instance.ExecuteAfterPlayCard();
             GameManager.Instance.currentPlayerTurn++;
 
             if (GameManager.Instance.currentPlayerTurn == GameManager.Instance.playerCount)
             {
                 TableManager.Instance.DetermineHighestCard();
-                
-            }
-
-            if (GameManager.Instance.currentPlayerTurn == GameManager.Instance.playerCount)
                 GameManager.Instance.currentPlayerTurn = 0;
+                GameManager.Instance.round++;
+            }
         }
-
+        
         [Command]
-        public void AddCardToTheTable(Card card)
+        public void CmdAddCardToTheTable(Card card)
         {
             TableManager.Instance.CardsInTable.Add(card);
         }
-        
+
         [TargetRpc]
         public void RpcRequestChangeTurn(NetworkConnection conn, bool turn)
         {
-            canPlayCard = turn;
+            player.canPlayCard = turn;
         }
     }
-
-
 }

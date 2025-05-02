@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: b45089c0bd97cbb40ae999c94216a444
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 253649
+  packageName: Proxima Runtime Inspector (Free)
+  packageVersion: 1.5.0
+  assetPath: Assets/Proxima/Documentation/docs.html
+  uploadId: 743660

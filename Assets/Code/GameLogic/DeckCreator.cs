@@ -86,7 +86,7 @@ namespace Code.GameLogic
             if (cardsHandler == null) return;
 
             cardsHandler.CmdDrawCard(_fullDeck);
-            localPlayer.GetComponent<AnnouncementSystem>().CanDeclareFlower();
+            //FindAnyObjectByType<AnnouncementManager>().CanDeclareFlower();
         }
     }
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Code.Cards;
 using Code.Networking;
 using Code.Player;
@@ -65,7 +66,7 @@ namespace Code.GameLogic
             playerInput = new PlayerInput();
 
             playerInput.Enable();
-            
+
             teams.Add(new Team("Team 1"));
             teams.Add(new Team("Team 2"));
         }
@@ -84,26 +85,58 @@ namespace Code.GameLogic
             if (!isGameScene) return;
             NextPlayer(serverPlayers[currentPlayerTurn]);
             if (_gameSceneStarted) return;
-            round++;
             RunOnlyOnce();
+        }
+
+
+        public GameObject[] GetOpponentTeam(GameObject currentPlayer)
+        {
+            if (currentPlayer == null)
+            {
+                Debug.LogError("Current player is null!");
+                return null;
+            }
+
+            PlayerLocal currentPlayerLocal = currentPlayer.GetComponent<PlayerLocal>();
+            if (currentPlayerLocal == null)
+            {
+                Debug.LogError("Player doesn't have a PlayerLocal component!");
+                return null;
+            }
+
+            var opponentTeamName = "";
+
+            foreach (var team in teams)
+            {
+                if (team.teamName != currentPlayerLocal.player.team.teamName)
+                {
+                    opponentTeamName = team.teamName;
+                    break;
+                }
+            }
+
+            GameObject[] opponentPlayers = serverPlayers
+                .Where(player => player.player.team.teamName == opponentTeamName)
+                .Select(player => player.gameObject)
+                .ToArray();
+
+            return opponentPlayers;
         }
 
         [Server]
         private void RunOnlyOnce()
         {
-            serverPlayers[0].canPlayCard = true;
+            serverPlayers[0].player.canPlayCard = true;
             _gameSceneStarted = true;
+            OnStartGame();
         }
 
-        public void ExecuteAfterPlayCard()
+        [ClientRpc]
+        private void OnStartGame()
         {
-            Debug.Log("A card has played");
-            if (currentPlayerTurn == serverPlayers.Count - 1)
-            {
-                round++;
-            }
+            Debug.Log("Game has started");
         }
-        
+
         [Server]
         private void NextPlayer(PlayerLocal player)
         {

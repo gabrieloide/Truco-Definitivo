@@ -5,6 +5,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 namespace Code.Player
 {
@@ -12,6 +13,7 @@ namespace Code.Player
     {
         public static PlayerHUD Instance { get; private set; }
         public GameObject playerFlowerButton;
+        public GameObject playerTrucoButton;
         public GameObject pauseMenu;
         [SerializeField] private TMP_Text currentTurn;
 
@@ -29,9 +31,8 @@ namespace Code.Player
             }
 
             pauseMenu.SetActive(false);
-            playerFlowerButton.SetActive(false);
         }
-        
+
         public void ChangeScoreText()
         {
             currentScore.text =
@@ -43,7 +44,7 @@ namespace Code.Player
 
         public void ChangeCurrentTurnText(bool yourTurn)
         {
-            currentTurn.text = yourTurn ? "Is your turn" : "Is not your turn";
+            currentTurn.text = yourTurn ? "Its your turn" : "Its not your turn";
         }
 
         public void LeaveNetworkButton()

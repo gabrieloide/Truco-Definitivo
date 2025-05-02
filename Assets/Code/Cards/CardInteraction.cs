@@ -26,14 +26,14 @@ namespace Code.Cards
         private void OnMouseDown()
         {
             var player = GetComponentInParent<PlayerLocal>();
-            if (player.canPlayCard)
+            if (player.player.canPlayCard)
             {
                 _isOnHand = false;
                 Cursor.SetCursor(player.cardsHandler.mouseOutTexture, Vector2.zero, CursorMode.Auto);
                 transform.DOMove(GameObject.Find("CardInTable").transform.position, 0.2f).SetEase(Ease.InOutElastic);
                 player.CmdIncreaseTurn(cardPosition);
-                player.AddCardToTheTable(Card);
-                
+                player.CmdAddCardToTheTable(Card);
+
             }
             else
             {

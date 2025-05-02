@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 5c9b2406965117149b215540242658d0
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 253649
+  packageName: Proxima Runtime Inspector (Free)
+  packageVersion: 1.5.0
+  assetPath: Assets/Proxima/Documentation/docs/viewing_logs_offline.html
+  uploadId: 743660

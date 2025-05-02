@@ -103,8 +103,7 @@ MonoBehaviour:
   player: {fileID: 0}
   cardsHandler: {fileID: 0}
   playerControllers: {fileID: 0}
-  announcementSystem: {fileID: 0}
-  canPlayCard: 0
+  announcementManager: {fileID: 0}
 --- !u!114 &-1080672572160513539
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -169,7 +168,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerName: 
+  canPlayCard: 0
   team:
     teamName: 
     teamScore: 0
+    roundsWon: 0
   haveFlower: 0

@@ -6,6 +6,7 @@ namespace Code.Player
     public class Player : MonoBehaviour
     {
         public string playerName;
+        public bool canPlayCard = false;
         public Team team;
         public bool haveFlower;
     }
