@@ -50,6 +50,9 @@ namespace Code.GameLogic
                     lowestCard = card;
                 }
             }
+            
+            // Server updates the score using GameManager
+            GameManager.Instance.AddScoreToTeam(highestCard.cardOwner.player.team.teamName, 1); // amountToIncrease could be dynamic based on Truco state
 
             RpcHighestCard(highestCard, lowestCard);
             CardsInTable.Clear();
@@ -64,14 +67,11 @@ namespace Code.GameLogic
 
             Debug.Log("=== Final Results ===");
             Debug.Log($"Highest Card: Value={highestCard.realValue}, Suit={highestCard.suit}, " +
-                      $"Owner={highestCard.cardOwner}, Team={highestCard.cardOwner.player.team.teamName}");
+                      $"Owner={highestCard.cardOwner.player.playerName}, Team={highestCard.cardOwner.player.team.teamName}");
             Debug.Log($"Lowest Card: Value={lowestCard.realValue}, Suit={lowestCard.suit}, " +
-                      $"Owner={lowestCard.cardOwner}, Team={lowestCard.cardOwner.player.team.teamName}");
+                      $"Owner={lowestCard.cardOwner.player.playerName}, Team={lowestCard.cardOwner.player.team.teamName}");
             
-            FindAnyObjectByType<ScoreManager>().IncreaseScore(highestCard.cardOwner.player.team.teamName);
-            Debug.Log(
-                $"Highest Card {highestCard.cardOwner.player.team.teamName} Score: {highestCard.cardOwner.player.team.teamScore}");
-            PlayerHUD.Instance.ChangeScoreText();
+            // The score is now handled by GameManager's RpcUpdateScores.
         }
     }
 }

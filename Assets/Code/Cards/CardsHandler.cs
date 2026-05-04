@@ -70,67 +70,35 @@ namespace Code.Cards
             Cards.Add(c);
         }
 
-        [Command]
-        public void CmdDrawCard(List<Card> FullDeck)
-        {
-            CreateVira();
-
-            DeckStatus(true);
-            foreach (var player in GameManager.Instance.serverPlayers)
-            {
-                for (var j = 0; j < 3; j++)
-                {
-                    GetCard(player.connectionToClient, j, FullDeck);
-                }
-            }
-        }
-
-        [ClientRpc]
-        private void CreateVira()
-        {
-            ref var card = ref FindAnyObjectByType<DeckCreator>().cardVira;
-            var fullDeck = FindAnyObjectByType<DeckCreator>()._fullDeck;
-
-            var random = Random.Range(0, fullDeck.Count);
-            card = fullDeck[random];
-
-            fullDeck.Remove(card);
-            Debug.Log($"La vira es {card.value}, {card.suit}");
-        }
-
         [ClientRpc]
         public void RpcMoveCard(Vector3 newPosition, int cardposition)
         {
             if (isLocalPlayer)
                 return;
 
-            var notPlayer = GameObject.Find("NotLocalPlayer");
+            if (NotPlayerSpawner.Instance == null || NotPlayerSpawner.Instance.allNotLocalPlayer.Count == 0) 
+                return;
 
-            if (notPlayer == null) return;
+            // Simple assumption: the first opponent is the one playing. 
+            // A more complex 4-player system requires mapping NetworkConnection to Seat Index.
+            var notPlayer = NotPlayerSpawner.Instance.allNotLocalPlayer[0];
 
-            var notPlayerCard = notPlayer.transform.GetChild(cardposition);
-            notPlayerCard.DOMove(newPosition, 0.2f).SetEase(Ease.InOutElastic);
+            if (cardposition >= 0 && cardposition < notPlayer.transform.childCount)
+            {
+                var notPlayerCard = notPlayer.transform.GetChild(cardposition);
+                notPlayerCard.DOMove(newPosition, 0.2f).SetEase(Ease.InOutElastic);
+            }
         }
 
         [TargetRpc]
-        private void GetCard(NetworkConnection conn, int index, List<Card> fullDeck)
+        public void TargetReceiveCards(NetworkConnection conn, List<Card> dealtCards)
         {
-            var random = Random.Range(0, fullDeck.Count);
-
-            var card = fullDeck[random];
-            card.cardOwner = NetworkClient.localPlayer.gameObject.GetComponent<PlayerLocal>();
-
-
-            PlayerCardSpawner(index, card, fullDeck[random].value, fullDeck[random].suit);
-            DeleteCardFromDeck(card);
-        }
-
-        [Server]
-        private void DeleteCardFromDeck(Card card)
-        {
-            ref var fullDeck = ref FindAnyObjectByType<DeckCreator>()._fullDeck;
-
-            fullDeck.Remove(card);
+            for (int i = 0; i < dealtCards.Count; i++)
+            {
+                var card = dealtCards[i];
+                card.cardOwner = NetworkClient.localPlayer.gameObject.GetComponent<PlayerLocal>();
+                PlayerCardSpawner(i, card, card.value, card.suit);
+            }
         }
     }
 }

@@ -8,10 +8,18 @@ namespace Code.GameLogic
 {
     public class NotPlayerSpawner : MonoBehaviour
     {
+        public static NotPlayerSpawner Instance { get; private set; }
+        
         [SerializeField] private GameObject notLocalPlayerPrefab;
-        [HideInInspector] public List<GameObject> allNotLocalPlayer;
+        [HideInInspector] public List<GameObject> allNotLocalPlayer = new List<GameObject>();
         
         private Canvas _canvas;
+
+        private void Awake()
+        {
+            if (Instance == null) Instance = this;
+            else Destroy(gameObject);
+        }
 
         private void Start()
         {
@@ -25,12 +33,11 @@ namespace Code.GameLogic
             for (var i = 0; i < GameManager.Instance.playerCount - 1; i++)
             {
                 var obj = Instantiate(notLocalPlayerPrefab, _canvas.transform);
-                //GameManager.Instance.Spawneables(obj);
                 
                 obj.GetComponent<RectTransform>().anchoredPosition =
                     CalculateNextNotLocalPlayerPosition(i, obj.GetComponent<RectTransform>());
 
-                obj.name = "NotLocalPlayer";
+                obj.name = $"NotLocalPlayer_{i}";
                 allNotLocalPlayer.Add(obj);
             }
         }

@@ -138,21 +138,17 @@ namespace Code.Player
         public void CmdIncreaseTurn(int cardPosition)
         {
             player.canPlayCard = false;
-            LastCard();
-            cardsHandler.RpcMoveCard(new Vector3(0, 0, 0), cardPosition);
-        }
-
-        [ClientRpc]
-        private void LastCard()
-        {
+            
             GameManager.Instance.currentPlayerTurn++;
 
-            if (GameManager.Instance.currentPlayerTurn == GameManager.Instance.playerCount)
+            if (GameManager.Instance.currentPlayerTurn >= GameManager.Instance.playerCount)
             {
                 TableManager.Instance.DetermineHighestCard();
                 GameManager.Instance.currentPlayerTurn = 0;
                 GameManager.Instance.round++;
             }
+
+            cardsHandler.RpcMoveCard(new Vector3(0, 0, 0), cardPosition);
         }
         
         [Command]

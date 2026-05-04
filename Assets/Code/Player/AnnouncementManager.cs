@@ -4,6 +4,7 @@ using Code.GameLogic;
 using Code.GameLogic.Announcement;
 using Mirror;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public enum AnnounceState
@@ -33,16 +34,51 @@ namespace Code.Player
         };
 
         [SyncVar] public AnnounceState _announceState = AnnounceState.None;
+        public GameObject[] respondButtons;
+        public string[] announcementPlayerNames = new string[2];
+
+        [Header("UI Buttons")]
+        [SerializeField] private Button acceptButton;
+        [SerializeField] private Button declineButton;
+        [SerializeField] private Button moreAnnounceButton;
 
         private void Start()
         {
+            respondButtons = new GameObject[3];
             foreach (var t in _announcement)
             {
                 var announce = Instantiate(_allAnnouncement, transform);
                 announce.name = t;
                 announce.AddComponent(_announceComponents[t]);
             }
+
+            InitializeRespondButtons();
         }
+
+        private void InitializeRespondButtons()
+        {
+            if (acceptButton != null)
+            {
+                respondButtons[0] = acceptButton.gameObject;
+                acceptButton.onClick.AddListener(() => LocalButtonInteract("AcceptButton"));
+                acceptButton.gameObject.SetActive(false);
+            }
+
+            if (declineButton != null)
+            {
+                respondButtons[1] = declineButton.gameObject;
+                declineButton.onClick.AddListener(() => LocalButtonInteract("DeclineButton"));
+                declineButton.gameObject.SetActive(false);
+            }
+
+            if (moreAnnounceButton != null)
+            {
+                respondButtons[2] = moreAnnounceButton.gameObject;
+                moreAnnounceButton.onClick.AddListener(() => LocalButtonInteract("MoreAnnounceButton"));
+                moreAnnounceButton.gameObject.SetActive(false);
+            }
+        }
+
 
         private void GetOpponentPlayer(out GameObject opponentPlayer)
         {
@@ -100,44 +136,39 @@ namespace Code.Player
         [ClientRpc]
         private void RpcAnnounceToAllClients()
         {
-            var envido = gameObject.GetComponentInChildren<EnvidoAnnouncement>();
+            var allAnnouncements = GetComponentsInChildren<Announce>();
+            foreach (var announce in allAnnouncements)
+            {
+                if (announce.AnnounceButton().activeSelf)
+                    announce.AnnounceButton().SetActive(false);
+            }
 
-            if (envido.announceEnvidoButton.activeSelf)
-                envido.announceEnvidoButton.SetActive(false);
+            Debug.Log($"The {_announceState} has started");
         }
 
         [TargetRpc]
         private void RpcSendToOpponent(NetworkConnection conn)
         {
-            var envido = gameObject.GetComponentInChildren<EnvidoAnnouncement>();
-            var localPlayer = NetworkClient.localPlayer;
-
-            foreach (var t in envido.envidoButtons)
+            foreach (var t in respondButtons)
             {
                 t.SetActive(true);
             }
-
-            Debug.Log($"i am the opponent player {localPlayer.GetComponent<PlayerLocal>().player.playerName}");
         }
 
-
-        //Accept or Decline Buttons
-        public void LocalButtonInteract(string buttonName)
+        /// <summary>
+        /// Accept announcement button 
+        /// </summary>
+        private void LocalButtonInteract(string buttonName)
         {
             var playerGameObject = NetworkClient.localPlayer.gameObject;
-            var playerLocal = playerGameObject.GetComponent<PlayerLocal>();
-            var envido = gameObject.GetComponentInChildren<EnvidoAnnouncement>();
 
             var opponent = GameManager.Instance.GetOpponentTeam(playerGameObject)[0].GetComponent<PlayerLocal>();
 
-            Debug.Log(
-                $"my name is {playerLocal.player.playerName} and the opponent is {opponent.player.playerName}");
-
             ButtonInteract(buttonName, opponent, playerGameObject.GetComponent<PlayerLocal>().player.playerName);
 
-            for (int i = 0; i < envido.envidoButtons.Length; i++)
+            foreach (var t in respondButtons)
             {
-                envido.envidoButtons[i].SetActive(false);
+                t.SetActive(false);
             }
         }
 
@@ -146,13 +177,18 @@ namespace Code.Player
         {
             switch (buttonName)
             {
-                case "AcceptEnvidoButton":
+                case "AcceptButton":
                     AcceptAnnounce(localPlayer.connectionToClient, playerName);
+                    
                     break;
 
-                case "DeclineEnvidoButton":
-                    DeclineAnnounce();
-                    Debug.Log($"{playerName} has declined the envido");
+                case "DeclineButton":
+                    DeclineAnnounce(playerName);
+
+                    break;
+                case "MoreAnnounceButton":
+                    MoreAnnounce(localPlayer.connectionToClient);
+                    gameObject.GetComponentInChildren<Announce>().IncreaseAcceptAmount();
                     break;
 
                 default:
@@ -162,21 +198,27 @@ namespace Code.Player
         }
 
         [TargetRpc]
-        private void AcceptAnnounce(NetworkConnection conn, string playerAcceptedName)
+        private void AcceptAnnounce(NetworkConnection conn, string playerName)
         {
-            Debug.Log($"the player {playerAcceptedName} has accepted the envido");
-            var envido = gameObject.GetComponentInChildren<EnvidoAnnouncement>();
-
-            for (int i = 0; i < envido.envidoButtons.Length; i++)
-            {
-                envido.envidoButtons[i].SetActive(true);
-            }
+            Debug.Log($"the player {playerName} has accepted the announce");
+            gameObject.GetComponentInChildren<Announce>().UpdateTotalScore();
         }
 
-
         [ClientRpc]
-        private void DeclineAnnounce()
+        private void DeclineAnnounce(string playerName)
         {
+            Debug.Log($"{playerName} has declined the envido");
+        }
+
+        [TargetRpc]
+        private void MoreAnnounce(NetworkConnection conn)
+        {
+            gameObject.GetComponentInChildren<Announce>().UpdateTotalScore();
+            
+            foreach (var t in respondButtons)
+            {
+                t.SetActive(true);
+            }
         }
     }
 }

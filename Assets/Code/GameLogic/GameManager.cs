@@ -20,16 +20,14 @@ namespace Code.GameLogic
         {
             get
             {
-                _instance = FindAnyObjectByType<GameManager>();
-
                 if (_instance == null)
                 {
-                    Debug.Log("New Game Manager has been created!");
-                    var obj = new GameObject("GameManager");
-                    _instance = obj.AddComponent<GameManager>();
-                    DontDestroyOnLoad(obj);
+                    _instance = FindAnyObjectByType<GameManager>();
+                    if (_instance == null)
+                    {
+                        Debug.LogError("GameManager is missing from the scene! Make sure it is added via the Editor for Mirror to work properly.");
+                    }
                 }
-
                 return _instance;
             }
         }
@@ -51,17 +49,11 @@ namespace Code.GameLogic
             if (_instance != null && _instance != this)
             {
                 Destroy(gameObject);
+                return;
             }
-            else
-            {
-                _instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-
-            if (GetComponent<NetworkIdentity>() == null)
-            {
-                gameObject.AddComponent<NetworkIdentity>();
-            }
+            
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
 
             playerInput = new PlayerInput();
 
@@ -128,13 +120,27 @@ namespace Code.GameLogic
         {
             serverPlayers[0].player.canPlayCard = true;
             _gameSceneStarted = true;
+            
+            // Server deals cards
+            var deckCreator = FindAnyObjectByType<DeckCreator>();
+            if (deckCreator != null)
+            {
+                deckCreator.ShuffleAndSetVira();
+
+                foreach (var player in serverPlayers)
+                {
+                    var dealtCards = deckCreator.DealCards(3);
+                    player.cardsHandler.TargetReceiveCards(player.connectionToClient, dealtCards);
+                }
+            }
+            
             OnStartGame();
         }
 
         [ClientRpc]
         private void OnStartGame()
         {
-            Debug.Log("Game has started");
+            Debug.Log("Game has started! Check the Vira.");
         }
 
         [Server]
@@ -154,6 +160,44 @@ namespace Code.GameLogic
                 return;
             serverPlayers.Add(player);
             playerCount++;
+        }
+
+        [Server]
+        public void AddScoreToTeam(string teamName, int pointsToIncrease)
+        {
+            foreach (var team in teams)
+            {
+                if (team.teamName == teamName)
+                {
+                    team.roundsWon++;
+                    if (team.roundsWon >= 2)
+                    {
+                        team.teamScore += pointsToIncrease;
+                        ResetTeamsRoundsWon();
+                        // Sync scores to all clients
+                        RpcUpdateScores(teams[0].teamScore, teams[1].teamScore);
+                    }
+                    break;
+                }
+            }
+        }
+
+        [Server]
+        private void ResetTeamsRoundsWon()
+        {
+            foreach (var team in teams) team.roundsWon = 0;
+        }
+
+        [ClientRpc]
+        private void RpcUpdateScores(int scoreTeam1, int scoreTeam2)
+        {
+            teams[0].teamScore = scoreTeam1;
+            teams[1].teamScore = scoreTeam2;
+            
+            if (PlayerHUD.Instance != null) 
+            {
+                PlayerHUD.Instance.ChangeScoreText();
+            }
         }
     }
 }

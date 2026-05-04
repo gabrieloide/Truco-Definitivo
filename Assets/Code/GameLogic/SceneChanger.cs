@@ -13,28 +13,28 @@ namespace Code.GameLogic
         {
             get
             {
-                _instance = FindFirstObjectByType<SceneChanger>();
                 if (_instance == null)
                 {
-                    GameObject obj = new GameObject("SceneChanger", typeof(SceneChanger), typeof(NetworkIdentity));
-                    _instance = obj.GetComponent<SceneChanger>();
-                    DontDestroyOnLoad(obj);
+                    _instance = FindAnyObjectByType<SceneChanger>();
+                    if (_instance == null)
+                    {
+                        Debug.LogError("SceneChanger is missing from the scene! Make sure it is added via the Editor for Mirror to work properly.");
+                    }
                 }
-
                 return _instance;
             }
         }
 
         private void Awake()
         {
-            if (_instance == null)
-            {
-                _instance = this;
-            }
-            else
+            if (_instance != null && _instance != this)
             {
                 Destroy(gameObject);
+                return;
             }
+            
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
         }
 
         [Server]

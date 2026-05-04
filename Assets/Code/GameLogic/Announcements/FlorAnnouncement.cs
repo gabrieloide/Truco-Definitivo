@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Code.Player;
 using Mirror;
@@ -8,6 +9,19 @@ namespace Code.GameLogic.Announcement
 {
     public class FlorAnnouncement : Announce
     {
+        public override GameObject AnnounceButton() => GameObject.Find("FlowerButton");
+        protected override AnnounceState AnnounceState() => global::AnnounceState.Flor;
+
+        protected override int[] IncreasingAmount() => throw new NotImplementedException();
+
+
+        private void Start()
+        {
+            var announcementManager = FindAnyObjectByType<AnnouncementManager>();
+            AnnounceButton().GetComponent<Button>().onClick
+                .AddListener(() => announcementManager.SendAnnounceToClient("FlowerButton"));
+        }
+
         public void CanDeclareFlower()
         {
             var playerLocal = NetworkClient.localPlayer.GetComponent<PlayerLocal>();
@@ -36,7 +50,8 @@ namespace Code.GameLogic.Announcement
             }
         }
 
-        public override void IncreaseTotalScore()
+
+        public override void UpdateTotalScore()
         {
             throw new System.NotImplementedException();
         }

@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Code.Cards;
 using Code.Player;
 using Mirror;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace Code.GameLogic
@@ -14,79 +12,71 @@ namespace Code.GameLogic
     {
         private readonly string[] _cardSuit = { "Gold", "Cup", "Sword", "Cudgel" };
         public List<Card> _fullDeck = new List<Card>();
-        public Card cardVira;
+        [SyncVar] public Card cardVira;
 
         private void Start()
         {
-            CreateDeck();
+            if (isServer)
+            {
+                CreateDeck();
+            }
         }
 
+        [Server]
         private void CreateDeck()
         {
+            _fullDeck.Clear();
             foreach (var cardType in _cardSuit)
             {
-                var earlyRealValue = 8;
-                for (var number = 1; number <= 3; number++)
-                {
-                    var assignedRealValue = (number == 1 && cardType == "Cudgel") ? 13 :
-                        (number == 1 && cardType == "Sword") ? 14 :
-                        earlyRealValue;
-
-                    AddCard(cardType, number, assignedRealValue);
-                    earlyRealValue++;
-                }
-
-                var runningRealValue = 1;
-                for (var number = 4; number <= 12; number++)
+                for (var number = 1; number <= 12; number++)
                 {
                     if (number == 8 || number == 9)
                         continue;
 
-                    var assignedRealValue = (number == 7 && cardType == "Gold") ? 11 :
-                        (number == 7 && cardType == "Sword") ? 12 :
-                        runningRealValue;
-
-                    AddCard(cardType, number, assignedRealValue);
-                    runningRealValue++;
+                    _fullDeck.Add(new Card { suit = cardType, value = number });
                 }
             }
-
-            _fullDeck = _fullDeck.OrderBy(c => c.suit).ThenBy(c => c.value).ToList();
         }
 
-        private void AddCard(string cardType, int number, int realValue)
+        [Server]
+        public void ShuffleAndSetVira()
         {
-            if (number > 9)
-                _fullDeck.Add(new CardPerico
-                {
-                    suit = $"{cardType} #{number}", value = number, realValue = realValue,
-                    IsPerico = cardType == cardVira.suit && number == 11,
-                    IsPerica = cardType == cardVira.suit && number == 10
-                });
+            CreateDeck(); // Refresh deck
+            
+            // Shuffle
+            _fullDeck = _fullDeck.OrderBy(x => Random.value).ToList();
 
-            else
-                _fullDeck.Add(new Card { suit = $"{cardType} #{number}", value = number, realValue = realValue });
-        }
+            // Pick Vira
+            int viraIndex = Random.Range(0, _fullDeck.Count);
+            cardVira = _fullDeck[viraIndex];
+            _fullDeck.RemoveAt(viraIndex);
 
-        private void OnMouseDown()
-        {
-            if (GameManager.Instance.deckIsLocked)
+            // Update real values based on the new Vira
+            foreach (var card in _fullDeck)
             {
-                Debug.Log("You can't draw any card");
-                return;
+                card.realValue = TrucoRules.GetCardRealValue(card, cardVira);
             }
+            
+            // Also update the vira's real value just in case
+            cardVira.realValue = TrucoRules.GetCardRealValue(cardVira, cardVira);
 
-            if (!NetworkClient.isConnected) return;
+            Debug.Log($"[SERVER] Vira selected: {cardVira.value} of {cardVira.suit}");
+        }
 
-            var localPlayer = NetworkClient.localPlayer;
-            if (localPlayer == null) return;
-
-            var cardsHandler = localPlayer.GetComponent<CardsHandler>();
-
-            if (cardsHandler == null) return;
-
-            cardsHandler.CmdDrawCard(_fullDeck);
-            //FindAnyObjectByType<AnnouncementManager>().CanDeclareFlower();
+        [Server]
+        public List<Card> DealCards(int count)
+        {
+            List<Card> dealtCards = new List<Card>();
+            for (int i = 0; i < count; i++)
+            {
+                if (_fullDeck.Count > 0)
+                {
+                    Card c = _fullDeck[0];
+                    _fullDeck.RemoveAt(0);
+                    dealtCards.Add(c);
+                }
+            }
+            return dealtCards;
         }
     }
 
@@ -97,11 +87,11 @@ namespace Code.GameLogic
         public string suit;
         public int value;
         public int realValue;
-    }
-
-    public class CardPerico : Card
-    {
-        public bool IsPerico;
-        public bool IsPerica;
+        
+        // Formatted display name, e.g., "Gold #7"
+        public string GetDisplayName()
+        {
+            return $"{suit} #{value}";
+        }
     }
 }
