@@ -1,11 +1,11 @@
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Mirror;
+// using Mirror;
 
 namespace Code.GameLogic
 {
-    public class SceneChanger : NetworkBehaviour
+    public class SceneChanger : MonoBehaviour
     {
         private static SceneChanger _instance;
 
@@ -37,10 +37,11 @@ namespace Code.GameLogic
             DontDestroyOnLoad(gameObject);
         }
 
-        [Server]
+        // [Server]
         public void ChangeScene(string sceneName)
         {
-            NetworkManager.singleton.ServerChangeScene(sceneName);
+            SceneManager.LoadScene(sceneName);
+            // NetworkManager.singleton.ServerChangeScene(sceneName);
         }
     }
 }

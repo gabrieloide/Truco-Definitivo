@@ -1,19 +1,22 @@
 using System;
 using Code.Cards;
 using Code.GameLogic;
-using Mirror;
+// using Mirror;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 
 namespace Code.Player
 {
-    public class PlayerLocal : NetworkBehaviour
+    public class PlayerLocal : MonoBehaviour
     {
+        public bool isLocalPlayer = true;
+        public bool isServer = true;
         public Player player;
         [HideInInspector] public CardsHandler cardsHandler;
         [HideInInspector] public PlayerControllers playerControllers;
         [FormerlySerializedAs("announcementSystem")] [HideInInspector] public AnnouncementManager announcementManager;
+        [HideInInspector] public CardInteraction selectedCardInteraction;
 
 
         private void Awake()
@@ -23,14 +26,23 @@ namespace Code.Player
 
             if (playerControllers == null)
                 playerControllers = gameObject.AddComponent<PlayerControllers>();
+            
+            // Ensure interaction and movement are added if missing
+            if (GetComponent<PlayerInteract>() == null)
+                gameObject.AddComponent<PlayerInteract>();
+            
+            if (GetComponent<PlayerMovement3D>() == null)
+                gameObject.AddComponent<PlayerMovement3D>();
 
             if (player == null)
                 player = GetComponent<Player>();
             
-
-            player.playerName = $"player{GameManager.Instance.playerCount}";
-            player.team.teamName = GameManager.Instance.teams[GameManager.Instance.playerCount].teamName;
-
+            // Teams and names are now assigned by GameManager.RunOnlyOnce in singleplayer.
+            // In multiplayer, this might need further adjustment, but for now we prioritize stability.
+            if (player.playerName == null || player.playerName == "")
+            {
+                player.playerName = $"Player_{UnityEngine.Random.Range(100, 999)}";
+            }
 
             cardsHandler.enabled = false;
             DontDestroyOnLoad(gameObject);
@@ -40,6 +52,18 @@ namespace Code.Player
         {
             if (!isLocalPlayer)
                 return;
+
+            // Register player to game manager for solo mode
+            if (GameManager.Instance != null)
+            {
+                Debug.Log($"[PlayerLocal] Registrando a {gameObject.name} en el GameManager.");
+                GameManager.Instance.AddPlayerToServer(this);
+            }
+            else
+            {
+                Debug.LogError("[PlayerLocal] ERROR: No se encontró el GameManager al intentar registrarse.");
+            }
+
             CmdRequestPlayerFromServer();
         }
 
@@ -59,7 +83,7 @@ namespace Code.Player
             PlayerHUD.Instance.ChangeCurrentTurnText(player.canPlayCard);
         }
 
-        [Command]
+        // [Command]
         private void CmdRequestPlayerFromServer()
         {
             Debug.Log("This message is to the server");
@@ -102,7 +126,7 @@ namespace Code.Player
         }
 
 
-        [ClientRpc]
+        // [ClientRpc]
         private void RpcServerPlayerToClient(PlayerLocal localPlayer, string playerName, string teamName)
         {
             if (isServer)
@@ -129,36 +153,13 @@ namespace Code.Player
             cardsHandler.enabled = true;
         }
 
-        public override void OnStopClient()
-        {
-            Destroy(gameObject);
-        }
+        // public override void OnStopClient()
+        // {
+        //     Destroy(gameObject);
+        // }
 
-        [Command]
-        public void CmdIncreaseTurn(int cardPosition)
-        {
-            player.canPlayCard = false;
-            
-            GameManager.Instance.currentPlayerTurn++;
-
-            if (GameManager.Instance.currentPlayerTurn >= GameManager.Instance.playerCount)
-            {
-                TableManager.Instance.DetermineHighestCard();
-                GameManager.Instance.currentPlayerTurn = 0;
-                GameManager.Instance.round++;
-            }
-
-            cardsHandler.RpcMoveCard(new Vector3(0, 0, 0), cardPosition);
-        }
-        
-        [Command]
-        public void CmdAddCardToTheTable(Card card)
-        {
-            TableManager.Instance.CardsInTable.Add(card);
-        }
-
-        [TargetRpc]
-        public void RpcRequestChangeTurn(NetworkConnection conn, bool turn)
+        // [TargetRpc]
+        public void RpcRequestChangeTurn(/*NetworkConnection conn,*/ bool turn)
         {
             player.canPlayCard = turn;
         }

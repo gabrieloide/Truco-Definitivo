@@ -2,27 +2,28 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Code.Player;
-using Mirror;
+// using Mirror;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace Code.GameLogic
 {
-    public class DeckCreator : NetworkBehaviour
+    public class DeckCreator : MonoBehaviour
     {
         private readonly string[] _cardSuit = { "Gold", "Cup", "Sword", "Cudgel" };
         public List<Card> _fullDeck = new List<Card>();
-        [SyncVar] public Card cardVira;
+        /*[SyncVar]*/ public Card cardVira;
 
         private void Start()
         {
-            if (isServer)
-            {
-                CreateDeck();
-            }
+            // if (isServer)
+            // {
+            //     CreateDeck();
+            // }
+            CreateDeck();
         }
 
-        [Server]
+        // [Server]
         private void CreateDeck()
         {
             _fullDeck.Clear();
@@ -38,7 +39,7 @@ namespace Code.GameLogic
             }
         }
 
-        [Server]
+        // [Server]
         public void ShuffleAndSetVira()
         {
             CreateDeck(); // Refresh deck
@@ -63,7 +64,7 @@ namespace Code.GameLogic
             Debug.Log($"[SERVER] Vira selected: {cardVira.value} of {cardVira.suit}");
         }
 
-        [Server]
+        // [Server]
         public List<Card> DealCards(int count)
         {
             List<Card> dealtCards = new List<Card>();
@@ -84,9 +85,20 @@ namespace Code.GameLogic
     public class Card
     {
         public PlayerLocal cardOwner;
+        public GameObject ownerObj;
         public string suit;
         public int value;
         public int realValue;
+
+        public Card() { }
+
+        public Card(int v, string s, PlayerLocal owner = null, GameObject ownerObj = null)
+        {
+            value = v;
+            suit = s;
+            cardOwner = owner;
+            this.ownerObj = ownerObj ?? (owner != null ? owner.gameObject : null);
+        }
         
         // Formatted display name, e.g., "Gold #7"
         public string GetDisplayName()

@@ -12,21 +12,27 @@ namespace Code.GameLogic.Announcement
         protected override AnnounceState AnnounceState() => global::AnnounceState.Truco;
 
 
-        protected override int[] IncreasingAmount() => new[] { 1, 3, 6, 9, 12 };
-        private void Start()
-        {
-            var announcementManager = FindAnyObjectByType<AnnouncementManager>();
+        // 1 (No cantado) - 3 (Truco) - 6 (Retruco) - 9 (Vale 9) - 30 (Vale Partida)
+        protected override int[] IncreasingAmount() => new[] { 1, 3, 6, 9, 30 };
+        
+        // UI handling is now managed by PlayerHUD and AnnouncementManager
 
-            AnnounceButton().GetComponent<Button>().onClick
-                .AddListener(() => announcementManager.SendAnnounceToClient("TrucoButton"));
-        }
-
-        //1 - 3 - 6 - 9 - all the game
+        //1 - 3 - 6 - 9 - Vale Partida
 
         public override void UpdateTotalScore()
         {
-            Debug.Log("Truco");
-            ScoreManager.instance.amountToIncrease = IncreasingAmount()[acceptAmount];
+            string stateName = acceptAmount switch
+            {
+                1 => "Truco",
+                2 => "Retruco",
+                3 => "Vale 9",
+                4 => "Vale Partida",
+                _ => "Truco"
+            };
+
+            Debug.Log($"[TrucoAnnouncement] ¡{stateName} ACEPTADO!");
+            int points = IncreasingAmount()[acceptAmount];
+            GameManager.Instance.currentHandValue = points;
         }
     }
 }

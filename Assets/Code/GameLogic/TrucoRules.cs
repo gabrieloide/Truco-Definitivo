@@ -55,13 +55,77 @@ namespace Code.GameLogic
 
         public static int CalculateEnvidoScore(List<Card> hand, Card vira)
         {
-            int maxScore = 0;
+            if (hand == null || hand.Count < 3) return 0;
 
-            // Check if player has Perico or Perica
-            bool hasPerico = false;
-            bool hasPerica = false;
+            // Check if player has Flor (3 of same suit OR 2 pieces OR 1 piece + 2 same suit)
+            // Note: In most rules, if you have Flor, Envido is invalid.
+            if (IsFlor(hand, vira)) return -1; 
+
+            int maxScore = 0;
             int pericoTarget = (vira.value == 11) ? 12 : 11;
             int pericaTarget = (vira.value == 10) ? 12 : 10;
+
+            Card perico = null;
+            Card perica = null;
+            List<Card> normalCards = new List<Card>();
+
+            foreach (var card in hand)
+            {
+                if (card.suit == vira.suit && card.value == pericoTarget) perico = card;
+                else if (card.suit == vira.suit && card.value == pericaTarget) perica = card;
+                else normalCards.Add(card);
+            }
+
+            // Case 1: Perico alone
+            if (perico != null && perica == null)
+            {
+                // Piece + highest normal card
+                int highestNormal = 0;
+                foreach(var c in normalCards) highestNormal = Mathf.Max(highestNormal, GetEnvidoValue(c, false, false));
+                maxScore = 30 + highestNormal;
+            }
+            // Case 2: Perica alone
+            else if (perica != null && perico == null)
+            {
+                int highestNormal = 0;
+                foreach(var c in normalCards) highestNormal = Mathf.Max(highestNormal, GetEnvidoValue(c, false, false));
+                maxScore = 29 + highestNormal;
+            }
+            // Case 3: No pieces
+            else if (perico == null && perica == null)
+            {
+                // Traditional combinations of 2 cards same suit
+                for (int i = 0; i < hand.Count; i++)
+                {
+                    for (int j = i + 1; j < hand.Count; j++)
+                    {
+                        if (hand[i].suit == hand[j].suit)
+                        {
+                            int score = 20 + GetEnvidoValue(hand[i], false, false) + GetEnvidoValue(hand[j], false, false);
+                            if (score > maxScore) maxScore = score;
+                        }
+                    }
+                }
+                
+                // If no combinations, just the highest card
+                if (maxScore == 0)
+                {
+                    foreach (var c in hand) maxScore = Mathf.Max(maxScore, GetEnvidoValue(c, false, false));
+                }
+            }
+
+            return maxScore;
+        }
+
+        public static int CalculateFlorPoints(List<Card> hand, Card vira)
+        {
+            if (!IsFlor(hand, vira)) return 0;
+
+            int pericoTarget = (vira.value == 11) ? 12 : 11;
+            int pericaTarget = (vira.value == 10) ? 12 : 10;
+
+            bool hasPerico = false;
+            bool hasPerica = false;
 
             foreach (var card in hand)
             {
@@ -69,71 +133,47 @@ namespace Code.GameLogic
                 if (card.suit == vira.suit && card.value == pericaTarget) hasPerica = true;
             }
 
-            // If Flor (Perico and Perica), envido score might not apply, but usually it's considered 59 points
-            if (hasPerico && hasPerica) return 59;
+            // Flor Reservada (Perico + Perica + Any card) = 5 points
+            if (hasPerico && hasPerica) return 5;
 
-            // Calculate combinations of 2 cards of the same suit
-            for (int i = 0; i < hand.Count; i++)
-            {
-                for (int j = i + 1; j < hand.Count; j++)
-                {
-                    Card c1 = hand[i];
-                    Card c2 = hand[j];
+            // Normal Flor = 3 points
+            return 3;
+        }
 
-                    int score = 0;
+        public static bool IsFlor(List<Card> hand, Card vira)
+        {
+            if (hand == null || hand.Count < 3) return false;
 
-                    bool c1IsPerico = (c1.suit == vira.suit && c1.value == pericoTarget);
-                    bool c1IsPerica = (c1.suit == vira.suit && c1.value == pericaTarget);
-                    bool c2IsPerico = (c2.suit == vira.suit && c2.value == pericoTarget);
-                    bool c2IsPerica = (c2.suit == vira.suit && c2.value == pericaTarget);
+            int pericoTarget = (vira.value == 11) ? 12 : 11;
+            int pericaTarget = (vira.value == 10) ? 12 : 10;
 
-                    // If they are the same suit OR one is a piece
-                    if (c1.suit == c2.suit || c1IsPerico || c1IsPerica || c2IsPerico || c2IsPerica)
-                    {
-                        int val1 = GetEnvidoValue(c1, c1IsPerico, c1IsPerica);
-                        int val2 = GetEnvidoValue(c2, c2IsPerico, c2IsPerica);
+            int piecesCount = 0;
+            string firstNormalSuit = "";
+            int sameSuitCount = 0;
 
-                        if (c1IsPerico || c1IsPerica || c2IsPerico || c2IsPerica)
-                        {
-                            // If one is a piece, and the other is ANY card, wait, 
-                            // pieces only sum with their own suit in Venezuelan Truco.
-                            // If they are not the same suit, the piece just plays alone? No, Perico + different suit is just the Perico value (30).
-                            if (c1.suit == c2.suit)
-                            {
-                                score = val1 + val2; // Piece + same suit card (e.g. Perico + 7 = 30 + 7 = 37)
-                            }
-                            else
-                            {
-                                // Just the piece alone
-                                score = Mathf.Max(val1, val2); 
-                            }
-                        }
-                        else
-                        {
-                            // Normal cards of the same suit
-                            score = 20 + val1 + val2;
-                        }
-                    }
-                    else
-                    {
-                        // Different suits, no pieces. Score is just the highest card value.
-                        score = Mathf.Max(GetEnvidoValue(c1, false, false), GetEnvidoValue(c2, false, false));
-                    }
-
-                    if (score > maxScore) maxScore = score;
-                }
-            }
-
-            // Also check single card values in case they have no matches
             foreach (var card in hand)
             {
-                bool isPerico = (card.suit == vira.suit && card.value == pericoTarget);
-                bool isPerica = (card.suit == vira.suit && card.value == pericaTarget);
-                int score = GetEnvidoValue(card, isPerico, isPerica);
-                if (score > maxScore) maxScore = score;
+                bool isPiece = (card.suit == vira.suit && (card.value == pericoTarget || card.value == pericaTarget));
+                if (isPiece) piecesCount++;
             }
 
-            return maxScore;
+            // 2 pieces always make a Flor (Perico + Perica + anything)
+            if (piecesCount >= 2) return true;
+
+            // 1 piece + 2 cards of same suit
+            if (piecesCount == 1)
+            {
+                List<Card> normals = new List<Card>();
+                foreach (var card in hand)
+                {
+                    bool isPiece = (card.suit == vira.suit && (card.value == pericoTarget || card.value == pericaTarget));
+                    if (!isPiece) normals.Add(card);
+                }
+                return normals[0].suit == normals[1].suit;
+            }
+
+            // 0 pieces: 3 cards of same suit
+            return (hand[0].suit == hand[1].suit && hand[1].suit == hand[2].suit);
         }
 
         private static int GetEnvidoValue(Card card, bool isPerico, bool isPerica)

@@ -7,22 +7,15 @@ namespace Code.GameLogic.Announcement
 {
     public class ALeyAnnouncement : Announce
     {
-        public override GameObject AnnounceButton() => GameObject.Find("ALeyButton");
+        public override GameObject AnnounceButton() => null; // Handled by PlayerHUD and UI Toolkit
         protected override AnnounceState AnnounceState() => global::AnnounceState.ALey;
 
-        protected override int[] IncreasingAmount() => throw new NotImplementedException();
-
-        private void Start()
-        {
-            var announcementManager = FindAnyObjectByType<AnnouncementManager>();
-            AnnounceButton().GetComponent<Button>().onClick
-                .AddListener(() => announcementManager.SendAnnounceToClient("ALeyButton"));
-        }
-
+        protected override int[] IncreasingAmount() => new[] { 0, 0 }; // A Ley doesn't add or subtract points
 
         public override void UpdateTotalScore()
         {
-            throw new NotImplementedException();
+            Debug.Log("¡A Ley! Verificando si el oponente tiene Flor...");
+            // No score increase for A Ley per user rules
         }
     }
 }
