@@ -127,13 +127,18 @@ namespace Code.DebugTools
                         float cardW = gizmoScale * 0.6f;
                         float cardH = gizmoScale * 0.9f;
                         Vector3 cp = cardDest.position;
-                        Vector3 cr = cardDest.right;
-                        Vector3 cf = cardDest.forward;
+                        // Dibujar siempre plano sobre la mesa (plano XZ) independientemente de si la flecha Z (forward) mira hacia arriba
+                        Vector3 right = Vector3.Cross(Vector3.up, (center - cp).normalized); // Perpendicular a la dirección hacia el centro
+                        if (right == Vector3.zero) right = Vector3.right;
+                        Vector3 forward = Vector3.Cross(right, Vector3.up); // Apuntando hacia el centro
 
-                        Vector3 c1 = cp - cr * cardW + cf * cardH;
-                        Vector3 c2 = cp + cr * cardW + cf * cardH;
-                        Vector3 c3 = cp + cr * cardW - cf * cardH;
-                        Vector3 c4 = cp - cr * cardW - cf * cardH;
+                        // Si por alguna razón el centro no está bien, usamos ejes globales
+                        if (forward == Vector3.zero) { right = Vector3.right; forward = Vector3.forward; }
+
+                        Vector3 c1 = cp - right * cardW + forward * cardH;
+                        Vector3 c2 = cp + right * cardW + forward * cardH;
+                        Vector3 c3 = cp + right * cardW - forward * cardH;
+                        Vector3 c4 = cp - right * cardW - forward * cardH;
 
                         Gizmos.DrawLine(c1, c2);
                         Gizmos.DrawLine(c2, c3);
