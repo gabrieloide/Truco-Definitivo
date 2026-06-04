@@ -90,38 +90,45 @@ namespace Code.Player
             if (vcamWalking != null) vcamWalking.Priority = 10;
         }
 
+        [Header("Camera Pivot")]
+        [Tooltip("Asigna aquí el objeto Pivot que sigue tu vcamSeated. Si está asignado, moveremos el Pivot en lugar de la cámara.")]
+        public Transform cameraPivot;
+
         public void SetSeatedCamera(Transform cameraPosition)
         {
             if (!isLocalPlayer) return;
 
             if (vcamSeated != null)
             {
-                // Limpiar cualquier target de Cinemachine que esté forzando la posición
-                vcamSeated.Target.TrackingTarget = null;
-                vcamSeated.Target.LookAtTarget = null;
+                // Limpiar cualquier target de Cinemachine si no usamos pivot
+                if (cameraPivot == null)
+                {
+                    vcamSeated.Target.TrackingTarget = null;
+                    vcamSeated.Target.LookAtTarget = null;
+                }
+
+                Transform objectToMove = cameraPivot != null ? cameraPivot : vcamSeated.transform;
 
                 if (cameraPosition != null)
                 {
-                    vcamSeated.transform.position = cameraPosition.position;
-                    vcamSeated.transform.rotation = cameraPosition.rotation;
+                    objectToMove.position = cameraPosition.position;
+                    objectToMove.rotation = cameraPosition.rotation;
                     _seatedBaseRotation = cameraPosition.rotation;
                 }
                 else
                 {
-                    // Fallback si el usuario no asignó un Transform vacío en el Inspector
-                    Debug.LogWarning("[CameraManager] No se asignó Camera Position en la silla. Usando sitTransform con un offset hacia arriba.");
-                    
+                    Debug.LogWarning("[CameraManager] No se asignó Camera Position. Usando sitTransform con offset.");
                     var chair = SeatManager.Instance.allChairs.Find(c => c.occupant != null && c.occupant.GetComponent<CameraManager>() == this);
                     if (chair != null && chair.sitTransform != null)
                     {
-                        vcamSeated.transform.position = chair.sitTransform.position + Vector3.up * 1.5f;
+                        objectToMove.position = chair.sitTransform.position + Vector3.up * 1.5f;
                         Vector3 lookTarget = TableManager.Instance.viraPosition.position;
-                        vcamSeated.transform.LookAt(lookTarget);
-                        _seatedBaseRotation = vcamSeated.transform.rotation;
+                        objectToMove.LookAt(lookTarget);
+                        _seatedBaseRotation = objectToMove.rotation;
                     }
                     else
                     {
-                        _seatedBaseRotation = vcamSeated.transform.rotation;
+                        _seatedBaseRotation = objectToMove.rotation;
                     }
                 }
                 _currentPan = 0f;
