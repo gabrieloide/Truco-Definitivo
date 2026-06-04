@@ -499,6 +499,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   numberText: {fileID: 3433376966614443697}
   suitText: {fileID: 4778787378039604524}
+  cardImageRenderer: {fileID: 0}
+  cardMeshRenderer: {fileID: 5666145703638630076}
   cardValue: 0
   cardSuit: 
+  cardDbId: 0
   owner: {fileID: 0}

@@ -10,7 +10,8 @@ namespace Code.Cards
         [Header("UI References")]
         public TMP_Text numberText;
         public TMP_Text suitText;
-        public SpriteRenderer cardImageRenderer;
+        public SpriteRenderer cardImageRenderer; // Opción A: Usar SpriteRenderer
+        public MeshRenderer cardMeshRenderer;    // Opción B: Usar Material/MeshRenderer
 
         public int cardValue;
         public string cardSuit;
@@ -30,7 +31,7 @@ namespace Code.Cards
             if (numberText != null) numberText.text = cardValue.ToString();
             if (suitText != null) suitText.text = cardSuit;
 
-            if (cardImageRenderer != null && cardDbId > 0)
+            if (cardDbId > 0)
             {
                 var db = Resources.Load<Code.Cards.CardDatabase>("CardDatabase");
                 if (db != null)
@@ -39,9 +40,32 @@ namespace Code.Cards
                     var data = db.GetCardById(cardDbId);
                     if (data != null && data.cardSprite != null)
                     {
-                        cardImageRenderer.sprite = data.cardSprite;
+                        // Opción A: Si usa SpriteRenderer
+                        if (cardImageRenderer != null)
+                        {
+                            cardImageRenderer.sprite = data.cardSprite;
+                        }
+
+                        // Opción B: Si prefiere usar un Material (MeshRenderer)
+                        if (cardMeshRenderer != null)
+                        {
+                            // Como el sprite es parte de un spritesheet, no podemos simplemente asignar la textura.
+                            // Tenemos que calcular el Offset y Scale basándonos en las coordenadas del sprite.
+                            Material mat = cardMeshRenderer.material; // Esto crea una instancia del material
+                            mat.mainTexture = data.cardSprite.texture;
+
+                            Rect spriteRect = data.cardSprite.textureRect;
+                            float texWidth = data.cardSprite.texture.width;
+                            float texHeight = data.cardSprite.texture.height;
+
+                            Vector2 scale = new Vector2(spriteRect.width / texWidth, spriteRect.height / texHeight);
+                            Vector2 offset = new Vector2(spriteRect.x / texWidth, spriteRect.y / texHeight);
+
+                            mat.mainTextureScale = scale;
+                            mat.mainTextureOffset = offset;
+                        }
                         
-                        // Ocultar textos si ya tenemos la imagen bonita de la carta española
+                        // Ocultar textos si ya tenemos la imagen de la carta
                         if (numberText != null) numberText.gameObject.SetActive(false);
                         if (suitText != null) suitText.gameObject.SetActive(false);
                     }

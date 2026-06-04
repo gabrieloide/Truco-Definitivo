@@ -73,27 +73,7 @@ namespace Code.GameLogic
             teams.Add(new Team("Team 2"));
         }
 
-        private void OnEnable()
-        {
-            TableManager.OnCardPlaced += HandleCardPlaced;
-        }
-
-        private void OnDisable()
-        {
-            TableManager.OnCardPlaced -= HandleCardPlaced;
-        }
-
-        private void HandleCardPlaced(Card card, GameObject player)
-        {
-            // End the current turn after a brief delay to let card animation finish
-            StartCoroutine(DelayedEndTurn());
-        }
-
-        private System.Collections.IEnumerator DelayedEndTurn()
-        {
-            yield return new WaitForSeconds(2.5f);
-            EndTurn();
-        }
+        // Las escuchas de TableManager.OnCardPlaced ahora están en PlayerTurnState
 
         public GameObject[] GetOpponentTeam(GameObject currentPlayer)
         {
@@ -215,8 +195,6 @@ namespace Code.GameLogic
                 var mainCardsHandler = localPlayer != null ? localPlayer.cardsHandler : FindAnyObjectByType<CardsHandler>();
                 var playerGameObject = localPlayer != null ? localPlayer.gameObject : mainPlayerComponent.gameObject;
 
-                deckCreator.ShuffleAndSetVira();
-                
                 if (SeatManager.Instance != null)
                 {
                     SeatManager.Instance.AutoSeatLocalPlayer(playerGameObject);
@@ -225,18 +203,9 @@ namespace Code.GameLogic
                 {
                     Debug.LogError("[GameManager] SeatManager.Instance es NULL!");
                 }
-
-                var myCards = deckCreator.DealCards(3);
-                if (mainCardsHandler != null) 
-                {
-                    Debug.Log("[GameManager] Repartiendo cartas al jugador local...");
-                    mainCardsHandler.TargetReceiveCards(myCards);
-                }
                 
                 foreach (var npc in npcs)
                 {
-                    Debug.Log($"[GameManager] Repartiendo cartas a NPC: {npc.playerName}");
-                    npc.ReceiveCards(deckCreator.DealCards(3));
                     if (SeatManager.Instance != null && SeatManager.Instance.GetPlayerSeatIndex(npc.gameObject) == -1)
                     {
                         foreach (var chair in SeatManager.Instance.allChairs)
@@ -274,16 +243,14 @@ namespace Code.GameLogic
 
                 _totalPlayersCount = 1 + npcs.Count;
                 dealerIndex = (SeatManager.Instance.allChairs.Count - 1) % SeatManager.Instance.allChairs.Count;
-                _currentManoSeatIndex = (dealerIndex + 1) % SeatManager.Instance.allChairs.Count;
-                _currentTrickStartSeatIndex = _currentManoSeatIndex;
+                currentManoSeatIndex = (dealerIndex + 1) % SeatManager.Instance.allChairs.Count;
+                currentTrickStartSeatIndex = currentManoSeatIndex;
 
-                Debug.Log($"[GameManager] Dealer: {dealerIndex}, Mano: {_currentManoSeatIndex}");
+                Debug.Log($"[GameManager] Inicializado. Dealer: {dealerIndex}, Mano: {currentManoSeatIndex}");
 
-                UpdateDeckAndVira();
-
-                // Start the State Machine!
-                stateMachine.ChangeState(new Code.GameLogic.States.PlayerTurnState());
-                StartTurn(_currentTrickStartSeatIndex);
+                // Start the State Machine directly with DealingState!
+                // DealingState will now handle shuffling, dealing, updating vira, and starting the turn.
+                stateMachine.ChangeState(new Code.GameLogic.States.DealingState());
             }
             else
             {
@@ -363,9 +330,9 @@ namespace Code.GameLogic
             }
         }
 
-        private int _lastTrickWinnerSeatIndex = -1;
-        private int _currentManoSeatIndex = 0; // The seat that starts every trick in the hand
-        private int _currentTrickStartSeatIndex = 0; // The seat that starts the current baza
+        public int lastTrickWinnerSeatIndex { get; set; } = -1;
+        public int currentManoSeatIndex { get; set; } = 0; // The seat that starts every trick in the hand
+        public int currentTrickStartSeatIndex { get; set; } = 0; // The seat that starts the current baza
 
         public void EndTurn()
         {

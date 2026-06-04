@@ -411,43 +411,43 @@ namespace Code.Player
         private void OnALeyClicked()
         {
             Debug.Log("[PlayerHUD] ¡A Ley! presionado en UI Toolkit.");
-            Code.Core.GameEventManager.EmitAnnounceButtonClicked("ALeyButton");
+            global::Code.Core.GameEventManager.EmitAnnounceButtonClicked("ALeyButton");
         }
 
         private void OnEnvidoClicked()
         {
             Debug.Log("[PlayerHUD] ¡Envido! presionado en UI Toolkit.");
-            Code.Core.GameEventManager.EmitAnnounceButtonClicked("EnvidoButton");
+            global::Code.Core.GameEventManager.EmitAnnounceButtonClicked("EnvidoButton");
         }
 
         private void OnTrucoClicked()
         {
             Debug.Log("[PlayerHUD] ¡Quiero Truco! presionado en UI Toolkit.");
-            Code.Core.GameEventManager.EmitAnnounceButtonClicked("TrucoButton");
+            global::Code.Core.GameEventManager.EmitAnnounceButtonClicked("TrucoButton");
         }
 
         private void OnFlorClicked()
         {
             Debug.Log("[PlayerHUD] ¡Flor! presionado en UI Toolkit.");
-            Code.Core.GameEventManager.EmitAnnounceButtonClicked("FlorButton");
+            global::Code.Core.GameEventManager.EmitAnnounceButtonClicked("FlorButton");
         }
 
         private void OnAcceptClicked()
         {
             Debug.Log("[PlayerHUD] Accept clicked");
-            Code.Core.GameEventManager.EmitAcceptButtonClicked();
+            global::Code.Core.GameEventManager.EmitAcceptButtonClicked();
         }
 
         private void OnDeclineClicked()
         {
             Debug.Log("[PlayerHUD] Decline clicked");
-            Code.Core.GameEventManager.EmitDeclineButtonClicked();
+            global::Code.Core.GameEventManager.EmitDeclineButtonClicked();
         }
 
         private void OnMoreClicked()
         {
             Debug.Log("[PlayerHUD] More clicked");
-            Code.Core.GameEventManager.EmitMoreButtonClicked();
+            global::Code.Core.GameEventManager.EmitMoreButtonClicked();
         }
 
         private void OnPauseClicked()

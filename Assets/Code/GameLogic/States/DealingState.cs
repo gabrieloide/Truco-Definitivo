@@ -9,25 +9,43 @@ namespace Code.GameLogic.States
         {
             Debug.Log("[DealingState] Repartiendo cartas...");
             
-            // 1. Mezclar y seleccionar la Vira
             var deckCreator = Object.FindAnyObjectByType<DeckCreator>();
-            if (deckCreator != null)
+            var gameManager = GameManager.Instance;
+            
+            if (deckCreator != null && gameManager != null)
             {
+                // 1. Mezclar y seleccionar la Vira
                 deckCreator.ShuffleAndSetVira();
+
+                // 2. Repartir a todos los jugadores y NPCs
+                var allPlayers = Object.FindObjectsByType<Code.Player.Player>(FindObjectsSortMode.None);
+                foreach (var player in allPlayers)
+                {
+                    var cardsHandler = player.GetComponent<Code.Cards.CardsHandler>();
+                    if (cardsHandler != null)
+                    {
+                        cardsHandler.TargetReceiveCards(deckCreator.DealCards(3));
+                    }
+                }
+
+                var allNPCs = Object.FindObjectsByType<Code.Player.NPCPlayer>(FindObjectsSortMode.None);
+                foreach (var npc in allNPCs)
+                {
+                    npc.ReceiveCards(deckCreator.DealCards(3));
+                }
+
+                // 3. Colocar el mazo y la vira en la mesa 3D
+                gameManager.UpdateDeckAndVira();
+
+                // 4. Iniciar el turno de la mano (el jugador a la derecha del repartidor)
+                gameManager.StartTurn(gameManager.currentTrickStartSeatIndex);
             }
 
-            // TODO: Integrar con SeatManager y PlayerLocal para asignarles las cartas
-            // var seatManager = Object.FindAnyObjectByType<SeatManager>();
-            // foreach(var seat in seatManager.Seats) { ... repartir 3 cartas ... }
-
-            // 2. Transición automática a la fase de juego
+            // Transición automática a la fase de juego
             StateMachine.ChangeState(new PlayerTurnState());
         }
 
-        public override void UpdateState()
-        {
-            // No se requiere lógica por frame en el reparto.
-        }
+        public override void UpdateState() { }
 
         public override void ExitState()
         {
