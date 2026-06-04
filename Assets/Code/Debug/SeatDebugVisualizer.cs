@@ -1,7 +1,7 @@
 using UnityEngine;
 using Code.GameLogic;
 
-namespace Code.Debug
+namespace Code.DebugTools
 {
     /// <summary>
     /// Dibuja Gizmos en la vista de Scene para visualizar:
