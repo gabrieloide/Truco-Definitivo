@@ -59,6 +59,18 @@ namespace Code.Player
             }
 
             InitializeRespondButtons();
+
+            // Suscribirse a los eventos de la UI Toolkit
+            global::Code.Core.GameEventManager.OnAcceptButtonClicked += LocalAccept;
+            global::Code.Core.GameEventManager.OnDeclineButtonClicked += LocalDecline;
+            global::Code.Core.GameEventManager.OnMoreButtonClicked += LocalMore;
+        }
+
+        private void OnDestroy()
+        {
+            global::Code.Core.GameEventManager.OnAcceptButtonClicked -= LocalAccept;
+            global::Code.Core.GameEventManager.OnDeclineButtonClicked -= LocalDecline;
+            global::Code.Core.GameEventManager.OnMoreButtonClicked -= LocalMore;
         }
 
         private void InitializeAnnouncementsCalled()
