@@ -56,5 +56,6 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "Truco Definitivo.sln"
+    "dotnet.defaultSolution": "Truco Definitivo.sln",
+    "dotnet.preferCSharpExtension": true
 }

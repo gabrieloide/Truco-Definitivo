@@ -56,7 +56,13 @@ namespace Code.Player
         {
             yield return new WaitForSeconds(Random.Range(0.5f, 1.5f));
 
-            while (GameManager.Instance.isAnnouncementPending) yield return new WaitForSeconds(0.5f);
+            bool announcementOccurred = false;
+
+            if (GameManager.Instance.isAnnouncementPending)
+            {
+                announcementOccurred = true;
+                while (GameManager.Instance.isAnnouncementPending) yield return new WaitForSeconds(0.5f);
+            }
 
             // 1. Canto en primera ronda
             if (GameManager.Instance.round == 0)
@@ -65,11 +71,13 @@ namespace Code.Player
                 if (NPCDecisionMaker.ShouldAnnounceFlor(hand, vira))
                 {
                     Announce(AnnounceState.ALey);
+                    announcementOccurred = true;
                     while (GameManager.Instance.isAnnouncementPending) yield return new WaitForSeconds(0.5f);
                 }
                 else if (NPCDecisionMaker.ShouldAnnounceEnvido(hand, vira))
                 {
                     Announce(AnnounceState.Envido);
+                    announcementOccurred = true;
                     while (GameManager.Instance.isAnnouncementPending) yield return new WaitForSeconds(0.5f);
                 }
             }
@@ -80,10 +88,20 @@ namespace Code.Player
             if (NPCDecisionMaker.ShouldAnnounceTruco(hand, FindAnyObjectByType<DeckCreator>().cardVira) && trucoLevel == 0)
             {
                 Announce(AnnounceState.Truco);
+                announcementOccurred = true;
                 while (GameManager.Instance.isAnnouncementPending) yield return new WaitForSeconds(0.5f);
             }
 
-            while (GameManager.Instance.isAnnouncementPending) yield return new WaitForSeconds(0.5f);
+            if (GameManager.Instance.isAnnouncementPending)
+            {
+                announcementOccurred = true;
+                while (GameManager.Instance.isAnnouncementPending) yield return new WaitForSeconds(0.5f);
+            }
+
+            if (announcementOccurred)
+            {
+                yield return new WaitForSeconds(1.5f);
+            }
 
             // 3. Jugar carta
             if (isMyTurn) yield return PlayCard();
@@ -124,13 +142,6 @@ namespace Code.Player
             {
                 Debug.Log($"[NPC {playerName}] Dice: NO QUIERO ({state})");
                 if (am != null) am.DeclineFromNPC(gameObject);
-
-                if (state == AnnounceState.Truco)
-                {
-                    var playerLocal = FindAnyObjectByType<PlayerLocal>();
-                    if (playerLocal?.player?.team != null)
-                        GameManager.Instance.AddScoreToTeam(playerLocal.player.team.teamName, 1);
-                }
             }
         }
 
@@ -145,14 +156,23 @@ namespace Code.Player
         {
             if (hand.Count > 0 && _visualCards.Count > 0)
             {
-                Card cardToPlay = hand[0];
-                hand.RemoveAt(0);
+                if (GameManager.Instance.isAnnouncementPending)
+                {
+                    // Si justo se inició un canto un milisegundo antes de que tire la carta
+                    isMyTurn = true;
+                    yield break;
+                }
+
+                Card cardToPlay = NPCDecisionMaker.SelectCardToPlay(hand, TableManager.Instance.CardsInTable, FindAnyObjectByType<DeckCreator>().cardVira);
+                if (cardToPlay == null) cardToPlay = hand[0];
+                
+                hand.Remove(cardToPlay);
 
                 GameObject visualCard = _visualCards[0];
                 _visualCards.RemoveAt(0);
                 if (visualCard != null) Destroy(visualCard);
 
-                Debug.Log($"[NPC {playerName}] Juega: {cardToPlay.value} de {cardToPlay.suit}");
+                Debug.Log($"[NPC {playerName}] Juega: {cardToPlay.value} de {cardToPlay.suit} (valor real: {cardToPlay.realValue})");
                 
                 // IMPORTANTE: Liberar el turno ANTES de ejecutar el comando que avanza el juego
                 isMyTurn = false;

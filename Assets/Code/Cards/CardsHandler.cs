@@ -58,7 +58,12 @@ namespace Code.Cards
             GameObject c = Instantiate(card3DPrefab, parent);
             c.transform.localPosition = localPos;
             c.transform.localRotation = localRot;
-            c.layer = LayerMask.NameToLayer("Interactable");
+            
+            int interactableLayer = LayerMask.NameToLayer("Interactable");
+            if (interactableLayer != -1)
+            {
+                SetLayerRecursively(c, interactableLayer);
+            }
 
             var physicalCard = c.GetComponent<PhysicalCard3D>();
             if (physicalCard != null)
@@ -90,6 +95,16 @@ namespace Code.Cards
             // Actualizar estado de Flor después de recibir todas las cartas
             var flor = FindAnyObjectByType<Code.GameLogic.Announcement.FlorAnnouncement>();
             if (flor != null) flor.CanDeclareFlower();
+        }
+
+        private void SetLayerRecursively(GameObject obj, int newLayer)
+        {
+            if (obj == null) return;
+            obj.layer = newLayer;
+            foreach (Transform child in obj.transform)
+            {
+                SetLayerRecursively(child.gameObject, newLayer);
+            }
         }
     }
 }

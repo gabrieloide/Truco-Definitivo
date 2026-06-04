@@ -28,7 +28,8 @@ namespace Code.Player
         private Label _scoreLabel;
         private Label _teamLabel;
         private Label _turnLabel;
-        private Label _tricksLabel;
+        private VisualElement _t1DotsContainer;
+        private VisualElement _t2DotsContainer;
         private Button _envidoButton;
         private Button _trucoButton;
         private Button _florButton;
@@ -45,6 +46,10 @@ namespace Code.Player
         private VisualElement _sliderContainer;
         private SliderInt _stonesSlider;
         private Label _sliderLabel;
+
+        [Header("Hierarchy Modal")]
+        private VisualElement _hierarchyModal;
+        private Button _closeHierarchyButton;
 
         private void Awake()
         {
@@ -133,7 +138,10 @@ namespace Code.Player
             _scoreLabel = _root.Q<Label>("score-label");
             _teamLabel = _root.Q<Label>("team-label");
             _turnLabel = _root.Q<Label>("turn-label");
-            _tricksLabel = _root.Q<Label>("tricks-label");
+            
+            // Tricks dots
+            _t1DotsContainer = _root.Q<VisualElement>("t1-dots");
+            _t2DotsContainer = _root.Q<VisualElement>("t2-dots");
 
             // Notification Label (assuming it exists or creating a fallback)
             _notificationLabel = _root.Q<Label>("notification-label");
@@ -171,6 +179,19 @@ namespace Code.Player
                 });
             }
 
+            // Hierarchy Modal
+            _hierarchyModal = _root.Q<VisualElement>("hierarchy-modal");
+            _closeHierarchyButton = _root.Q<Button>("close-hierarchy-button");
+            if (_closeHierarchyButton != null) _closeHierarchyButton.clicked += HideCardHierarchy;
+
+            // Info Button (to open Hierarchy)
+            var infoButton = _root.Q<Button>("info-button");
+            if (infoButton != null) infoButton.clicked += ShowCardHierarchy;
+
+            // Camera Button
+            var cameraButton = _root.Q<Button>("camera-button");
+            if (cameraButton != null) cameraButton.clicked += ToggleCamera;
+
             // 2. Suscribirse a los eventos de los botones
             if (_aleyButton != null) _aleyButton.clicked += OnALeyClicked;
             if (_envidoButton != null) _envidoButton.clicked += OnEnvidoClicked;
@@ -198,6 +219,13 @@ namespace Code.Player
             if (_acceptButton != null) _acceptButton.clicked -= OnAcceptClicked;
             if (_declineButton != null) _declineButton.clicked -= OnDeclineClicked;
             if (_moreButton != null) _moreButton.clicked -= OnMoreClicked;
+            if (_closeHierarchyButton != null) _closeHierarchyButton.clicked -= HideCardHierarchy;
+
+            var infoButton = _root?.Q<Button>("info-button");
+            if (infoButton != null) infoButton.clicked -= ShowCardHierarchy;
+
+            var cameraButton = _root?.Q<Button>("camera-button");
+            if (cameraButton != null) cameraButton.clicked -= ToggleCamera;
 
             GameManager.OnTurnStarted -= HandleTurnStarted;
             GameManager.OnScoreChanged -= UpdateScore;
@@ -215,6 +243,16 @@ namespace Code.Player
             else playerName = occupant.name;
 
             UpdateTurnState(localPlayer != null, playerName);
+
+            // Mostrar aviso visual del turno
+            if (localPlayer != null)
+            {
+                NotifyEvent("¡TU TURNO!", 1.5f);
+            }
+            else
+            {
+                NotifyEvent($"TURNO DE: {playerName.ToUpper()}", 1.5f);
+            }
         }
 
         public void UpdateScore(int team1, int team2)
@@ -227,11 +265,24 @@ namespace Code.Player
             if (_scoreLabel != null)
                 _scoreLabel.text = $"{team1} | {team2}";
             
-            if (_tricksLabel != null)
-                _tricksLabel.text = $"Bazas: {roundsTeam1} - {roundsTeam2}";
-            
             if (currentScore != null)
                 currentScore.text = $"{team1} | {team2}";
+
+            UpdateDots(_t1DotsContainer, roundsTeam1);
+            UpdateDots(_t2DotsContainer, roundsTeam2);
+        }
+
+        private void UpdateDots(VisualElement container, int score)
+        {
+            if (container == null) return;
+            
+            int index = 0;
+            foreach (var child in container.Children())
+            {
+                if (index < score) child.AddToClassList("filled");
+                else child.RemoveFromClassList("filled");
+                index++;
+            }
         }
 
         public void UpdateTurnState(bool isYourTurn, string playerName = "")
@@ -440,6 +491,27 @@ namespace Code.Player
             else
             {
                 _teamLabel.style.display = DisplayStyle.None;
+            }
+        }
+
+        public void ShowCardHierarchy()
+        {
+            if (_hierarchyModal != null)
+                _hierarchyModal.style.display = DisplayStyle.Flex;
+        }
+
+        private void HideCardHierarchy()
+        {
+            if (_hierarchyModal != null)
+                _hierarchyModal.style.display = DisplayStyle.None;
+        }
+
+        private void ToggleCamera()
+        {
+            var camManager = FindAnyObjectByType<CameraManager>();
+            if (camManager != null)
+            {
+                camManager.ToggleAlternativeCamera();
             }
         }
     }

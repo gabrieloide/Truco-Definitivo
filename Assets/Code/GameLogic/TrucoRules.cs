@@ -140,6 +140,46 @@ namespace Code.GameLogic
             return 3;
         }
 
+        public static int CalculateFlorComparisonScore(List<Card> hand, Card vira)
+        {
+            if (hand == null || hand.Count < 3) return 0;
+
+            int pericoTarget = (vira.value == 11) ? 12 : 11;
+            int pericaTarget = (vira.value == 10) ? 12 : 10;
+
+            Card perico = null;
+            Card perica = null;
+            List<Card> normalCards = new List<Card>();
+
+            foreach (var card in hand)
+            {
+                if (card.suit == vira.suit && card.value == pericoTarget) perico = card;
+                else if (card.suit == vira.suit && card.value == pericaTarget) perica = card;
+                else normalCards.Add(card);
+            }
+
+            if (perico != null && perica != null)
+            {
+                // Flor Reservada: Perico (30) + Perica (29) + third card
+                return 30 + 29 + GetEnvidoValue(normalCards[0], false, false);
+            }
+            else if (perico != null)
+            {
+                // Perico (30) + 2 normal cards
+                return 30 + GetEnvidoValue(normalCards[0], false, false) + GetEnvidoValue(normalCards[1], false, false);
+            }
+            else if (perica != null)
+            {
+                // Perica (29) + 2 normal cards
+                return 29 + GetEnvidoValue(normalCards[0], false, false) + GetEnvidoValue(normalCards[1], false, false);
+            }
+            else
+            {
+                // Normal Flor: 3 cards of the same suit
+                return 20 + GetEnvidoValue(hand[0], false, false) + GetEnvidoValue(hand[1], false, false) + GetEnvidoValue(hand[2], false, false);
+            }
+        }
+
         public static bool IsFlor(List<Card> hand, Card vira)
         {
             if (hand == null || hand.Count < 3) return false;

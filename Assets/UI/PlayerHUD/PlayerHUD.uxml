@@ -1,0 +1,106 @@
+<engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/PlayerHUD/PlayerHUD.uss?fileID=7433441132597879392&amp;guid=39d14e2f5ac21234f8ccda13eb5e456b&amp;type=3#PlayerHUD" />
+    <engine:VisualElement class="hud-container" picking-mode="Ignore">
+        <engine:VisualElement class="hud-top-bar" picking-mode="Ignore">
+            <engine:VisualElement class="hud-score-panel central-banner">
+                <engine:Label name="team-label" text="EQUIPO" class="hud-team__text" />
+                <engine:Label name="score-label" text="0 | 0" class="hud-score__text" />
+                
+                <engine:VisualElement class="tricks-dots-container">
+                    <engine:VisualElement name="t1-dots" class="team-dots">
+                        <engine:VisualElement class="trick-dot" />
+                        <engine:VisualElement class="trick-dot" />
+                        <engine:VisualElement class="trick-dot" />
+                    </engine:VisualElement>
+                    
+                    <engine:VisualElement class="dots-separator" style="width: 20px;" />
+
+                    <engine:VisualElement name="t2-dots" class="team-dots">
+                        <engine:VisualElement class="trick-dot" />
+                        <engine:VisualElement class="trick-dot" />
+                        <engine:VisualElement class="trick-dot" />
+                    </engine:VisualElement>
+                </engine:VisualElement>
+            </engine:VisualElement>
+
+            <engine:Button name="camera-button" class="hud-btn-icon hud-btn-camera">
+                <engine:Label text="O" class="hud-btn-icon__text" />
+            </engine:Button>
+            <engine:Button name="info-button" class="hud-btn-icon hud-btn-info">
+                <engine:Label text="?" class="hud-btn-icon__text" />
+            </engine:Button>
+            <engine:Button name="pause-button" class="hud-btn-icon hud-btn-pause">
+                <engine:Label text="II" class="hud-btn-icon__text" />
+            </engine:Button>
+        </engine:VisualElement>
+        
+        <engine:VisualElement class="hud-event-overlay" picking-mode="Ignore">
+            <engine:Label name="notification-label" text="¡CANTO!" />
+        </engine:VisualElement>
+        
+        <engine:VisualElement class="hud-turn-indicator bottom-turn-indicator" picking-mode="Ignore">
+            <engine:Label name="turn-label" text="IT&apos;S YOUR TURN" class="hud-turn__text" />
+        </engine:VisualElement>
+
+        <engine:VisualElement class="hud-right-area" picking-mode="Ignore">
+            <engine:VisualElement name="hud-response-bar" class="hud-action-bar" picking-mode="Ignore">
+                <engine:VisualElement name="hud-slider-container" class="hud-slider-container">
+                    <engine:Label name="slider-value-label" text="+1 PIEDRA" class="hud-slider__label" />
+                    <engine:SliderInt name="stones-slider" low-value="1" high-value="10" value="1" class="hud-slider" />
+                </engine:VisualElement>
+                <engine:Button name="accept-button" class="hud-btn hud-btn--accept">
+                    <engine:Label text="QUIERO" class="hud-btn__text" />
+                </engine:Button>
+                <engine:Button name="decline-button" class="hud-btn hud-btn--decline">
+                    <engine:Label text="NO QUIERO" class="hud-btn__text" />
+                </engine:Button>
+                <engine:Button name="more-button" class="hud-btn hud-btn--more">
+                    <engine:Label text="RE-ENVIDAR" class="hud-btn__text" />
+                </engine:Button>
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <engine:VisualElement class="hud-bottom-area" picking-mode="Ignore">
+            <engine:VisualElement name="hud-action-bar" class="hud-action-bar" picking-mode="Ignore">
+                <engine:Button name="aley-button" class="hud-btn hud-btn--aley">
+                    <engine:Label text="A LEY" class="hud-btn__text" />
+                </engine:Button>
+                <engine:Button name="envido-button" class="hud-btn hud-btn--envido">
+                    <engine:Label text="ENVIDO" class="hud-btn__text" />
+                </engine:Button>
+                <engine:Button name="truco-button" class="hud-btn hud-btn--truco">
+                    <engine:Label text="TRUCO" class="hud-btn__text" />
+                </engine:Button>
+                <engine:Button name="flor-button" class="hud-btn hud-btn--flor">
+                    <engine:Label text="FLOR" class="hud-btn__text" />
+                </engine:Button>
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <!-- HIERARCHY MODAL -->
+        <engine:VisualElement name="hierarchy-modal" class="hierarchy-modal-overlay">
+            <engine:VisualElement class="hierarchy-panel">
+                <engine:Label text="JERARQUÍA DE CARTAS (ESCALERA)" class="hierarchy-title" />
+                <engine:ScrollView class="hierarchy-scroll">
+                    <engine:Label text="1. As de Espada" class="hierarchy-item hierarchy-item--high" />
+                    <engine:Label text="2. As de Basto" class="hierarchy-item hierarchy-item--high" />
+                    <engine:Label text="3. Siete de Espada" class="hierarchy-item hierarchy-item--high" />
+                    <engine:Label text="4. Siete de Oro" class="hierarchy-item hierarchy-item--high" />
+                    <engine:Label text="5. Los Tres (3)" class="hierarchy-item hierarchy-item--mid" />
+                    <engine:Label text="6. Los Dos (2)" class="hierarchy-item hierarchy-item--mid" />
+                    <engine:Label text="7. Ases Falsos (Copa, Oro)" class="hierarchy-item hierarchy-item--mid" />
+                    <engine:Label text="8. Reyes (12)" class="hierarchy-item hierarchy-item--low" />
+                    <engine:Label text="9. Caballos (11)" class="hierarchy-item hierarchy-item--low" />
+                    <engine:Label text="10. Sotas (10)" class="hierarchy-item hierarchy-item--low" />
+                    <engine:Label text="11. Sietes Falsos (Copa, Basto)" class="hierarchy-item hierarchy-item--low" />
+                    <engine:Label text="12. Los Seis (6)" class="hierarchy-item hierarchy-item--lowest" />
+                    <engine:Label text="13. Los Cincos (5)" class="hierarchy-item hierarchy-item--lowest" />
+                    <engine:Label text="14. Los Cuatros (4)" class="hierarchy-item hierarchy-item--lowest" />
+                </engine:ScrollView>
+                <engine:Button name="close-hierarchy-button" class="hud-btn hud-btn--decline" style="align-self: center; margin-top: 20px;">
+                    <engine:Label text="CERRAR" class="hud-btn__text" />
+                </engine:Button>
+            </engine:VisualElement>
+        </engine:VisualElement>
+    </engine:VisualElement>
+</engine:UXML>

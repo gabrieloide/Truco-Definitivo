@@ -37,6 +37,7 @@ namespace Code.GameLogic
         }
 
         public List<PlayerLocal> serverPlayers = new List<PlayerLocal>();
+        public List<Code.Player.Player> allPlayers = new List<Code.Player.Player>();
 
         public int currentPlayerTurn = 0;
         public int playerCount;
@@ -81,7 +82,13 @@ namespace Code.GameLogic
 
         private void HandleCardPlaced(Card card, GameObject player)
         {
-            // End the current turn and evaluate progression
+            // End the current turn after a brief delay to let card animation finish
+            StartCoroutine(DelayedEndTurn());
+        }
+
+        private System.Collections.IEnumerator DelayedEndTurn()
+        {
+            yield return new WaitForSeconds(0.8f);
             EndTurn();
         }
 
@@ -111,7 +118,7 @@ namespace Code.GameLogic
             }
 
             // Buscar en jugadores humanos
-            var allPlayers = FindObjectsByType<Code.Player.Player>(FindObjectsSortMode.None);
+            var allPlayers = this.allPlayers;
             foreach (var p in allPlayers)
             {
                 if (p != null && p.gameObject != currentPlayer && p.team != null && p.team.teamName != myTeam.teamName)
@@ -195,6 +202,7 @@ namespace Code.GameLogic
 #endif
 
             npcs = FindObjectsByType<NPCPlayer>(FindObjectsSortMode.None).ToList();
+            allPlayers = FindObjectsByType<Code.Player.Player>(FindObjectsSortMode.None).ToList();
             Debug.Log($"[GameManager] NPCs encontrados: {npcs.Count}");
 
             if (deckCreator != null && (localPlayer != null || FindAnyObjectByType<Code.Player.Player>() != null))
@@ -264,11 +272,12 @@ namespace Code.GameLogic
                 _totalPlayersCount = 1 + npcs.Count;
                 dealerIndex = (SeatManager.Instance.allChairs.Count - 1) % SeatManager.Instance.allChairs.Count;
                 _currentManoSeatIndex = (dealerIndex + 1) % SeatManager.Instance.allChairs.Count;
+                _currentTrickStartSeatIndex = _currentManoSeatIndex;
 
                 Debug.Log($"[GameManager] Dealer: {dealerIndex}, Mano: {_currentManoSeatIndex}");
 
                 UpdateDeckAndVira();
-                StartTurn(_currentManoSeatIndex);
+                StartTurn(_currentTrickStartSeatIndex);
             }
             else
             {
@@ -279,12 +288,24 @@ namespace Code.GameLogic
         }
         public void StartTurn(int index)
         {
-            currentPlayerTurn = index % SeatManager.Instance.allChairs.Count;
+            StartTurnRecursive(index, 0);
+        }
+
+        private void StartTurnRecursive(int index, int depth)
+        {
+            if (depth > SeatManager.Instance.allChairs.Count)
+            {
+                Debug.LogError("[GameManager] CRITICAL: All chairs are empty! Stopping turn assignment.");
+                return;
+            }
+
+            currentPlayerTurn = (index + SeatManager.Instance.allChairs.Count) % SeatManager.Instance.allChairs.Count;
             ChairInteractable targetChair = SeatManager.Instance.allChairs[currentPlayerTurn];
 
             if (targetChair.occupant == null)
             {
-                StartTurn(currentPlayerTurn + 1);
+                // Mover en sentido ANTIHORARIO (incrementando) para saltar la silla vacía
+                StartTurnRecursive(currentPlayerTurn + 1, depth + 1);
                 return;
             }
 
@@ -338,11 +359,12 @@ namespace Code.GameLogic
 
         private int _lastTrickWinnerSeatIndex = -1;
         private int _currentManoSeatIndex = 0; // The seat that starts every trick in the hand
+        private int _currentTrickStartSeatIndex = 0; // The seat that starts the current baza
 
         public void EndTurn()
         {
             // Bloqueamos el turno actual para todos antes de evaluar
-            var players = FindObjectsByType<Code.Player.Player>(FindObjectsSortMode.None);
+            var players = this.allPlayers;
             foreach (var p in players) p.canPlayCard = false;
             
             // Usamos ResetTurnState para asegurar que los NPCs detengan cualquier acción pendiente
@@ -355,47 +377,59 @@ namespace Code.GameLogic
 
             if (cardsPlayed >= totalExpectedCards)
             {
-                // Guardamos el round actual antes de evaluar, por si StartNewHand lo resetea
-                int roundBeforeEvaluation = round;
-
-                // Fin de la baza
-                TableManager.Instance.DetermineHighestCard();
-                
-                // Si la mano terminó, DetermineHighestCard -> ... -> StartNewHand se habrá encargado de todo.
-                // Verificamos si el round se reseteó a 0 para saber si hubo cambio de mano.
-                if (round == 0 && roundBeforeEvaluation != 0)
-                {
-                    Debug.Log("[GameManager] La mano finalizó durante la evaluación. EndTurn abortado.");
-                    return;
-                }
-
-                TableManager.Instance.CardsInTable.Clear(); 
-                round++;
-                
-                if (round >= 3)
-                {
-                    Debug.Log("[GameManager] Fin de la 3ra ronda. Iniciando nueva mano.");
-                    StartNewHand();
-                    return;
-                }
-                else
-                {
-                    // En el Truco Venezolano (variante del usuario), la MANO siempre empieza cada baza
-                    Debug.Log($"[GameManager] Baza finalizada. Empieza la MANO de la mano actual: Silla {_currentManoSeatIndex}");
-                    StartTurn(_currentManoSeatIndex);
-                }
+                StartCoroutine(DelayedTrickResolution());
                 return;
             }
 
-            // Turno normal dentro de una baza: Siguiente silla en sentido ANTIHORARIO (decrementando índice)
-            int nextIndex = (currentPlayerTurn - 1 + SeatManager.Instance.allChairs.Count) % SeatManager.Instance.allChairs.Count;
+            // Turno normal dentro de una baza: Siguiente silla en sentido ANTIHORARIO (incrementando índice)
+            int nextIndex = (currentPlayerTurn + 1) % SeatManager.Instance.allChairs.Count;
             
             Debug.Log($"[GameManager] Turno finalizado. Siguiente en sentido antihorario: Silla {nextIndex}");
             StartTurn(nextIndex);
         }
 
+        private System.Collections.IEnumerator DelayedTrickResolution()
+        {
+            // Esperar 1.2 segundos para apreciar la última carta jugada
+            yield return new WaitForSeconds(1.2f);
+
+            int roundBeforeEvaluation = round;
+
+            // Determinar el ganador de la baza (esto dispara HandleTrickResult)
+            TableManager.Instance.DetermineHighestCard();
+
+            // Esperar 2.2 segundos para asimilar quién ganó y ver las cartas en mesa
+            yield return new WaitForSeconds(2.2f);
+
+            // Si la mano finalizó en el camino, abortamos la transición
+            if (round == 0 && roundBeforeEvaluation != 0)
+            {
+                Debug.Log("[GameManager] La mano finalizó en DelayedTrickResolution.");
+                yield break;
+            }
+
+            TableManager.Instance.CardsInTable.Clear();
+            round++;
+
+            if (round >= 3)
+            {
+                Debug.Log("[GameManager] Fin de la 3ra ronda. Iniciando nueva mano.");
+                StartNewHand();
+            }
+            else
+            {
+                if (_lastTrickWinnerSeatIndex != -1)
+                {
+                    _currentTrickStartSeatIndex = _lastTrickWinnerSeatIndex;
+                }
+                Debug.Log($"[GameManager] Baza finalizada. Sale el anterior ganador: Silla {_currentTrickStartSeatIndex}");
+                StartTurn(_currentTrickStartSeatIndex);
+            }
+        }
+
         public List<int> trickWinners = new List<int>(); // 0 = Tie, 1 = Team 1, 2 = Team 2
         private int _manoTeamIndex = 1; // Team index (1 or 2) that is "Mano" in current hand
+        public int ManoTeamIndex => _manoTeamIndex;
         public int currentHandValue = 1; // Points for the winner of the hand (Truco, Retruco, etc)
         public int lastTrucoTeamIndex = 0; // The team that made the last accepted challenge (1 or 2)
 
@@ -462,14 +496,21 @@ namespace Code.GameLogic
                 }
                 else if (currentRound == 3)
                 {
-                    if (trickWinners[0] == 0 && trickWinners[1] == 0) handWinner = trickWinners[2];
-                    
-                    if (handWinner == 0 && trickWinners[2] == 0)
+                    if (trickWinners[2] != 0)
                     {
-                        Debug.Log("[GameManager] Empate en la 3ra ronda. Gana el equipo que es MANO.");
-                        handWinner = _manoTeamIndex;
+                        handWinner = trickWinners[2];
                     }
-                    else if (handWinner == 0) handWinner = trickWinners[2];
+                    else
+                    {
+                        if (trickWinners[0] != 0)
+                        {
+                            handWinner = trickWinners[0];
+                        }
+                        else
+                        {
+                            handWinner = _manoTeamIndex;
+                        }
+                    }
                 }
             }
 
@@ -507,6 +548,12 @@ namespace Code.GameLogic
                     break;
                 }
             }
+            StartCoroutine(DelayedNewHand());
+        }
+
+        private System.Collections.IEnumerator DelayedNewHand()
+        {
+            yield return new WaitForSeconds(2.8f);
             StartNewHand();
         }
 
@@ -523,7 +570,7 @@ namespace Code.GameLogic
 
             // Limpiar estados de turno de todos los NPCs y jugadores
             foreach (var npc in npcs) npc.ResetTurnState();
-            var players = FindObjectsByType<Code.Player.Player>(FindObjectsSortMode.None);
+            var players = this.allPlayers;
             foreach (var p in players) p.canPlayCard = false;
 
             // Reset announcements state for the new hand
@@ -547,6 +594,7 @@ namespace Code.GameLogic
             dealerIndex = (dealerIndex + 1) % SeatManager.Instance.allChairs.Count;
             int manoSeatIndex = (dealerIndex + 1) % SeatManager.Instance.allChairs.Count;
             _manoTeamIndex = (manoSeatIndex % 2) + 1; // Team 1 or 2
+            _currentTrickStartSeatIndex = manoSeatIndex;
             
             Debug.Log($"[GameManager] Nueva mano. Repartidor: Silla {dealerIndex}. Mano: Silla {manoSeatIndex} (Equipo {_manoTeamIndex})");
             
@@ -554,7 +602,7 @@ namespace Code.GameLogic
             RpcUpdateScores(teams[0].teamScore, teams[1].teamScore, 0, 0);
             OnScoreChanged?.Invoke(teams[0].teamScore, teams[1].teamScore);
 
-            StartTurn(manoSeatIndex);
+            StartTurn(_currentTrickStartSeatIndex);
         }
 
         // [Server]

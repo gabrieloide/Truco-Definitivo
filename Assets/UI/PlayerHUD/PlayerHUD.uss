@@ -1,0 +1,373 @@
+/* =========================================================
+   PLAYER HUD STYLES (FLAT 2.0 / MODERN)
+   ========================================================= */
+
+.hud-container {
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    justify-content: space-between; /* Pushes top-bar to the top, bottom-area to the bottom */
+    padding: 30px;
+}
+
+/* =========================================================
+   TOP BAR PANELS (Cream & Paper Style)
+   ========================================================= */
+.hud-top-bar {
+    flex-direction: row;
+    justify-content: flex-start; /* Mover el banner a la esquina superior izquierda */
+    align-items: flex-start;
+    width: 100%;
+}
+
+.central-banner {
+    background-color: #242933; /* Pizarra oscura */
+    border-radius: 20px;
+    padding: 10px 20px; /* Padding mucho más pequeño */
+    border-width: 6px;
+    border-color: #E6C875; /* Borde dorado */
+    border-bottom-width: 8px; /* Sombra reducida */
+    border-bottom-color: #A38543; 
+    align-items: center;
+    min-width: 250px;
+    width: auto; /* Permite que el contenedor crezca si los puntos necesitan espacio */
+    max-width: 90%;
+    margin-left: 10px; /* Pequeño margen para no pegar a la pared */
+    margin-top: 10px;
+}
+
+.central-banner .hud-score__text {
+    font-size: 32px; /* Puntaje más pequeño (antes 50px) */
+}
+
+.hud-team__text { color: #FFF2C8; font-size: 18px; -unity-font-style: bold; -unity-text-align: middle-center; letter-spacing: 1.5px; }
+.hud-score__text, .hud-tricks__text { color: #E6C875; font-size: 28px; -unity-font-style: bold; -unity-text-align: middle-center; -unity-text-outline-width: 1px; -unity-text-outline-color: #A38543; text-shadow: 0px 3px 0px rgba(0,0,0,0.6); }
+.hud-turn__text { color: #FFF2C8; font-size: 24px; -unity-font-style: bold; -unity-text-align: middle-center; -unity-text-outline-width: 1px; -unity-text-outline-color: #A38543; text-shadow: 0px 3px 0px rgba(0,0,0,0.6); }
+
+/* DOTS BAZAS (FIGHTING GAME STYLE) */
+.tricks-dots-container {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin-top: 15px;
+    width: 100%;
+}
+
+.team-dots {
+    flex-direction: row;
+    align-items: center;
+    margin: 0 5px; /* Reducido para evitar desbordamientos */
+}
+
+.trick-dot {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
+    max-width: 16px;
+    max-height: 16px;
+    flex-shrink: 0; /* Evita que el contenedor los aplaste convirtiéndolos en óvalos */
+    border-radius: 50%;
+    background-color: #1A1E24; /* Vacío */
+    border-width: 2px;
+    border-color: #A38543;
+    margin: 0 3px; /* Reducido para que quepan bien */
+    transition-property: background-color, border-color, width, height, min-width, min-height, max-width, max-height;
+    transition-duration: 0.15s;
+}
+
+.trick-dot.filled {
+    background-color: #FFF2C8; /* Lleno */
+    border-color: #FFF2C8;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    max-width: 20px;
+    max-height: 20px;
+}
+
+/* TOP RIGHT ICON BUTTONS */
+.hud-btn-icon {
+    position: absolute;
+    top: 0;
+    background-color: #E6C875;
+    border-radius: 20px;
+    width: 80px; /* Aumentado de 60px a 80px */
+    height: 80px; /* Aumentado de 60px a 80px */
+    justify-content: center;
+    align-items: center;
+    border-width: 4px;
+    border-bottom-width: 8px;
+    border-color: #FFF2C8;
+    border-bottom-color: #A38543;
+    transition-property: scale, translate, border-bottom-width, background-color;
+    transition-duration: 0.1s;
+    transition-timing-function: ease-out-bounce;
+}
+
+.hud-btn-pause { right: 0; }
+.hud-btn-info { right: 95px; background-color: #37474F; border-color: #546E7A; border-bottom-color: #263238; }
+.hud-btn-camera { right: 190px; background-color: #512DA8; border-color: #673AB7; border-bottom-color: #311B92; }
+
+.hud-btn-icon:hover { scale: 1.05; }
+.hud-btn-pause:hover { background-color: #FFF2C8; }
+.hud-btn-info:hover { background-color: #455A64; }
+.hud-btn-camera:hover { background-color: #673AB7; }
+
+.hud-btn-icon:active { translate: 0px 4px; border-bottom-width: 4px; scale: 1; }
+
+.hud-btn-icon__text { font-size: 36px; -unity-font-style: bold; } /* Texto más grande */
+.hud-btn-pause .hud-btn-icon__text { color: #242933; }
+.hud-btn-info .hud-btn-icon__text { color: #ffffff; }
+.hud-btn-camera .hud-btn-icon__text { color: #ffffff; }
+
+/* TURN INDICATOR (BOTTOM) */
+.bottom-turn-indicator {
+    position: absolute;
+    bottom: 25%; /* Aparece justo encima de las cartas */
+    left: 0;
+    right: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border-width: 0;
+    pointer-events: none;
+}
+
+.bottom-turn-indicator .hud-turn__text {
+    font-size: 32px;
+    text-shadow: 0px 4px 0px rgba(0,0,0,0.8);
+}
+
+/* =========================================================
+   EVENT OVERLAY (NOTIFICATIONS)
+   ========================================================= */
+.hud-event-overlay {
+    position: absolute;
+    top: 35%;
+    left: 0;
+    right: 0;
+    align-items: center;
+    justify-content: center;
+}
+
+#notification-label {
+    display: none;
+    background-color: #242933;
+    color: #FFF2C8;
+    font-size: 64px;
+    -unity-font-style: bold;
+    padding: 30px 60px;
+    border-radius: 20px;
+    border-width: 6px;
+    border-color: #E6C875;
+    border-bottom-width: 14px;
+    border-bottom-color: #A38543;
+    -unity-text-align: middle-center;
+    rotate: -3deg; 
+    -unity-text-outline-width: 2px;
+    -unity-text-outline-color: #A38543;
+    text-shadow: 0px 6px 0px rgba(0,0,0,0.6);
+}
+
+/* =========================================================
+   BOTTOM AREA (Structural Flex Layout)
+   ========================================================= */
+.hud-bottom-area {
+    flex-direction: column;
+    justify-content: flex-end; /* Everything stays at the bottom */
+    align-items: flex-start; /* Everything anchors to the left */
+    width: 100%;
+}
+
+/* =========================================================
+   RIGHT AREA (Response Buttons)
+   ========================================================= */
+.hud-right-area {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 30px;
+    justify-content: center; /* Center vertically */
+    align-items: flex-end; /* Anchor to the right */
+    pointer-events: none; /* Let clicks pass through the invisible container */
+}
+
+.hud-right-area > * {
+    pointer-events: auto; /* Re-enable clicks for actual buttons */
+}
+
+/* Response Bar: Vertical Stack */
+#hud-response-bar {
+    flex-direction: column;
+    align-items: center; /* Center buttons within their column */
+}
+
+/* Action Bar (Cantos): Horizontal Stack */
+#hud-action-bar {
+    flex-direction: row;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+/* =========================================================
+   BUTTONS (FLAT 2.0)
+   ========================================================= */
+.hud-btn {
+    border-radius: 12px;
+    padding: 14px 30px;
+    margin: 6px;
+    border-width: 4px;
+    border-bottom-width: 8px;
+    transition-property: scale, translate, border-bottom-width, background-color;
+    transition-duration: 0.1s;
+    transition-timing-function: ease-out-bounce;
+}
+
+.hud-btn:hover { scale: 1.05; }
+.hud-btn:active { translate: 0px 4px; border-bottom-width: 4px; scale: 1; }
+
+.hud-btn__text {
+    font-size: 22px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    letter-spacing: 1px;
+    color: #ffffff;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0,0,0,0.8);
+    text-shadow: 0px 2px 0px rgba(0,0,0,0.5);
+}
+
+/* --- COLOR VARIANTS --- */
+.hud-btn--accept { background-color: #D32F2F; border-color: #F44336; border-bottom-color: #9A0007; }
+.hud-btn--accept:hover { background-color: #F44336; }
+
+.hud-btn--decline { background-color: #E64A19; border-color: #FF5722; border-bottom-color: #BF360C; }
+.hud-btn--decline:hover { background-color: #FF5722; }
+
+.hud-btn--more { background-color: #E6C875; border-color: #FFF2C8; border-bottom-color: #A38543; }
+.hud-btn--more:hover { background-color: #FFF2C8; }
+.hud-btn--more > .hud-btn__text { color: #242933; text-shadow: none; -unity-text-outline-width: 0px; }
+
+.hud-btn--aley { background-color: #512DA8; border-color: #673AB7; border-bottom-color: #311B92; }
+.hud-btn--aley:hover { background-color: #673AB7; }
+
+.hud-btn--envido { background-color: #37474F; border-color: #546E7A; border-bottom-color: #263238; }
+.hud-btn--envido:hover { background-color: #455A64; }
+
+.hud-btn--truco { background-color: #388E3C; border-color: #4CAF50; border-bottom-color: #1B5E20; }
+.hud-btn--truco:hover { background-color: #4CAF50; }
+
+.hud-btn--flor { background-color: #C2185B; border-color: #E91E63; border-bottom-color: #880E4F; }
+.hud-btn--flor:hover { background-color: #E91E63; }
+
+/* =========================================================
+   SLIDER
+   ========================================================= */
+.hud-slider-container {
+    flex-direction: column;
+    align-items: center;
+    background-color: #242933;
+    padding: 15px 25px;
+    border-radius: 20px;
+    margin: 6px; 
+    margin-bottom: 20px;
+    border-width: 6px;
+    border-color: #E6C875;
+    border-bottom-width: 10px;
+    border-bottom-color: #A38543;
+}
+
+.hud-slider__label {
+    color: #E6C875;
+    font-size: 20px;
+    -unity-font-style: bold;
+    margin-bottom: 8px;
+}
+
+.hud-slider {
+    width: 200px;
+}
+
+.hud-slider .unity-base-slider__tracker {
+    background-color: #1A1E24;
+    height: 14px;
+    border-radius: 7px;
+    border-width: 0;
+    margin-top: -7px;
+}
+
+.hud-slider .unity-base-slider__dragger {
+    background-color: #E6C875;
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+    border-width: 6px;
+    border-color: #FFF2C8;
+    margin-top: -18px;
+}
+
+/* =========================================================
+   HIERARCHY MODAL (ESCALERA)
+   ========================================================= */
+.hierarchy-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(10, 14, 20, 0.9); /* Dark overlay */
+    justify-content: center;
+    align-items: center;
+    display: none; /* Hidden by default */
+}
+
+.hierarchy-panel {
+    background-color: #242933; /* Dark slate */
+    border-radius: 20px;
+    padding: 30px 40px;
+    border-width: 6px;
+    border-color: #E6C875; /* Gold */
+    border-bottom-width: 12px;
+    border-bottom-color: #A38543;
+    width: 600px;
+    max-width: 90%;
+    max-height: 80%;
+    flex-direction: column;
+}
+
+.hierarchy-title {
+    color: #E6C875;
+    font-size: 36px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    margin-bottom: 20px;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: #A38543;
+    text-shadow: 0px 3px 0px rgba(0,0,0,0.6);
+}
+
+.hierarchy-scroll {
+    flex-grow: 1;
+    background-color: #1A1E24; /* Even darker inset */
+    border-radius: 10px;
+    padding: 15px;
+    border-width: 4px;
+    border-color: #37474F;
+    margin-bottom: 15px;
+}
+
+.hierarchy-item {
+    font-size: 24px;
+    -unity-font-style: bold;
+    padding: 8px 15px;
+    margin: 4px 0;
+    border-radius: 8px;
+    -unity-text-align: middle-left;
+}
+
+.hierarchy-item--high { background-color: #4CAF50; color: #ffffff; }
+.hierarchy-item--mid { background-color: #FF9A55; color: #ffffff; }
+.hierarchy-item--low { background-color: #546E7A; color: #ffffff; }
+.hierarchy-item--lowest { background-color: #37474F; color: #B0BEC5; }

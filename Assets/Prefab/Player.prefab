@@ -153,6 +153,7 @@ MonoBehaviour:
   mouseOverTexture: {fileID: 2800000, guid: b1cebafbf60cd5743ac2bc98f2e06fc6, type: 3}
   mouseOutTexture: {fileID: 2800000, guid: 7439e2bdad7276240b7190274d9edde3, type: 3}
   cardPrefab: {fileID: 2225189555247482472, guid: 4391868780d4ed04ebb34be5263f33b5, type: 3}
+  card3DPrefab: {fileID: 9104489508758994168, guid: e2ad588094e48cb44ad850ce6dd6b03f, type: 3}
   _offsetCards: {x: 3, y: 1.5}
   Cards: []
 --- !u!114 &7562388556402564537

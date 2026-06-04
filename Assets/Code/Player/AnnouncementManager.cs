@@ -36,6 +36,7 @@ namespace Code.Player
         };
 
         /*[SyncVar]*/ public AnnounceState _announceState = AnnounceState.None;
+        public Code.Player.Team currentAnnouncerTeam;
         public GameObject[] respondButtons;
         public string[] announcementPlayerNames = new string[2];
         private Dictionary<AnnounceState, bool> _announcementsCalledThisHand = new Dictionary<AnnounceState, bool>();
@@ -95,6 +96,7 @@ namespace Code.Player
         public void ResetState()
         {
             _announceState = AnnounceState.None;
+            currentAnnouncerTeam = null;
             if (GameManager.Instance != null) GameManager.Instance.isAnnouncementPending = false;
             if (PlayerHUD.Instance != null) PlayerHUD.Instance.ShowResponseButtons(false);
             
@@ -117,7 +119,7 @@ namespace Code.Player
             }
 
             var myTeam = playerLocal.player.team;
-            var allNpcs = FindObjectsByType<NPCPlayer>(FindObjectsSortMode.None);
+            var allNpcs = GameManager.Instance.npcs;
 
             foreach (var npc in allNpcs)
             {
@@ -137,8 +139,6 @@ namespace Code.Player
 
             var playerLocal = FindAnyObjectByType<PlayerLocal>();
             
-            // --- VALIDACIÓN DE TURNO ---
-            // Solo puedes cantar si es tu turno o si se está respondiendo a un canto previo (isAnnouncementPending ya manejado arriba)
             if (playerLocal != null && !playerLocal.player.canPlayCard)
             {
                 Debug.LogWarning("[AnnouncementManager] No puedes cantar fuera de tu turno.");
@@ -155,7 +155,6 @@ namespace Code.Player
                 _ => AnnounceState.None
             };
 
-            // Validación de propiedad de Truco: No puedes cantar Truco si tu equipo cantó el anterior aceptado
             if (targetState == AnnounceState.Truco)
             {
                 int myTeamIndex = (playerLocal != null && playerLocal.player != null && playerLocal.player.team != null) 
@@ -175,20 +174,33 @@ namespace Code.Player
                 return;
             }
 
+            StartCoroutine(SendAnnounceCoroutine(targetState, playerLocal));
+        }
+
+        private System.Collections.IEnumerator SendAnnounceCoroutine(AnnounceState targetState, PlayerLocal playerLocal)
+        {
             _announceState = targetState;
             if (targetState != AnnounceState.None) _announcementsCalledThisHand[targetState] = true;
 
             string teamName = "TU EQUIPO";
             if (playerLocal != null && playerLocal.player != null && playerLocal.player.team != null)
+            {
                 teamName = playerLocal.player.team.teamName;
+                currentAnnouncerTeam = playerLocal.player.team;
+            }
 
             Debug.Log($"[Canto] El jugador canta {targetState}");
-            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{teamName.ToUpper()} CANTA {targetState.ToString().ToUpper()}!");
+            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{teamName.ToUpper()} CANTA {targetState.ToString().ToUpper()}!", 2.5f);
             
             GameManager.Instance.isAnnouncementPending = true;
 
-            // Al cantar, bloqueamos el permiso de jugar carta para evitar que juegue mientras se procesa el canto
             if (playerLocal != null) playerLocal.player.canPlayCard = false;
+            
+            RpcAnnounceToAllClients();
+            if (PlayerHUD.Instance != null) PlayerHUD.Instance.RefreshActionButtons(true);
+
+            // 2.5s para que desaparezca el texto + 2s extra = 4.5s
+            yield return new WaitForSeconds(4.5f);
 
             GetOpponentPlayer(out var opponent);
             if (opponent != null)
@@ -196,9 +208,6 @@ namespace Code.Player
                 var npc = opponent.GetComponent<NPCPlayer>();
                 if (npc != null) npc.HandleOpponentAnnounce(_announceState, gameObject);
             }
-            
-            RpcAnnounceToAllClients();
-            if (PlayerHUD.Instance != null) PlayerHUD.Instance.RefreshActionButtons(true);
         }
 
         private void RpcAnnounceToAllClients()
@@ -213,15 +222,25 @@ namespace Code.Player
 
         public void ReceiveAnnounceFromNPC(AnnounceState state, GameObject npcObj)
         {
+            StartCoroutine(ReceiveAnnounceFromNPCCoroutine(state, npcObj));
+        }
+
+        private System.Collections.IEnumerator ReceiveAnnounceFromNPCCoroutine(AnnounceState state, GameObject npcObj)
+        {
             var npcComp = npcObj.GetComponent<NPCPlayer>();
             var npcTeam = npcComp != null ? npcComp.team : null;
             string npcName = npcComp != null ? npcComp.playerName : npcObj.name;
             string teamName = npcTeam != null ? npcTeam.teamName : npcName;
 
-            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{teamName.ToUpper()} CANTA {state.ToString().ToUpper()}!");
+            currentAnnouncerTeam = npcTeam;
+
+            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{teamName.ToUpper()} CANTA {state.ToString().ToUpper()}!", 2.5f);
 
             _announceState = state;
             GameManager.Instance.isAnnouncementPending = true;
+
+            // 2.5s para que desaparezca el texto + 2s extra = 4.5s
+            yield return new WaitForSeconds(4.5f);
 
             var playerLocal = FindAnyObjectByType<PlayerLocal>();
             bool humanIsOpponent = playerLocal != null && playerLocal.player != null && playerLocal.player.team != npcTeam;
@@ -250,7 +269,7 @@ namespace Code.Player
             var npcComp = npcObject.GetComponent<NPCPlayer>();
             var team = npcComp != null ? npcComp.team : null;
             
-            var allNpcs = FindObjectsByType<NPCPlayer>(FindObjectsSortMode.None);
+            var allNpcs = GameManager.Instance.npcs;
             foreach (var n in allNpcs)
             {
                 if (n.gameObject != npcObject && n.team != team)
@@ -267,14 +286,12 @@ namespace Code.Player
         // Métodos auxiliares para respuestas de NPC
         public void AcceptFromNPC(GameObject npcObj)
         {
-            AcceptAnnounce(npcObj.name, false);
-            GameManager.Instance.isAnnouncementPending = false; // Liberamos juego
+            StartCoroutine(AcceptAnnounceCoroutine(npcObj.name, false));
         }
 
         public void DeclineFromNPC(GameObject npcObj)
         {
-            DeclineAnnounce(npcObj.name, false);
-            GameManager.Instance.isAnnouncementPending = false; // Liberamos juego
+            StartCoroutine(DeclineAnnounceCoroutine(npcObj.name, false, _announceState, currentAnnouncerTeam));
         }
 
         private void ShowRespondButtons()
@@ -301,7 +318,8 @@ namespace Code.Player
 
             if (PlayerHUD.Instance != null)
             {
-                PlayerHUD.Instance.ShowResponseButtons(true, acceptText, declineText, showMore);
+                bool showSlider = _announceState == AnnounceState.Envido;
+                PlayerHUD.Instance.ShowResponseButtons(true, acceptText, declineText, showMore, showSlider);
             }
             else
             {
@@ -317,9 +335,6 @@ namespace Code.Player
 
         private void LocalButtonInteract(string buttonName)
         {
-            // Liberamos el juego al responder
-            GameManager.Instance.isAnnouncementPending = false;
-
             var playerLocal = GetComponent<PlayerLocal>();
             if (playerLocal == null) playerLocal = GetComponentInParent<PlayerLocal>();
             if (playerLocal == null) playerLocal = FindAnyObjectByType<PlayerLocal>();
@@ -348,41 +363,11 @@ namespace Code.Player
             switch (buttonName)
             {
                 case "AcceptButton":
-                    AcceptAnnounce(playerName, hasFlor);
+                    StartCoroutine(AcceptAnnounceCoroutine(playerName, hasFlor));
                     break;
 
                 case "DeclineButton":
-                    // Primero manejamos las consecuencias de rechazar SEGÚN el estado actual
-                    if (_announceState == AnnounceState.Truco)
-                    {
-                        Debug.Log("[AnnouncementManager] Truco RECHAZADO. Finalizando mano.");
-                        GetOpponentPlayer(out var npcObj);
-                        if (npcObj != null)
-                        {
-                            var npc = npcObj.GetComponent<NPCPlayer>();
-                            if (npc != null && npc.team != null)
-                            {
-                                // Si se rechaza el Truco, el equipo que cantó gana los puntos acumulados hasta ese momento (mínimo 1)
-                                GameManager.Instance.ResolveHandWinner(npc.team.teamName, GameManager.Instance.currentHandValue);
-                            }
-                        }
-                    }
-                    else if (_announceState == AnnounceState.Envido)
-                    {
-                        Debug.Log("[AnnouncementManager] Envido RECHAZADO. Sumando 1 punto al oponente.");
-                        GetOpponentPlayer(out var npcObj);
-                        if (npcObj != null)
-                        {
-                            var npc = npcObj.GetComponent<NPCPlayer>();
-                            if (npc != null && npc.team != null)
-                            {
-                                GameManager.Instance.AddAnnouncementPoints(npc.team.teamName, 1);
-                            }
-                        }
-                    }
-
-                    // Luego limpiamos el estado
-                    DeclineAnnounce(playerName, hasFlor);
+                    StartCoroutine(DeclineAnnounceCoroutine(playerName, hasFlor, _announceState, currentAnnouncerTeam));
                     break;
 
                 case "MoreAnnounceButton":
@@ -411,16 +396,17 @@ namespace Code.Player
             };
         }
 
-        // [TargetRpc]
-        private void AcceptAnnounce(/*NetworkConnection conn,*/ string playerName, bool hasFlor)
+        private System.Collections.IEnumerator AcceptAnnounceCoroutine(string playerName, bool hasFlor)
         {
             string displayWinner = GetTeamNameByPlayerName(playerName);
             string msg = $"¡{displayWinner.ToUpper()} QUIERE!";
             if (_announceState == AnnounceState.ALey) msg = $"¡{displayWinner.ToUpper()} TIENE FLOR!";
-            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(msg);
+            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(msg, 2.5f);
 
-            Debug.Log($"[AnnouncementManager] Canto ACEPTADO por {playerName}");
-            GameManager.Instance.isAnnouncementPending = false;
+            Debug.Log($"[AnnouncementManager] Canto ACEPTADO por {playerName}. Esperando para reanudar...");
+            
+            // 2.5s para que desaparezca el texto + 2s extra = 4.5s
+            yield return new WaitForSeconds(4.5f);
             
             var current = GetCurrentAnnounce();
             if (current != null)
@@ -450,6 +436,14 @@ namespace Code.Player
                 current.UpdateTotalScore();
             }
 
+            if (_announceState == AnnounceState.ALey)
+            {
+                Debug.Log($"[A Ley] El jugador {playerName} responde que {(hasFlor ? "SÍ" : "NO")} tiene Flor.");
+            }
+            
+            _announceState = AnnounceState.None;
+            GameManager.Instance.isAnnouncementPending = false;
+
             // Restaurar permiso de juego al humano si es su turno
             var player = FindAnyObjectByType<PlayerLocal>();
             if (player != null && SeatManager.Instance.GetPlayerSeatIndex(player.gameObject) == GameManager.Instance.currentPlayerTurn)
@@ -457,30 +451,45 @@ namespace Code.Player
                 player.player.canPlayCard = true;
                 Debug.Log("[AnnouncementManager] Turno restaurado al jugador humano.");
             }
-
-            if (_announceState == AnnounceState.ALey)
-            {
-                Debug.Log($"[A Ley] El jugador {playerName} responde que {(hasFlor ? "SÍ" : "NO")} tiene Flor.");
-            }
-            
-            _announceState = AnnounceState.None;
         }
 
-        // [ClientRpc]
-        private void DeclineAnnounce(string playerName, bool hasFlor)
+        private System.Collections.IEnumerator DeclineAnnounceCoroutine(string playerName, bool hasFlor, AnnounceState previousState, Team announcerTeam)
         {
             string displayWinner = GetTeamNameByPlayerName(playerName);
             string msg = $"¡{displayWinner.ToUpper()} NO QUIERO!";
-            if (_announceState == AnnounceState.ALey) msg = $"¡{displayWinner.ToUpper()} NO TIENE FLOR!";
-            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(msg);
+            if (previousState == AnnounceState.ALey) msg = $"¡{displayWinner.ToUpper()} NO TIENE FLOR!";
+            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(msg, 2.5f);
 
-            Debug.Log($"[AnnouncementManager] Canto RECHAZADO por {playerName}");
-            GameManager.Instance.isAnnouncementPending = false;
+            Debug.Log($"[AnnouncementManager] Canto RECHAZADO por {playerName}. Esperando para reanudar...");
             
-            if (_announceState == AnnounceState.ALey)
+            // 2.5s para que desaparezca el texto + 2s extra = 4.5s
+            yield return new WaitForSeconds(4.5f);
+            
+            if (previousState == AnnounceState.ALey)
             {
                 Debug.Log($"[A Ley] El jugador {playerName} responde que {(hasFlor ? "SÍ" : "NO")} tiene Flor.");
             }
+
+            // Procesar las consecuencias AHORA que ha pasado el tiempo
+            if (previousState == AnnounceState.Truco)
+            {
+                Debug.Log("[AnnouncementManager] Truco RECHAZADO. Finalizando mano.");
+                if (announcerTeam != null)
+                {
+                    GameManager.Instance.ResolveHandWinner(announcerTeam.teamName, GameManager.Instance.currentHandValue);
+                }
+            }
+            else if (previousState == AnnounceState.Envido)
+            {
+                Debug.Log("[AnnouncementManager] Envido RECHAZADO. Sumando 1 punto al oponente.");
+                if (announcerTeam != null)
+                {
+                    GameManager.Instance.AddAnnouncementPoints(announcerTeam.teamName, 1);
+                }
+            }
+
+            _announceState = AnnounceState.None;
+            GameManager.Instance.isAnnouncementPending = false;
 
             // Restaurar permiso de juego al humano si es su turno
             var player = FindAnyObjectByType<PlayerLocal>();
@@ -488,19 +497,17 @@ namespace Code.Player
             {
                 player.player.canPlayCard = true;
             }
-            
-            _announceState = AnnounceState.None;
         }
 
         private string GetTeamNameByPlayerName(string playerName)
         {
-            var allPlayers = FindObjectsByType<Code.Player.Player>(FindObjectsSortMode.None);
+            var allPlayers = GameManager.Instance.allPlayers;
             foreach (var p in allPlayers)
             {
                 if (p.playerName == playerName && p.team != null) return p.team.teamName;
             }
             
-            var allNpcs = FindObjectsByType<NPCPlayer>(FindObjectsSortMode.None);
+            var allNpcs = GameManager.Instance.npcs;
             foreach (var n in allNpcs)
             {
                 if (n.playerName == playerName && n.team != null) return n.team.teamName;
@@ -517,7 +524,8 @@ namespace Code.Player
             
             if (PlayerHUD.Instance != null)
             {
-                PlayerHUD.Instance.ShowResponseButtons(true, "QUIERO", "NO QUIERO", true);
+                bool showSlider = _announceState == AnnounceState.Envido;
+                PlayerHUD.Instance.ShowResponseButtons(true, "QUIERO", "NO QUIERO", true, showSlider);
             }
             else
             {

@@ -1,0 +1,162 @@
+<engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/MainMenu/MainMenu.uss" />
+    
+    <engine:VisualElement class="menu-root">
+        
+        <!-- ============================================== -->
+        <!-- SCREEN: MAIN MENU                              -->
+        <!-- ============================================== -->
+        <engine:VisualElement name="screen-main" class="screen-container main-layout">
+            <engine:Label text="TRUCO DEFINITIVO" class="title-text title-main" />
+            
+            <engine:VisualElement class="main-buttons-container">
+                <engine:Button name="btn-main-singleplayer" class="menu-btn menu-btn--primary btn-large">
+                    <engine:Label text="UN JUGADOR" class="menu-btn__text btn-large__text" />
+                </engine:Button>
+
+                <engine:Button name="btn-main-play" class="menu-btn menu-btn--secondary">
+                    <engine:Label text="MULTIJUGADOR" class="menu-btn__text" />
+                </engine:Button>
+                
+                <engine:Button name="btn-main-settings" class="menu-btn menu-btn--secondary">
+                    <engine:Label text="OPCIONES" class="menu-btn__text" />
+                </engine:Button>
+                
+                <engine:Button name="btn-main-credits" class="menu-btn menu-btn--secondary">
+                    <engine:Label text="CRÉDITOS" class="menu-btn__text" />
+                </engine:Button>
+                
+                <engine:Button name="btn-main-quit" class="menu-btn menu-btn--danger">
+                    <engine:Label text="SALIR" class="menu-btn__text" />
+                </engine:Button>
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <!-- ============================================== -->
+        <!-- SCREEN: PLAY / CONNECTION                      -->
+        <!-- ============================================== -->
+        <engine:VisualElement name="screen-play" class="screen-container" style="display: none;">
+            <engine:VisualElement class="panel-container">
+                <engine:Label text="MULTIJUGADOR" class="title-text" />
+                
+                <engine:VisualElement class="input-group">
+                    <engine:Label text="Tu Nombre:" class="input-label" />
+                    <engine:TextField name="input-nickname" class="menu-input" />
+                </engine:VisualElement>
+
+                <engine:Button name="btn-play-host" class="menu-btn menu-btn--primary">
+                    <engine:Label text="CREAR SALA" class="menu-btn__text" />
+                </engine:Button>
+
+                <engine:VisualElement class="divider" />
+
+                <engine:VisualElement class="input-group">
+                    <engine:Label text="Código de Sala:" class="input-label" />
+                    <engine:TextField name="input-room-code" class="menu-input" />
+                </engine:VisualElement>
+                
+                <engine:Button name="btn-play-join" class="menu-btn menu-btn--secondary">
+                    <engine:Label text="UNIRSE CON CÓDIGO" class="menu-btn__text" />
+                </engine:Button>
+
+                <engine:Button name="btn-play-back" class="menu-btn menu-btn--back" style="margin-top: 30px;">
+                    <engine:Label text="VOLVER" class="menu-btn__text" />
+                </engine:Button>
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <!-- ============================================== -->
+        <!-- SCREEN: LOBBY                                  -->
+        <!-- ============================================== -->
+        <engine:VisualElement name="screen-lobby" class="screen-container" style="display: none;">
+            <engine:VisualElement class="panel-container lobby-panel">
+                <engine:Label text="SALA DE ESPERA" class="title-text" />
+                <engine:Label name="lbl-room-code" text="CÓDIGO: ----" class="subtitle-text" />
+                
+                <engine:VisualElement class="lobby-teams-container">
+                    <engine:VisualElement class="lobby-team lobby-team-card">
+                        <engine:Label text="EQUIPO 1" class="team-title" />
+                        <engine:VisualElement class="player-slot">
+                            <engine:Label name="lbl-t1-p1" text="Esperando..." class="player-name" />
+                        </engine:VisualElement>
+                        <engine:VisualElement class="player-slot">
+                            <engine:Label name="lbl-t1-p2" text="Esperando..." class="player-name" />
+                        </engine:VisualElement>
+                    </engine:VisualElement>
+                    
+                    <engine:VisualElement class="vs-badge">
+                        <engine:Label text="VS" class="vs-text" />
+                    </engine:VisualElement>
+
+                    <engine:VisualElement class="lobby-team lobby-team-card">
+                        <engine:Label text="EQUIPO 2" class="team-title" />
+                        <engine:VisualElement class="player-slot">
+                            <engine:Label name="lbl-t2-p1" text="Esperando..." class="player-name" />
+                        </engine:VisualElement>
+                        <engine:VisualElement class="player-slot">
+                            <engine:Label name="lbl-t2-p2" text="Esperando..." class="player-name" />
+                        </engine:VisualElement>
+                    </engine:VisualElement>
+                </engine:VisualElement>
+
+                <engine:VisualElement class="settings-group">
+                    <engine:Toggle name="toggle-flor" label="Jugar con Flor" class="menu-toggle" />
+                    <engine:DropdownField name="dropdown-points" label="Puntos:" choices="15,30" index="1" class="menu-dropdown" />
+                </engine:VisualElement>
+
+                <engine:VisualElement class="row-buttons">
+                    <engine:Button name="btn-lobby-back" class="menu-btn menu-btn--danger">
+                        <engine:Label text="SALIR" class="menu-btn__text" />
+                    </engine:Button>
+                    <engine:Button name="btn-lobby-ready" class="menu-btn menu-btn--secondary">
+                        <engine:Label text="LISTO" class="menu-btn__text" />
+                    </engine:Button>
+                    <engine:Button name="btn-lobby-start" class="menu-btn menu-btn--primary">
+                        <engine:Label text="EMPEZAR" class="menu-btn__text" />
+                    </engine:Button>
+                </engine:VisualElement>
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <!-- ============================================== -->
+        <!-- SCREEN: SETTINGS                               -->
+        <!-- ============================================== -->
+        <engine:VisualElement name="screen-settings" class="screen-container" style="display: none;">
+            <engine:VisualElement class="panel-container">
+                <engine:Label text="OPCIONES" class="title-text" />
+                
+                <engine:VisualElement class="settings-group">
+                    <engine:Slider name="slider-master" label="Volumen General" low-value="0" high-value="100" value="100" class="menu-slider" />
+                    <engine:Slider name="slider-music" label="Música" low-value="0" high-value="100" value="100" class="menu-slider" />
+                    <engine:Slider name="slider-sfx" label="Efectos" low-value="0" high-value="100" value="100" class="menu-slider" />
+                </engine:VisualElement>
+
+                <engine:VisualElement class="settings-group">
+                    <engine:DropdownField name="dropdown-lang" label="Idioma:" choices="Español,English" index="0" class="menu-dropdown" />
+                </engine:VisualElement>
+
+                <engine:Button name="btn-settings-back" class="menu-btn menu-btn--back" style="margin-top: 30px;">
+                    <engine:Label text="VOLVER" class="menu-btn__text" />
+                </engine:Button>
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <!-- ============================================== -->
+        <!-- SCREEN: CREDITS                                -->
+        <!-- ============================================== -->
+        <engine:VisualElement name="screen-credits" class="screen-container" style="display: none;">
+            <engine:VisualElement class="panel-container">
+                <engine:Label text="CRÉDITOS" class="title-text" />
+                
+                <engine:Label text="Desarrollado por Gabriel" class="credits-text" />
+                <engine:Label text="Motor: Unity" class="credits-text" />
+                <engine:Label text="Red: Mirror" class="credits-text" />
+                
+                <engine:Button name="btn-credits-back" class="menu-btn menu-btn--back" style="margin-top: 30px;">
+                    <engine:Label text="VOLVER" class="menu-btn__text" />
+                </engine:Button>
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+    </engine:VisualElement>
+</engine:UXML>

@@ -106,8 +106,12 @@ namespace Code.GameLogic
                 }
                 
                 player.transform.position = chair.sitTransform.position;
-                player.transform.rotation = chair.sitTransform.rotation;
-                Debug.Log($"[SeatManager] Teleportando jugador a {chair.sitTransform.position}");
+                // Make the player always face the center of the table (viraPosition) and stay upright
+                Vector3 lookTarget = TableManager.Instance.viraPosition.position;
+                lookTarget.y = player.transform.position.y;
+                player.transform.LookAt(lookTarget);
+                
+                Debug.Log($"[SeatManager] Teleportando jugador a {chair.sitTransform.position} y mirando a la mesa.");
             }
 
             if (chair != null && camManager != null)

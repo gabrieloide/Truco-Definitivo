@@ -48,5 +48,48 @@ namespace Code.Player
                     return Random.value > 0.5f; // Random fallback
             }
         }
+
+        public static Card SelectCardToPlay(List<Card> hand, List<Card> cardsOnTable, Card vira)
+        {
+            if (hand == null || hand.Count == 0) return null;
+            if (hand.Count == 1) return hand[0];
+
+            // Aseguramos que el valor real de cada carta de la mano esté actualizado
+            foreach (var card in hand)
+            {
+                card.realValue = TrucoRules.GetCardRealValue(card, vira);
+            }
+
+            // Ordenar de menor a mayor valor real
+            var sortedHand = new List<Card>(hand);
+            sortedHand.Sort((a, b) => a.realValue.CompareTo(b.realValue));
+
+            // Si somos los primeros en jugar en esta baza, jugamos una carta mediana
+            if (cardsOnTable == null || cardsOnTable.Count == 0)
+            {
+                int middleIndex = sortedHand.Count / 2;
+                return sortedHand[middleIndex];
+            }
+
+            // Encontrar el valor real más alto actualmente en la mesa
+            int highestTableValue = -1;
+            foreach (var tableCard in cardsOnTable)
+            {
+                int val = TrucoRules.GetCardRealValue(tableCard, vira);
+                if (val > highestTableValue) highestTableValue = val;
+            }
+
+            // Encontrar la menor carta en nuestra mano que pueda ganarle al valor de la mesa
+            foreach (var card in sortedHand)
+            {
+                if (card.realValue > highestTableValue)
+                {
+                    return card; // Retornamos la menor carta ganadora
+                }
+            }
+
+            // Si no podemos ganarle a la carta más alta en la mesa, jugamos nuestra peor carta (descarte)
+            return sortedHand[0];
+        }
     }
 }

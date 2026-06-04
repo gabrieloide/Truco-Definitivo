@@ -56,50 +56,140 @@ namespace Code.GameLogic.Announcement
         }
 
 
+        private class FlorData
+        {
+            public string TeamName;
+            public int Points;
+            public int ComparisonScore;
+            public string PlayerName;
+        }
+
         public override void UpdateTotalScore()
         {
-            // Flor is typically accepted automatically or results in immediate points
-            // in some Venezuelan Truco variants when called.
-            
-            // For now, let's find the team that called it.
-            var announcementManager = FindAnyObjectByType<AnnouncementManager>();
-            if (announcementManager == null) return;
+            var deckCreator = FindAnyObjectByType<DeckCreator>();
+            if (deckCreator == null) return;
+            var vira = deckCreator.cardVira;
 
-            // El equipo que cantó la flor gana 3 puntos (o 5 si es reservada)
-            // Para simplificar, buscaremos quién cantó recientemente o quién tiene la propiedad
-            
-            var playerLocal = FindAnyObjectByType<PlayerLocal>();
-            if (playerLocal != null && playerLocal.player != null && playerLocal.player.haveFlower)
+            List<FlorData> allFlores = new List<FlorData>();
+
+            var allPlayers = FindObjectsByType<Code.Player.Player>(FindObjectsSortMode.None);
+            var allNpcs = FindObjectsByType<NPCPlayer>(FindObjectsSortMode.None);
+
+            foreach (var p in allPlayers)
             {
-                int points = 3; // Default
-                var deckCreator = FindAnyObjectByType<DeckCreator>();
-                if (deckCreator != null)
+                var cardsHandler = p.GetComponent<CardsHandler>();
+                if (cardsHandler == null) cardsHandler = p.GetComponentInChildren<CardsHandler>();
+                
+                if (cardsHandler != null)
                 {
                     List<Card> hand = new List<Card>();
-                    foreach(var cardObj in playerLocal.cardsHandler.Cards)
+                    foreach(var cardObj in cardsHandler.Cards)
                     {
                         if (cardObj == null) continue;
                         var physical = cardObj.GetComponent<Code.Cards.PhysicalCard3D>();
+                        if (physical == null) physical = cardObj.GetComponentInParent<Code.Cards.PhysicalCard3D>();
                         if (physical != null) hand.Add(new Card(physical.cardValue, physical.cardSuit));
                     }
-                    points = TrucoRules.CalculateFlorPoints(hand, deckCreator.cardVira);
+
+                    if (TrucoRules.IsFlor(hand, vira))
+                    {
+                        allFlores.Add(new FlorData
+                        {
+                            TeamName = p.team != null ? p.team.teamName : "Team 1",
+                            Points = TrucoRules.CalculateFlorPoints(hand, vira),
+                            ComparisonScore = TrucoRules.CalculateFlorComparisonScore(hand, vira),
+                            PlayerName = p.playerName
+                        });
+                    }
                 }
-                
-                GameManager.Instance.AddAnnouncementPoints(playerLocal.player.team.teamName, points);
+            }
+
+            foreach (var npc in allNpcs)
+            {
+                if (TrucoRules.IsFlor(npc.hand, vira))
+                {
+                    allFlores.Add(new FlorData
+                    {
+                        TeamName = npc.team != null ? npc.team.teamName : "Team 2",
+                        Points = TrucoRules.CalculateFlorPoints(npc.hand, vira),
+                        ComparisonScore = TrucoRules.CalculateFlorComparisonScore(npc.hand, vira),
+                        PlayerName = npc.playerName
+                    });
+                }
+            }
+
+            if (allFlores.Count == 0)
+            {
+                Debug.Log("[FlorAnnouncement] Ningún jugador tiene Flor para cobrar.");
                 return;
             }
 
-            // Check NPCs
-            var npcs = FindObjectsByType<NPCPlayer>(FindObjectsSortMode.None);
-            foreach(var npc in npcs)
+            var team1Flores = allFlores.FindAll(f => f.TeamName == "Team 1");
+            var team2Flores = allFlores.FindAll(f => f.TeamName == "Team 2");
+
+            Debug.Log($"[FlorAnnouncement] Flores encontradas: Equipo 1 = {team1Flores.Count} | Equipo 2 = {team2Flores.Count}");
+
+            if (team1Flores.Count > 0 && team2Flores.Count == 0)
             {
-                var deckCreator = FindAnyObjectByType<DeckCreator>();
-                if (deckCreator != null && TrucoRules.IsFlor(npc.hand, deckCreator.cardVira))
+                // Solo el Equipo 1 tiene Flor
+                int totalPoints = 0;
+                foreach (var f in team1Flores) totalPoints += f.Points;
+                Debug.Log($"[FlorAnnouncement] Solo Equipo 1 tiene Flor. Ganando {totalPoints} piedras.");
+                GameManager.Instance.AddAnnouncementPoints("Team 1", totalPoints);
+            }
+            else if (team2Flores.Count > 0 && team1Flores.Count == 0)
+            {
+                // Solo el Equipo 2 tiene Flor
+                int totalPoints = 0;
+                foreach (var f in team2Flores) totalPoints += f.Points;
+                Debug.Log($"[FlorAnnouncement] Solo Equipo 2 tiene Flor. Ganando {totalPoints} piedras.");
+                GameManager.Instance.AddAnnouncementPoints("Team 2", totalPoints);
+            }
+            else if (team1Flores.Count > 0 && team2Flores.Count > 0)
+            {
+                // CONTRAFLOR: Ambos equipos tienen Flor
+                Debug.Log("[FlorAnnouncement] ¡CONTRAFLOR! Ambos equipos tienen Flor. Resolviendo disputa...");
+
+                FlorData bestTeam1 = team1Flores[0];
+                foreach (var f in team1Flores)
                 {
-                    int points = TrucoRules.CalculateFlorPoints(npc.hand, deckCreator.cardVira);
-                    GameManager.Instance.AddAnnouncementPoints(npc.team.teamName, points);
-                    return;
+                    if (f.ComparisonScore > bestTeam1.ComparisonScore) bestTeam1 = f;
                 }
+
+                FlorData bestTeam2 = team2Flores[0];
+                foreach (var f in team2Flores)
+                {
+                    if (f.ComparisonScore > bestTeam2.ComparisonScore) bestTeam2 = f;
+                }
+
+                string winnerTeam = "";
+                if (bestTeam1.ComparisonScore > bestTeam2.ComparisonScore)
+                {
+                    winnerTeam = "Team 1";
+                }
+                else if (bestTeam2.ComparisonScore > bestTeam1.ComparisonScore)
+                {
+                    winnerTeam = "Team 2";
+                }
+                else
+                {
+                    // Empate en puntaje de Flor: Gana el equipo que es Mano
+                    int manoTeamIndex = GameManager.Instance.ManoTeamIndex;
+                    winnerTeam = "Team " + manoTeamIndex;
+                    Debug.Log($"[FlorAnnouncement] Empate de Contraflor ({bestTeam1.ComparisonScore} pts). Gana la Mano: {winnerTeam}");
+                }
+
+                int totalPoints = 0;
+                foreach (var f in allFlores) totalPoints += f.Points;
+
+                // Notificar los puntajes comparados de Contraflor en la pantalla
+                if (PlayerHUD.Instance != null)
+                {
+                    PlayerHUD.Instance.NotifyEvent($"CONTRAFLOR: TEAM 1 ({bestTeam1.ComparisonScore}) VS TEAM 2 ({bestTeam2.ComparisonScore})", 4.0f);
+                }
+
+                Debug.Log($"[FlorAnnouncement] Ganador de Contraflor: {winnerTeam} ({bestTeam1.ComparisonScore} vs {bestTeam2.ComparisonScore} pts). Total ganado: {totalPoints} piedras.");
+                GameManager.Instance.AddAnnouncementPoints(winnerTeam, totalPoints);
             }
         }
     }

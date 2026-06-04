@@ -39,35 +39,39 @@ namespace Code.GameLogic.Announcement
 
             foreach (var p in allPlayers)
             {
-                // Note: Getting human cards is tricky because they are visual GameObjects.
-                // Assuming we can evaluate them or they were stored.
-                // For now, let's use a placeholder if we can't get cards.
                 int score = 0;
                 var cardsHandler = p.GetComponent<CardsHandler>();
+                if (cardsHandler == null) cardsHandler = p.GetComponentInChildren<CardsHandler>();
+                
                 if (cardsHandler != null)
                 {
                     // Convert GameObjects to Card data
                     List<Card> hand = new List<Card>();
                     foreach(var cardObj in cardsHandler.Cards) {
                         if (cardObj == null) continue;
-                        var interaction = cardObj.GetComponent<Code.Cards.CardInteraction>();
-                        if (interaction == null) interaction = cardObj.GetComponentInParent<Code.Cards.CardInteraction>();
                         
-                        if (interaction != null) hand.Add(interaction.Card);
+                        var physical = cardObj.GetComponent<Code.Cards.PhysicalCard3D>();
+                        if (physical == null) physical = cardObj.GetComponentInParent<Code.Cards.PhysicalCard3D>();
+                        
+                        if (physical != null)
+                        {
+                            hand.Add(new Card(physical.cardValue, physical.cardSuit));
+                        }
                         else
                         {
-                            // Try physical 3D card fallback
-                            var physical = cardObj.GetComponent<Code.Cards.PhysicalCard3D>();
-                            if (physical == null) physical = cardObj.GetComponentInParent<Code.Cards.PhysicalCard3D>();
-                            
-                            if (physical != null)
-                            {
-                                // We need to map physical cards back to Card data if not already there
-                                // For now, let's assume CardInteraction is the primary source or add logic to handle physical cards
-                            }
+                            var interaction = cardObj.GetComponent<Code.Cards.CardInteraction>();
+                            if (interaction == null) interaction = cardObj.GetComponentInParent<Code.Cards.CardInteraction>();
+                            if (interaction != null) hand.Add(interaction.Card);
                         }
                     }
                     score = TrucoRules.CalculateEnvidoScore(hand, vira);
+                }
+
+                // Si alguien tiene Flor, el Envido se anula automáticamente
+                if (score == -1)
+                {
+                    Debug.Log($"[EnvidoAnnouncement] Envido ANULADO porque el jugador humano {p.playerName} tiene FLOR.");
+                    return;
                 }
 
                 if (p.team != null && p.team.teamName == "Team 1") bestScoreTeam1 = Mathf.Max(bestScoreTeam1, score);
@@ -96,11 +100,16 @@ namespace Code.GameLogic.Announcement
             else if (bestScoreTeam2 > bestScoreTeam1) winnerTeam = "Team 2";
             else
             {
-                // Tie: Mano wins. In GameManager we should track which team is Mano.
-                // For now, let's assume Mano team is Team 1 or gets it from GameManager.
-                // winnerTeam = GameManager.Instance.GetManoTeamName(); 
-                winnerTeam = "Team 1"; // Placeholder for tie
-                Debug.Log("[EnvidoAnnouncement] Empate en Envido. Gana el equipo Mano.");
+                // Tie: Mano wins.
+                int manoTeamIndex = GameManager.Instance.ManoTeamIndex; // 1 or 2
+                winnerTeam = "Team " + manoTeamIndex;
+                Debug.Log($"[EnvidoAnnouncement] Empate en Envido. Gana el equipo Mano: {winnerTeam}");
+            }
+
+            // Notificar los puntajes comparados en la pantalla
+            if (PlayerHUD.Instance != null)
+            {
+                PlayerHUD.Instance.NotifyEvent($"ENVIDO: TEAM 1 ({bestScoreTeam1}) VS TEAM 2 ({bestScoreTeam2})", 4.0f);
             }
 
             GameManager.Instance.AddAnnouncementPoints(winnerTeam, pointsToAward);

@@ -56,22 +56,22 @@ namespace Code.GameLogic
             var top = topRight.y;
             var left = bottomLeft.x;
 
-            //Place cards in order
+            //Place cards in order (Anti-clockwise mapping on screen)
             switch (indexPlayer)
             {
-                case 0:
-                    c.rotation = Quaternion.Euler(0, 0, 180);
-                    c.anchorMin = new Vector2(0.5f, 1);
-                    c.anchorMax = new Vector2(0.5f, 1);
-                    return new Vector3(0, top - offset);
-
-                case 1:
+                case 0: // 1st Next Player -> RIGHT
                     c.rotation = Quaternion.Euler(0, 0, 90);
                     c.anchorMin = new Vector2(1, 0.5f);
                     c.anchorMax = new Vector2(1, 0.5f);
                     return new Vector3(right - offset, 0);
 
-                case 2:
+                case 1: // 2nd Next Player -> TOP
+                    c.rotation = Quaternion.Euler(0, 0, 180);
+                    c.anchorMin = new Vector2(0.5f, 1);
+                    c.anchorMax = new Vector2(0.5f, 1);
+                    return new Vector3(0, top - offset);
+
+                case 2: // 3rd Next Player -> LEFT
                     c.rotation = Quaternion.Euler(0, 0, 270);
                     c.anchorMin = new Vector2(0, 0.5f);
                     c.anchorMax = new Vector2(0, 0.5f);

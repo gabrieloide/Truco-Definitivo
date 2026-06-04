@@ -1,4 +1,5 @@
 using Code.GameLogic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -13,9 +14,12 @@ namespace Code.Player
         public Transform playerCamera;
 
         private IInteractable _currentInteractable;
+        private Camera _mainCamera;
+        private RaycastHit[] _hits = new RaycastHit[10];
 
         private void Start()
         {
+            _mainCamera = Camera.main;
             Debug.Log($"[PlayerInteract] Script activo en {gameObject.name}. Rango: {interactRange}");
         }
 
@@ -38,32 +42,37 @@ namespace Code.Player
 
         private void HandleRaycast()
         {
-            if (Camera.main == null) return;
+            if (_mainCamera == null) return;
 
             // Start ray from mouse position
             Vector2 mousePos = Mouse.current != null ? Mouse.current.position.ReadValue() : new Vector2(Screen.width / 2f, Screen.height / 2f);
-            Ray ray = Camera.main.ScreenPointToRay(mousePos);
+            Ray ray = _mainCamera.ScreenPointToRay(mousePos);
 
-            // Using ~0 to hit EVERYTHING
-            RaycastHit[] hits = Physics.RaycastAll(ray, interactRange, ~0, QueryTriggerInteraction.Collide);
+            // Use RaycastNonAlloc to prevent GC allocation. Usamos ~0 para detectar todas las capas y no depender de la configuración del Editor.
+            int hitCount = Physics.RaycastNonAlloc(ray, _hits, interactRange, ~0, QueryTriggerInteraction.Collide);
             
-            System.Array.Sort(hits, (x, y) => x.distance.CompareTo(y.distance));
+            // Sort only the valid hits by distance
+            System.Array.Sort(_hits, 0, hitCount, Comparer<RaycastHit>.Create((x, y) => x.distance.CompareTo(y.distance)));
 
-            foreach (var hit in hits)
+            for (int i = 0; i < hitCount; i++)
             {
-                // Intentamos buscar el componente en el objeto, en sus padres o en sus hijos
-                IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
-                if (interactable == null) interactable = hit.collider.GetComponentInChildren<IInteractable>();
+                var hit = _hits[i];
+                
+                // Try component avoids allocating memory if missing
+                if (!hit.collider.TryGetComponent<IInteractable>(out var interactable))
+                {
+                    interactable = hit.collider.GetComponentInParent<IInteractable>();
+                }
                 
                 if (interactable != null)
                 {
+                    // Ignore our own root body, but allow interacting with our children (like the Cards in our hand!)
+                    if (hit.collider.gameObject == gameObject)
+                        continue;
+
                     _currentInteractable = interactable;
                     return;
                 }
-
-                // If it's NOT an interactable and it's us or a child, ignore it
-                if (hit.collider.gameObject == gameObject || hit.collider.transform.IsChildOf(transform))
-                    continue;
             }
 
             _currentInteractable = null;

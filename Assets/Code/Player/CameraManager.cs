@@ -11,6 +11,7 @@ namespace Code.Player
         [Header("Cinemachine Cameras")]
         public CinemachineCamera vcamWalking; // The camera attached to the player's head
         public CinemachineCamera vcamSeated;  // The camera looking at the table
+        public CinemachineCamera vcamAlternative; // La cámara secundaria de la mesa
 
         [Header("Seated Camera Panning")]
         public float panSpeed = 45f;
@@ -84,6 +85,7 @@ namespace Code.Player
                 }
                 vcamSeated.Priority = 0;
             }
+            if (vcamAlternative != null) vcamAlternative.Priority = 0;
             if (vcamWalking != null) vcamWalking.Priority = 10;
         }
 
@@ -104,9 +106,51 @@ namespace Code.Player
             }
 
             if (vcamWalking != null) vcamWalking.Priority = 0;
+            if (vcamAlternative != null) vcamAlternative.Priority = 0;
             if (vcamSeated != null) vcamSeated.Priority = 100;
 
             Debug.Log($"[CameraManager] Cámara cambiada. Seated: {vcamSeated.name} (Prio 100), Walking: {(vcamWalking != null ? vcamWalking.name : "None")} (Prio 0)");
+        }
+
+        public void ToggleAlternativeCamera()
+        {
+            if (!isLocalPlayer) return;
+
+            // Buscar automáticamente la cámara (incluso si está inactiva o tiene mayúsculas)
+            if (vcamAlternative == null)
+            {
+                var allCams = FindObjectsByType<CinemachineCamera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                foreach (var cam in allCams)
+                {
+                    if (cam.gameObject.name.ToLower().Contains("tablecamera"))
+                    {
+                        vcamAlternative = cam;
+                        break;
+                    }
+                }
+                
+                if (vcamAlternative == null)
+                {
+                    Debug.LogError("[CameraManager] ERROR: No se encontró ninguna CinemachineCamera que contenga 'tablecamera' en su nombre.");
+                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("ERROR: CÁMARA ALTERNATIVA NO ENCONTRADA", 3f);
+                    return;
+                }
+            }
+
+            // Si la cámara alternativa está activa, la desactivamos y volvemos a la normal
+            if (vcamAlternative.Priority > 50)
+            {
+                vcamAlternative.Priority = 0;
+                if (vcamSeated != null) vcamSeated.Priority = 100;
+                else if (vcamWalking != null) vcamWalking.Priority = 100;
+            }
+            // Si no está activa, la activamos y apagamos las demás
+            else
+            {
+                vcamAlternative.Priority = 100;
+                if (vcamSeated != null) vcamSeated.Priority = 0;
+                if (vcamWalking != null) vcamWalking.Priority = 0;
+            }
         }
     }
 }

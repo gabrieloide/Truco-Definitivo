@@ -40,7 +40,7 @@
 }
 
 .label__header {
-    -unity-font-style: bold
+    -unity-font-style: bold;
 }
 
 .label__status {
