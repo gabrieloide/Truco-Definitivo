@@ -391,12 +391,12 @@ namespace Code.GameLogic
             }
             else
             {
-                if (_lastTrickWinnerSeatIndex != -1)
+                if (lastTrickWinnerSeatIndex != -1)
                 {
-                    _currentTrickStartSeatIndex = _lastTrickWinnerSeatIndex;
+                    currentTrickStartSeatIndex = lastTrickWinnerSeatIndex;
                 }
-                Debug.Log($"[GameManager] Baza finalizada. Sale el anterior ganador: Silla {_currentTrickStartSeatIndex}");
-                StartTurn(_currentTrickStartSeatIndex);
+                Debug.Log($"[GameManager] Baza finalizada. Sale el anterior ganador: Silla {currentTrickStartSeatIndex}");
+                StartTurn(currentTrickStartSeatIndex);
             }
         }
 
@@ -409,11 +409,11 @@ namespace Code.GameLogic
         public void HandleTrickResult(GameObject winnerObj)
         {
             int winnerTeam = 0; // Tie
-            _lastTrickWinnerSeatIndex = -1;
+            lastTrickWinnerSeatIndex = -1;
 
             if (winnerObj != null)
             {
-                _lastTrickWinnerSeatIndex = SeatManager.Instance.GetPlayerSeatIndex(winnerObj);
+                lastTrickWinnerSeatIndex = SeatManager.Instance.GetPlayerSeatIndex(winnerObj);
                 
                 var pComp = winnerObj.GetComponent<Code.Player.Player>();
                 var npcComp = winnerObj.GetComponent<NPCPlayer>();
@@ -536,7 +536,7 @@ namespace Code.GameLogic
             round = 0;
             currentHandValue = 1; 
             lastTrucoTeamIndex = 0;
-            _lastTrickWinnerSeatIndex = -1;
+            lastTrickWinnerSeatIndex = -1;
             trickWinners.Clear();
             TableManager.Instance.ClearTable();
             ResetTeamsRoundsWon();
@@ -567,7 +567,7 @@ namespace Code.GameLogic
             dealerIndex = (dealerIndex + 1) % SeatManager.Instance.allChairs.Count;
             int manoSeatIndex = (dealerIndex + 1) % SeatManager.Instance.allChairs.Count;
             _manoTeamIndex = (manoSeatIndex % 2) + 1; // Team 1 or 2
-            _currentTrickStartSeatIndex = manoSeatIndex;
+            currentTrickStartSeatIndex = manoSeatIndex;
             
             Debug.Log($"[GameManager] Nueva mano. Repartidor: Silla {dealerIndex}. Mano: Silla {manoSeatIndex} (Equipo {_manoTeamIndex})");
             
@@ -575,7 +575,7 @@ namespace Code.GameLogic
             RpcUpdateScores(teams[0].teamScore, teams[1].teamScore, 0, 0);
             OnScoreChanged?.Invoke(teams[0].teamScore, teams[1].teamScore);
 
-            StartTurn(_currentTrickStartSeatIndex);
+            StartTurn(currentTrickStartSeatIndex);
         }
 
         // [Server]

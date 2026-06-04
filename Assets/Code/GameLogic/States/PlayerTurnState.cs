@@ -22,7 +22,7 @@ namespace Code.GameLogic.States
             global::Code.Core.GameEventManager.OnAnnounceButtonClicked -= HandleAnnounce;
         }
 
-        private void HandleCardPlaced(Code.Cards.Card card, GameObject player)
+        private void HandleCardPlaced(Card card, GameObject player)
         {
             Debug.Log($"[PlayerTurnState] Carta jugada por {player.name}. Finalizando turno en breve...");
             GameManager.Instance.StartCoroutine(DelayedEndTurn());
