@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Cinemachine; // Adjust namespace if using an older Cinemachine version
+using Code.GameLogic;
 
 namespace Code.Player
 {
