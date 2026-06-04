@@ -116,11 +116,9 @@ namespace Code.DebugTools
                 }
 
                 // ===== 3. DESTINO DE CARTAS EN LA MESA =====
-                if (showCardDestinations && tableManager != null && 
-                    tableManager.tableCardPositions != null && 
-                    tableManager.tableCardPositions.Count > i)
+                if (showCardDestinations && chair.cardDestination != null)
                 {
-                    Transform cardDest = tableManager.tableCardPositions[i];
+                    Transform cardDest = chair.cardDestination;
                     if (cardDest != null)
                     {
                         Color cardColor = new Color(seatColor.r, seatColor.g, seatColor.b, 0.9f);

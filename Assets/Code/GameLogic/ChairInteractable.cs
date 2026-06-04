@@ -8,6 +8,7 @@ namespace Code.GameLogic
         [Header("Chair Configuration")]
         public Transform sitTransform;
         public Transform deckAnchor; // Position to the right of the player for the deck/vira
+        public Transform cardDestination; // Posición en la mesa donde aterrizan las cartas de esta silla
         public Unity.Cinemachine.CinemachineCamera tableCamera;
 
         public bool isOccupied = false;

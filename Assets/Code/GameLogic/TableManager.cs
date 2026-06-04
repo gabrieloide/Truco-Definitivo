@@ -38,7 +38,7 @@ namespace Code.GameLogic
         public GameObject deckVisualPrefab; // Prefab for the stack of cards
         private GameObject _currentViraObj;
         private GameObject _currentDeckObj;
-        public List<Transform> tableCardPositions; // 4 positions, one for each seat
+        [Header("Table Configuration")]
         
         // Track how many cards each player has played on their spot
         private Dictionary<GameObject, int> _cardsPerPlayer = new Dictionary<GameObject, int>();
@@ -53,13 +53,14 @@ namespace Code.GameLogic
             if (_currentViraObj != null) Destroy(_currentViraObj);
             if (_currentDeckObj != null) Destroy(_currentDeckObj);
 
-            // Determinar ancla base desde las posiciones de la mesa
-            Transform anchor = viraPosition;
-            
-            // Si tenemos un índice de repartidor, intentamos usar su posición en la mesa como referencia
-            if (dealerSeatIndex != -1 && tableCardPositions != null && tableCardPositions.Count > dealerSeatIndex)
+            Transform anchor = transform;
+            if (dealerSeatIndex != -1 && SeatManager.Instance != null && SeatManager.Instance.allChairs.Count > dealerSeatIndex)
             {
-                anchor = tableCardPositions[dealerSeatIndex];
+                var chair = SeatManager.Instance.allChairs[dealerSeatIndex];
+                if (chair != null && chair.cardDestination != null)
+                {
+                    anchor = chair.cardDestination;
+                }
             }
             
             if (anchor == null)
@@ -119,16 +120,32 @@ namespace Code.GameLogic
 
             // Find which seat this player is occupying
             int seatIndex = SeatManager.Instance.GetPlayerSeatIndex(player);
+            
+            // --- DEBUG LOGS ---
+            string chairsDebug = "";
+            for (int i = 0; i < SeatManager.Instance.allChairs.Count; i++) {
+                var o = SeatManager.Instance.allChairs[i].occupant;
+                chairsDebug += $"[{i}:{(o?o.name:"null")}] ";
+            }
+            Debug.Log($"[TableManager-Debug] SpawnCard3D para jugador '{player.name}'. SeatManager devolvió index={seatIndex}. Sillas actuales: {chairsDebug}");
+            // ------------------
+
             if (seatIndex == -1)
             {
                 Debug.LogWarning($"[TableManager] El jugador {player.name} no está sentado. Usando posición por defecto (0).");
                 seatIndex = 0;
             }
 
-            // Get base position for this seat
-            Transform basePos = (tableCardPositions != null && tableCardPositions.Count > seatIndex) 
-                                ? tableCardPositions[seatIndex] 
-                                : transform;
+            // Get base position for this seat directly from the chair
+            Transform basePos = transform;
+            if (seatIndex != -1 && SeatManager.Instance != null && SeatManager.Instance.allChairs.Count > seatIndex)
+            {
+                var chair = SeatManager.Instance.allChairs[seatIndex];
+                if (chair != null && chair.cardDestination != null)
+                {
+                    basePos = chair.cardDestination;
+                }
+            }
 
             // Stack upwards: base position + height offset per card
             float heightOffset = cardsCount * 0.025f; // Slight height increase for stacking
