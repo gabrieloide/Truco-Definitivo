@@ -170,7 +170,12 @@ namespace Code.Player
 
                 GameObject visualCard = _visualCards[0];
                 _visualCards.RemoveAt(0);
-                if (visualCard != null) Destroy(visualCard);
+                Vector3? startPos = null;
+                if (visualCard != null) 
+                {
+                    startPos = visualCard.transform.position;
+                    Destroy(visualCard);
+                }
 
                 Debug.Log($"[NPC {playerName}] Juega: {cardToPlay.value} de {cardToPlay.suit} (valor real: {cardToPlay.realValue})");
                 
@@ -178,7 +183,7 @@ namespace Code.Player
                 isMyTurn = false;
                 _turnCoroutine = null;
 
-                var playCommand = new Code.GameLogic.Architecture.PlayCardCommand(cardToPlay, gameObject);
+                var playCommand = new Code.GameLogic.Architecture.PlayCardCommand(cardToPlay, gameObject, startPos);
                 playCommand.Execute();
             }
             else

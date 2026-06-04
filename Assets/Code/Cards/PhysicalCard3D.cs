@@ -122,7 +122,7 @@ namespace Code.Cards
                 Debug.Log($"[PhysicalCard3D] Carta {cardValue} de {cardSuit} jugada con éxito por {interactorPlayer.name}");
                 
                 // Logic to play the card
-                Code.GameLogic.Architecture.ICommand playCommand = new Code.GameLogic.Architecture.PlayCardCommand(new Code.GameLogic.Card(cardValue, cardSuit), owner.gameObject);
+                Code.GameLogic.Architecture.ICommand playCommand = new Code.GameLogic.Architecture.PlayCardCommand(new Code.GameLogic.Card(cardValue, cardSuit), owner.gameObject, transform.position);
                 playCommand.Execute();
                 
                 Destroy(gameObject);

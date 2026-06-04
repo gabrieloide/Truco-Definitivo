@@ -89,19 +89,15 @@ namespace Code.Player
             if (vcamWalking != null) vcamWalking.Priority = 10;
         }
 
-        public void SetSeatedCamera(CinemachineCamera tableCamera)
+        public void SetSeatedCamera(Transform cameraPosition)
         {
             if (!isLocalPlayer) return;
 
-            // Optional: If the table has a specific camera we want to blend to, 
-            // we can reassign vcamSeated or just activate the table's own camera.
-            // For now, we assume vcamSeated is a camera child of the player 
-            // that we move to the table's position, or we just switch priorities.
-
-            if (tableCamera != null)
+            if (vcamSeated != null && cameraPosition != null)
             {
-                vcamSeated = tableCamera;
-                _seatedBaseRotation = vcamSeated.transform.rotation;
+                vcamSeated.transform.position = cameraPosition.position;
+                vcamSeated.transform.rotation = cameraPosition.rotation;
+                _seatedBaseRotation = cameraPosition.rotation;
                 _currentPan = 0f;
             }
 
@@ -109,7 +105,7 @@ namespace Code.Player
             if (vcamAlternative != null) vcamAlternative.Priority = 0;
             if (vcamSeated != null) vcamSeated.Priority = 100;
 
-            Debug.Log($"[CameraManager] Cámara cambiada. Seated: {vcamSeated.name} (Prio 100), Walking: {(vcamWalking != null ? vcamWalking.name : "None")} (Prio 0)");
+            Debug.Log($"[CameraManager] Cámara de mesa activada y movida. Seated: {vcamSeated?.name} (Prio 100)");
         }
 
         public void ToggleAlternativeCamera()

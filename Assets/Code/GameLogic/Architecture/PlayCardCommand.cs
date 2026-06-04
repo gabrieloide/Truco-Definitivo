@@ -5,20 +5,22 @@ namespace Code.GameLogic.Architecture
 {
     public class PlayCardCommand : ICommand
     {
-        private Card _card;
-        private GameObject _player;
+        private readonly Card card;
+        private readonly GameObject player;
+        private readonly Vector3? startPos;
 
-        public PlayCardCommand(Card card, GameObject player)
+        public PlayCardCommand(Card card, GameObject player, Vector3? startPos = null)
         {
-            _card = card;
-            _player = player;
+            this.card = card;
+            this.player = player;
+            this.startPos = startPos;
         }
 
         public void Execute()
         {
             if (TableManager.Instance != null)
             {
-                TableManager.Instance.PlaceCard(_card, _player);
+                TableManager.Instance.PlaceCard(card, player, startPos);
             }
         }
     }

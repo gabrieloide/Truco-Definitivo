@@ -70,9 +70,9 @@ namespace Code.DebugTools
                 }
 
                 // ===== 2. CAMARA DE MESA =====
-                if (showCameraGizmos && chair.tableCamera != null)
+                if (showCameraGizmos && chair.cameraPosition != null)
                 {
-                    Transform camTransform = chair.tableCamera.transform;
+                    Transform camTransform = chair.cameraPosition;
                     Color camColor = new Color(seatColor.r, seatColor.g, seatColor.b, 0.7f);
                     Gizmos.color = camColor;
 

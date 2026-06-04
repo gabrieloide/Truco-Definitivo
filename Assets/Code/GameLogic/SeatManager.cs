@@ -117,7 +117,7 @@ namespace Code.GameLogic
             if (chair != null && camManager != null)
             {
                 Debug.Log("[SeatManager] Solicitando cambio de cámara a CameraManager.");
-                camManager.SetSeatedCamera(chair.tableCamera);
+                camManager.SetSeatedCamera(chair.cameraPosition);
             }
         }
 

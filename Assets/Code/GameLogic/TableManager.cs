@@ -101,7 +101,7 @@ namespace Code.GameLogic
         }
 
         // [Server]
-        public void SpawnCard3D(Card card, GameObject player)
+        public void SpawnCard3D(Card card, GameObject player, Vector3? customStartPos = null)
         {
             if (card3DPrefab == null)
             {
@@ -121,21 +121,6 @@ namespace Code.GameLogic
             // Find which seat this player is occupying
             int seatIndex = SeatManager.Instance.GetPlayerSeatIndex(player);
             
-            // --- DEBUG LOGS ---
-            string chairsDebug = "";
-            for (int i = 0; i < SeatManager.Instance.allChairs.Count; i++) {
-                var o = SeatManager.Instance.allChairs[i].occupant;
-                chairsDebug += $"[{i}:{(o?o.name:"null")}] ";
-            }
-            Debug.Log($"[TableManager-Debug] SpawnCard3D para jugador '{player.name}'. SeatManager devolvió index={seatIndex}. Sillas actuales: {chairsDebug}");
-            // ------------------
-
-            if (seatIndex == -1)
-            {
-                Debug.LogWarning($"[TableManager] El jugador {player.name} no está sentado. Usando posición por defecto (0).");
-                seatIndex = 0;
-            }
-
             // Get base position for this seat directly from the chair
             Transform basePos = transform;
             if (seatIndex != -1 && SeatManager.Instance != null && SeatManager.Instance.allChairs.Count > seatIndex)
@@ -148,14 +133,14 @@ namespace Code.GameLogic
             }
 
             // Stack upwards: base position + height offset per card
-            float heightOffset = cardsCount * 0.025f; // Slight height increase for stacking
+            float heightOffset = (cardsCount - 1) * 0.025f; // Slight height increase for stacking
             Vector3 targetPos = basePos.position + Vector3.up * heightOffset;
             
             // Apply a 90-degree rotation on X so the card lays flat on the table (face up)
             Quaternion targetRot = basePos.rotation * Quaternion.Euler(90f, 0f, 0f);
             
-            // Start from player position for animation
-            Vector3 startPos = player.transform.position + Vector3.up * 1.5f;
+            // Start from custom pos or player position for animation
+            Vector3 startPos = customStartPos.HasValue ? customStartPos.Value : player.transform.position + Vector3.up * 1.5f;
             
             GameObject cardObj = Instantiate(card3DPrefab, startPos, player.transform.rotation);
             
@@ -184,11 +169,11 @@ namespace Code.GameLogic
             CardsInTable.Clear();
         }
 
-        public void PlaceCard(Card card, GameObject player)
+        public void PlaceCard(Card card, GameObject player, Vector3? startPos = null)
         {
             card.ownerObj = player;
             CardsInTable.Add(card);
-            SpawnCard3D(card, player);
+            SpawnCard3D(card, player, startPos);
             
             // Disparar evento de dominio
             OnCardPlaced?.Invoke(card, player);

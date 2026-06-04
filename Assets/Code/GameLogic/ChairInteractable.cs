@@ -9,7 +9,7 @@ namespace Code.GameLogic
         public Transform sitTransform;
         public Transform deckAnchor; // Position to the right of the player for the deck/vira
         public Transform cardDestination; // Posición en la mesa donde aterrizan las cartas de esta silla
-        public Unity.Cinemachine.CinemachineCamera tableCamera;
+        public Transform cameraPosition; // Posición adonde se moverá la cámara principal al sentarse
 
         public bool isOccupied = false;
         public GameObject occupant;
