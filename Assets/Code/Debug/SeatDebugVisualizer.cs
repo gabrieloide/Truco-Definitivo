@@ -127,6 +127,8 @@ namespace Code.DebugTools
                         float cardW = gizmoScale * 0.6f;
                         float cardH = gizmoScale * 0.9f;
                         Vector3 cp = cardDest.position;
+                        Vector3 center = tableManager != null && tableManager.viraPosition != null ? tableManager.viraPosition.position : Vector3.zero;
+                        
                         // Dibujar siempre plano sobre la mesa (plano XZ) independientemente de si la flecha Z (forward) mira hacia arriba
                         Vector3 right = Vector3.Cross(Vector3.up, (center - cp).normalized); // Perpendicular a la dirección hacia el centro
                         if (right == Vector3.zero) right = Vector3.right;
