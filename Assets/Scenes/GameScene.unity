@@ -2672,6 +2672,7 @@ MonoBehaviour:
   panSpeed: 45
   edgeThreshold: 0.05
   maxPanAngle: 40
+  cameraPivot: {fileID: 1396654932}
 --- !u!4 &873329477
 Transform:
   m_ObjectHideFlags: 0
@@ -3938,7 +3939,7 @@ Transform:
   m_GameObject: {fileID: 1396654931}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5.06731, y: 1.7055522, z: 4.739615}
+  m_LocalPosition: {x: -4.948, y: 1.7055522, z: 5.64}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4838,6 +4839,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1678367450}
   - component: {fileID: 1678367449}
+  - component: {fileID: 1678367451}
   m_Layer: 0
   m_Name: PlayerCamera
   m_TagString: Untagged
@@ -4865,7 +4867,7 @@ MonoBehaviour:
   m_StreamingVersion: 20230301
   m_LegacyPriority: 0
   Target:
-    TrackingTarget: {fileID: 0}
+    TrackingTarget: {fileID: 1396654932}
     LookAtTarget: {fileID: 0}
     CustomLookAtTarget: 0
   Lens:
@@ -4874,7 +4876,7 @@ MonoBehaviour:
     NearClipPlane: 0.3
     FarClipPlane: 1000
     Dutch: 0
-    ModeOverride: 0
+    ModeOverride: 2
     PhysicalProperties:
       GateFit: 2
       SensorSize: {x: 21.946, y: 16.002}
@@ -4896,13 +4898,26 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1678367448}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.13369875, y: -0, z: -0, w: 0.9910221}
-  m_LocalPosition: {x: -6.219, y: 1.5240002, z: 2.8439999}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -4.948, y: 1.7055522, z: 5.64}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 15.367, y: 0, z: 0}
+--- !u!114 &1678367451
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1678367448}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36d1163fa822e8b418a0a603ec078d5c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Damping: 0
 --- !u!1001 &1686661319
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5293,8 +5308,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1818274241}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.13369875, y: 0, z: 0, w: 0.9910221}
-  m_LocalPosition: {x: -6.219, y: 1.5240002, z: 2.8439999}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -4.948, y: 1.7055522, z: 5.64}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

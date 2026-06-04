@@ -111,8 +111,10 @@ namespace Code.Player
 
                 if (cameraPosition != null)
                 {
-                    objectToMove.position = cameraPosition.position;
-                    objectToMove.rotation = cameraPosition.rotation;
+                    // Emparentar directamente para que no haya problemas de desincronización
+                    objectToMove.SetParent(cameraPosition);
+                    objectToMove.localPosition = Vector3.zero;
+                    objectToMove.localRotation = Quaternion.identity;
                     _seatedBaseRotation = cameraPosition.rotation;
                 }
                 else
@@ -121,7 +123,8 @@ namespace Code.Player
                     var chair = SeatManager.Instance.allChairs.Find(c => c.occupant != null && c.occupant.GetComponent<CameraManager>() == this);
                     if (chair != null && chair.sitTransform != null)
                     {
-                        objectToMove.position = chair.sitTransform.position + Vector3.up * 1.5f;
+                        objectToMove.SetParent(chair.sitTransform);
+                        objectToMove.localPosition = Vector3.up * 1.5f;
                         Vector3 lookTarget = TableManager.Instance.viraPosition.position;
                         objectToMove.LookAt(lookTarget);
                         _seatedBaseRotation = objectToMove.rotation;
@@ -132,6 +135,9 @@ namespace Code.Player
                     }
                 }
                 _currentPan = 0f;
+
+                // Forzar el corte instantáneo en Cinemachine para que no haga transición lenta
+                vcamSeated.PreviousStateIsValid = false;
             }
 
             if (vcamWalking != null) vcamWalking.Priority = 0;

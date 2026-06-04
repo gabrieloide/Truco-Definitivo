@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "com.besty.unity-skills": "https://github.com/Besty0728/Unity-Skills.git?path=/SkillsForUnity",
+    "com.gabrieloide.retro-sound-synthesizer": "https://github.com/gabrieloide/Retro-Sound-Synthesizer.git#upm",
     "com.unity.cinemachine": "3.1.1",
     "com.unity.collab-proxy": "2.5.2",
     "com.unity.feature.2d": "2.0.1",

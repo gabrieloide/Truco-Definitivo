@@ -10,6 +10,13 @@
       },
       "hash": "338b15f564917aed0917a5ef410451d457739e2f"
     },
+    "com.gabrieloide.retro-sound-synthesizer": {
+      "version": "https://github.com/gabrieloide/Retro-Sound-Synthesizer.git#upm",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "c5405291d3aff4969dc18b1cf1265cf80fd29fc8"
+    },
     "com.unity.2d.animation": {
       "version": "10.1.3",
       "depth": 1,
