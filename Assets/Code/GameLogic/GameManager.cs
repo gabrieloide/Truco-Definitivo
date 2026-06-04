@@ -36,6 +36,10 @@ namespace Code.GameLogic
             }
         }
 
+        [Header("Player Settings")]
+        public PlayerLocal localPlayer; // Referencia al jugador local (asignada manual o dinámicamente)
+        public int defaultLocalSeatIndex = 0; // Índice de la silla donde el jugador local debería empezar
+
         public List<PlayerLocal> serverPlayers = new List<PlayerLocal>();
         public List<Code.Player.Player> allPlayers = new List<Code.Player.Player>();
 
@@ -197,7 +201,14 @@ namespace Code.GameLogic
 
                 if (SeatManager.Instance != null)
                 {
-                    SeatManager.Instance.AutoSeatLocalPlayer(playerGameObject);
+                    if (SeatManager.Instance.allChairs.Count > defaultLocalSeatIndex)
+                    {
+                        SeatManager.Instance.RequestSeat(playerGameObject, SeatManager.Instance.allChairs[defaultLocalSeatIndex]);
+                    }
+                    else
+                    {
+                        SeatManager.Instance.AutoSeatLocalPlayer(playerGameObject);
+                    }
                 }
                 else
                 {

@@ -155,7 +155,8 @@ namespace Code.DebugTools
                             cardStyle.normal.textColor = cardColor;
                             cardStyle.fontStyle = FontStyle.Bold;
                             cardStyle.fontSize = 11;
-                            UnityEditor.Handles.Label(cp + Vector3.up * 0.2f, $"Carta -> Silla {i}", cardStyle);
+                            string occupantName = Application.isPlaying && chair.isOccupied && chair.occupant != null ? chair.occupant.name : "(Vacía)";
+                            UnityEditor.Handles.Label(cp + Vector3.up * 0.2f, $"Destino Silla {i}\n{occupantName}", cardStyle);
                         }
 
                         // ===== 4. FLECHA TRAYECTORIA =====
