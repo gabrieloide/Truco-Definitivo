@@ -96,6 +96,10 @@ namespace Code.Player
 
             if (vcamSeated != null)
             {
+                // Limpiar cualquier target de Cinemachine que esté forzando la posición
+                vcamSeated.Target.TrackingTarget = null;
+                vcamSeated.Target.LookAtTarget = null;
+
                 if (cameraPosition != null)
                 {
                     vcamSeated.transform.position = cameraPosition.position;
