@@ -88,7 +88,7 @@ namespace Code.GameLogic
 
         private System.Collections.IEnumerator DelayedEndTurn()
         {
-            yield return new WaitForSeconds(0.8f);
+            yield return new WaitForSeconds(2.5f);
             EndTurn();
         }
 

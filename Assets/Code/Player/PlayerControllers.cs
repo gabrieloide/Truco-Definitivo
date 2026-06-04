@@ -16,10 +16,10 @@ namespace Code.Player
 
         public void PauseMenu(InputAction.CallbackContext context)
         {
-            if (FindAnyObjectByType<PlayerHUD>() == null)
-                return;
-            _isPaused = !_isPaused;
-            PlayerHUD.Instance.pauseMenu.SetActive(_isPaused);
+            if (PlayerHUD.Instance != null)
+            {
+                PlayerHUD.Instance.TogglePauseMenu();
+            }
         }
         
 

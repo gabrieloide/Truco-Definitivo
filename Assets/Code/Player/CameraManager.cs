@@ -141,12 +141,22 @@ namespace Code.Player
             if (vcamAlternative.Priority > 50)
             {
                 vcamAlternative.Priority = 0;
-                if (vcamSeated != null) vcamSeated.Priority = 100;
-                else if (vcamWalking != null) vcamWalking.Priority = 100;
+                vcamAlternative.gameObject.SetActive(false);
+                if (vcamSeated != null) 
+                {
+                    vcamSeated.gameObject.SetActive(true);
+                    vcamSeated.Priority = 100;
+                }
+                else if (vcamWalking != null) 
+                {
+                    vcamWalking.gameObject.SetActive(true);
+                    vcamWalking.Priority = 100;
+                }
             }
             // Si no está activa, la activamos y apagamos las demás
             else
             {
+                vcamAlternative.gameObject.SetActive(true);
                 vcamAlternative.Priority = 100;
                 if (vcamSeated != null) vcamSeated.Priority = 0;
                 if (vcamWalking != null) vcamWalking.Priority = 0;

@@ -16,11 +16,7 @@ namespace Code.Player
         public static PlayerHUD Instance { get; private set; }
         
         [Header("Legacy UI References")]
-        public GameObject playerFlowerButton;
-        public GameObject playerTrucoButton;
-        public GameObject pauseMenu;
-        [SerializeField] private TMP_Text currentTurn;
-        [SerializeField] private TMP_Text currentScore;
+        // Se removieron las referencias al Canvas viejo (pauseMenu, currentTurn, currentScore, etc)
 
         [Header("UI Toolkit References")]
         private UIDocument _uiDocument;
@@ -46,10 +42,17 @@ namespace Code.Player
         private VisualElement _sliderContainer;
         private SliderInt _stonesSlider;
         private Label _sliderLabel;
-
-        [Header("Hierarchy Modal")]
+        
+        [Header("Hierarchy & Pause")]
         private VisualElement _hierarchyModal;
         private Button _closeHierarchyButton;
+        private VisualElement _pauseModal;
+        private Button _resumeButton;
+        private Button _quitButton;
+        
+        private VisualElement _quitConfirmModal;
+        private Button _confirmYesButton;
+        private Button _confirmNoButton;
 
         private void Awake()
         {
@@ -60,7 +63,6 @@ namespace Code.Player
             }
             Instance = this;
             
-            if (pauseMenu != null) pauseMenu.SetActive(false);
             DontDestroyOnLoad(gameObject);
         }
 
@@ -182,26 +184,71 @@ namespace Code.Player
             // Hierarchy Modal
             _hierarchyModal = _root.Q<VisualElement>("hierarchy-modal");
             _closeHierarchyButton = _root.Q<Button>("close-hierarchy-button");
-            if (_closeHierarchyButton != null) _closeHierarchyButton.clicked += HideCardHierarchy;
+            if (_closeHierarchyButton != null)
+            {
+                _closeHierarchyButton.clicked -= HideCardHierarchy;
+                _closeHierarchyButton.clicked += HideCardHierarchy;
+            }
+
+            // Pause Modal
+            _pauseModal = _root.Q<VisualElement>("pause-modal");
+            _resumeButton = _root.Q<Button>("resume-button");
+            _quitButton = _root.Q<Button>("quit-button");
+            if (_resumeButton != null) 
+            {
+                _resumeButton.clicked -= TogglePauseMenu;
+                _resumeButton.clicked += TogglePauseMenu;
+            }
+            if (_quitButton != null) 
+            {
+                _quitButton.clicked -= ShowQuitConfirm;
+                _quitButton.clicked += ShowQuitConfirm;
+            }
+
+            // Quit Confirm Modal
+            _quitConfirmModal = _root.Q<VisualElement>("quit-confirm-modal");
+            if (_quitConfirmModal != null) _quitConfirmModal.style.display = DisplayStyle.None;
+            
+            _confirmYesButton = _root.Q<Button>("confirm-yes-button");
+            if (_confirmYesButton != null) 
+            {
+                _confirmYesButton.clicked -= ConfirmQuitGame;
+                _confirmYesButton.clicked += ConfirmQuitGame;
+            }
+
+            _confirmNoButton = _root.Q<Button>("confirm-no-button");
+            if (_confirmNoButton != null) 
+            {
+                _confirmNoButton.clicked -= CancelQuit;
+                _confirmNoButton.clicked += CancelQuit;
+            }
 
             // Info Button (to open Hierarchy)
             var infoButton = _root.Q<Button>("info-button");
-            if (infoButton != null) infoButton.clicked += ShowCardHierarchy;
+            if (infoButton != null) 
+            {
+                infoButton.clicked -= ShowCardHierarchy;
+                infoButton.clicked += ShowCardHierarchy;
+            }
 
             // Camera Button
             var cameraButton = _root.Q<Button>("camera-button");
-            if (cameraButton != null) cameraButton.clicked += ToggleCamera;
+            if (cameraButton != null) 
+            {
+                cameraButton.clicked -= ToggleCamera;
+                cameraButton.clicked += ToggleCamera;
+            }
 
-            // 2. Suscribirse a los eventos de los botones
-            if (_aleyButton != null) _aleyButton.clicked += OnALeyClicked;
-            if (_envidoButton != null) _envidoButton.clicked += OnEnvidoClicked;
-            if (_trucoButton != null) _trucoButton.clicked += OnTrucoClicked;
-            if (_florButton != null) _florButton.clicked += OnFlorClicked;
-            if (_pauseButton != null) _pauseButton.clicked += OnPauseClicked;
+            // 2. Suscribirse a los eventos de los botones (limpiando primero por si InitializeUI se llama múltiples veces)
+            if (_aleyButton != null) { _aleyButton.clicked -= OnALeyClicked; _aleyButton.clicked += OnALeyClicked; }
+            if (_envidoButton != null) { _envidoButton.clicked -= OnEnvidoClicked; _envidoButton.clicked += OnEnvidoClicked; }
+            if (_trucoButton != null) { _trucoButton.clicked -= OnTrucoClicked; _trucoButton.clicked += OnTrucoClicked; }
+            if (_florButton != null) { _florButton.clicked -= OnFlorClicked; _florButton.clicked += OnFlorClicked; }
+            if (_pauseButton != null) { _pauseButton.clicked -= OnPauseClicked; _pauseButton.clicked += OnPauseClicked; }
 
-            if (_acceptButton != null) _acceptButton.clicked += OnAcceptClicked;
-            if (_declineButton != null) _declineButton.clicked += OnDeclineClicked;
-            if (_moreButton != null) _moreButton.clicked += OnMoreClicked;
+            if (_acceptButton != null) { _acceptButton.clicked -= OnAcceptClicked; _acceptButton.clicked += OnAcceptClicked; }
+            if (_declineButton != null) { _declineButton.clicked -= OnDeclineClicked; _declineButton.clicked += OnDeclineClicked; }
+            if (_moreButton != null) { _moreButton.clicked -= OnMoreClicked; _moreButton.clicked += OnMoreClicked; }
 
             // Ocultar los botones inicialmente
             SetActionsVisible(false);
@@ -220,6 +267,10 @@ namespace Code.Player
             if (_declineButton != null) _declineButton.clicked -= OnDeclineClicked;
             if (_moreButton != null) _moreButton.clicked -= OnMoreClicked;
             if (_closeHierarchyButton != null) _closeHierarchyButton.clicked -= HideCardHierarchy;
+            if (_resumeButton != null) _resumeButton.clicked -= TogglePauseMenu;
+            if (_quitButton != null) _quitButton.clicked -= ShowQuitConfirm;
+            if (_confirmYesButton != null) _confirmYesButton.clicked -= ConfirmQuitGame;
+            if (_confirmNoButton != null) _confirmNoButton.clicked -= CancelQuit;
 
             var infoButton = _root?.Q<Button>("info-button");
             if (infoButton != null) infoButton.clicked -= ShowCardHierarchy;
@@ -265,9 +316,6 @@ namespace Code.Player
             if (_scoreLabel != null)
                 _scoreLabel.text = $"{team1} | {team2}";
             
-            if (currentScore != null)
-                currentScore.text = $"{team1} | {team2}";
-
             UpdateDots(_t1DotsContainer, roundsTeam1);
             UpdateDots(_t2DotsContainer, roundsTeam2);
         }
@@ -294,12 +342,6 @@ namespace Code.Player
             {
                 _turnLabel.text = turnText;
                 _turnLabel.style.color = new StyleColor(turnColor);
-            }
-
-            if (currentTurn != null)
-            {
-                currentTurn.text = turnText;
-                currentTurn.color = turnColor;
             }
 
             RefreshActionButtons(isYourTurn);
@@ -369,79 +411,115 @@ namespace Code.Player
         private void OnALeyClicked()
         {
             Debug.Log("[PlayerHUD] ¡A Ley! presionado en UI Toolkit.");
-            var announcementManager = FindAnyObjectByType<AnnouncementManager>();
-            if (announcementManager != null) 
-            {
-                announcementManager.SendAnnounceToClient("ALeyButton");
-            }
-            else Debug.LogError("[PlayerHUD] No se encontró AnnouncementManager.");
+            Code.Core.GameEventManager.EmitAnnounceButtonClicked("ALeyButton");
         }
 
         private void OnEnvidoClicked()
         {
             Debug.Log("[PlayerHUD] ¡Envido! presionado en UI Toolkit.");
-            var announcementManager = FindAnyObjectByType<AnnouncementManager>();
-            if (announcementManager != null) 
-            {
-                announcementManager.SendAnnounceToClient("EnvidoButton");
-            }
-            else Debug.LogError("[PlayerHUD] No se encontró AnnouncementManager.");
+            Code.Core.GameEventManager.EmitAnnounceButtonClicked("EnvidoButton");
         }
 
         private void OnTrucoClicked()
         {
             Debug.Log("[PlayerHUD] ¡Quiero Truco! presionado en UI Toolkit.");
-            var announcementManager = FindAnyObjectByType<AnnouncementManager>();
-            if (announcementManager != null) 
-            {
-                announcementManager.SendAnnounceToClient("TrucoButton");
-            }
-            else Debug.LogError("[PlayerHUD] No se encontró AnnouncementManager.");
+            Code.Core.GameEventManager.EmitAnnounceButtonClicked("TrucoButton");
         }
 
         private void OnFlorClicked()
         {
             Debug.Log("[PlayerHUD] ¡Flor! presionado en UI Toolkit.");
-            var announcementManager = FindAnyObjectByType<AnnouncementManager>();
-            if (announcementManager != null) 
-            {
-                announcementManager.SendAnnounceToClient("FlorButton");
-            }
-            else Debug.LogError("[PlayerHUD] No se encontró AnnouncementManager.");
+            Code.Core.GameEventManager.EmitAnnounceButtonClicked("FlorButton");
         }
 
         private void OnAcceptClicked()
         {
             Debug.Log("[PlayerHUD] Accept clicked");
-            var am = FindAnyObjectByType<AnnouncementManager>();
-            if (am != null)
-            {
-                int stones = _stonesSlider != null ? _stonesSlider.value : 0;
-                am.Invoke("LocalAccept", 0); 
-                // Note: If you want to pass stones, you'll need to modify AnnouncementManager accordingly.
-            }
+            Code.Core.GameEventManager.EmitAcceptButtonClicked();
         }
 
         private void OnDeclineClicked()
         {
             Debug.Log("[PlayerHUD] Decline clicked");
-            var am = FindAnyObjectByType<AnnouncementManager>();
-            if (am != null) am.Invoke("LocalDecline", 0);
+            Code.Core.GameEventManager.EmitDeclineButtonClicked();
         }
 
         private void OnMoreClicked()
         {
             Debug.Log("[PlayerHUD] More clicked");
-            var am = FindAnyObjectByType<AnnouncementManager>();
-            if (am != null)
+            Code.Core.GameEventManager.EmitMoreButtonClicked();
+        }
+
+        private void OnPauseClicked()
+        {
+            Debug.Log("[PlayerHUD] Click en botón de pausa de la UI (II).");
+            if (PlayerHUD.Instance != null)
             {
-                int stones = (_sliderContainer != null && _sliderContainer.resolvedStyle.display == DisplayStyle.Flex) ? _stonesSlider.value : 0;
-                // If it's Envido and slider is visible, we might want a different "More" logic
-                am.Invoke("LocalMore", 0);
+                PlayerHUD.Instance.TogglePauseMenu();
+            }
+            else
+            {
+                TogglePauseMenu();
             }
         }
 
-        private void OnPauseClicked() => PauseMenuButton();
+        public void TogglePauseMenu()
+        {
+            if (_pauseModal == null) 
+            {
+                Debug.LogError("[PlayerHUD] _pauseModal es nulo en TogglePauseMenu.");
+                return;
+            }
+            
+            bool isPauseModalFlex = _pauseModal.style.display == DisplayStyle.Flex;
+            bool isConfirmModalFlex = _quitConfirmModal != null && _quitConfirmModal.style.display == DisplayStyle.Flex;
+            bool isPaused = isPauseModalFlex || isConfirmModalFlex;
+
+            Debug.Log($"[PlayerHUD] TogglePauseMenu llamado. isPaused = {isPaused} (pauseModal={isPauseModalFlex}, confirmModal={isConfirmModalFlex})");
+
+            if (isPaused)
+            {
+                Debug.Log("[PlayerHUD] Ocultando menús de pausa.");
+                _pauseModal.style.display = DisplayStyle.None;
+                if (_quitConfirmModal != null) _quitConfirmModal.style.display = DisplayStyle.None;
+            }
+            else
+            {
+                Debug.Log("[PlayerHUD] Mostrando menú de pausa.");
+                _pauseModal.style.display = DisplayStyle.Flex;
+                if (_quitConfirmModal != null) _quitConfirmModal.style.display = DisplayStyle.None;
+            }
+        }
+
+        private void ShowQuitConfirm()
+        {
+            if (_pauseModal != null) _pauseModal.style.display = DisplayStyle.None;
+            if (_quitConfirmModal != null) _quitConfirmModal.style.display = DisplayStyle.Flex;
+        }
+
+        private void CancelQuit()
+        {
+            if (_quitConfirmModal != null) _quitConfirmModal.style.display = DisplayStyle.None;
+            if (_pauseModal != null) _pauseModal.style.display = DisplayStyle.Flex;
+        }
+
+        private void ConfirmQuitGame()
+        {
+            Debug.Log("[PlayerHUD] Cargando MainMenu y limpiando estado...");
+            
+            // Destruir GameManager si existe para reiniciar la partida la próxima vez
+            if (GameManager.Instance != null)
+            {
+                Destroy(GameManager.Instance.gameObject);
+            }
+
+            // Destruir también al jugador local / PlayerHUD que tiene DontDestroyOnLoad
+            // para que no aparezca el HUD en el MainMenu.
+            Destroy(gameObject);
+
+            // Cargar MainMenu
+            UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+        }
 
         public void ChangeScoreText()
         {
@@ -508,11 +586,26 @@ namespace Code.Player
 
         private void ToggleCamera()
         {
-            var camManager = FindAnyObjectByType<CameraManager>();
-            if (camManager != null)
+            if (NetworkClient.localPlayer != null)
             {
-                camManager.ToggleAlternativeCamera();
+                var camManager = NetworkClient.localPlayer.GetComponentInChildren<CameraManager>(true);
+                if (camManager != null)
+                {
+                    camManager.ToggleAlternativeCamera();
+                    return;
+                }
             }
+
+            var camManagers = FindObjectsByType<CameraManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var cm in camManagers)
+            {
+                if (cm.isLocalPlayer)
+                {
+                    cm.ToggleAlternativeCamera();
+                    return;
+                }
+            }
+            Debug.LogWarning("[PlayerHUD] No se encontró ningún CameraManager con isLocalPlayer = true, ni en el localPlayer ni en la escena.");
         }
     }
 }

@@ -102,5 +102,33 @@
                 </engine:Button>
             </engine:VisualElement>
         </engine:VisualElement>
+
+        <!-- PAUSE MODAL -->
+        <engine:VisualElement name="pause-modal" class="hierarchy-modal-overlay" style="display: none;">
+            <engine:VisualElement class="hierarchy-panel">
+                <engine:Label text="PAUSA" class="hierarchy-title" />
+                <engine:Button name="resume-button" class="hud-btn hud-btn--accept" style="align-self: center; margin-top: 20px; width: 200px;">
+                    <engine:Label text="REANUDAR" class="hud-btn__text" />
+                </engine:Button>
+                <engine:Button name="quit-button" class="hud-btn hud-btn--decline" style="align-self: center; margin-top: 20px; width: 200px;">
+                    <engine:Label text="SALIR AL MENÚ" class="hud-btn__text" />
+                </engine:Button>
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <!-- QUIT CONFIRM MODAL -->
+        <engine:VisualElement name="quit-confirm-modal" class="hierarchy-modal-overlay" style="display: none;">
+            <engine:VisualElement class="hierarchy-panel" style="width: 500px;">
+                <engine:Label text="¿ESTÁS SEGURO DE QUE QUIERES SALIR?" class="hierarchy-title" style="white-space: normal; text-align: center;" />
+                <engine:VisualElement style="flex-direction: row; justify-content: space-around; margin-top: 30px; width: 100%;">
+                    <engine:Button name="confirm-yes-button" class="hud-btn hud-btn--decline" style="width: 180px;">
+                        <engine:Label text="SÍ, SALIR" class="hud-btn__text" />
+                    </engine:Button>
+                    <engine:Button name="confirm-no-button" class="hud-btn hud-btn--accept" style="width: 180px;">
+                        <engine:Label text="CANCELAR" class="hud-btn__text" />
+                    </engine:Button>
+                </engine:VisualElement>
+            </engine:VisualElement>
+        </engine:VisualElement>
     </engine:VisualElement>
 </engine:UXML>
