@@ -68,7 +68,7 @@ namespace Code.Cards
             var physicalCard = c.GetComponent<PhysicalCard3D>();
             if (physicalCard != null)
             {
-                physicalCard.SetupCard(value, type);
+                physicalCard.SetupCard(value, type, card.dbId);
                 physicalCard.owner = GetComponent<PlayerLocal>();
             }
 

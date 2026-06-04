@@ -51,6 +51,7 @@ namespace Code.GameLogic
         [SerializeField] private bool _gameSceneStarted = false;
         public List<Team> teams = new List<Team>();
         public bool isAnnouncementPending = false; // Bloquea el flujo del juego para esperar respuesta
+        public Code.GameLogic.States.GameStateMachine stateMachine { get; private set; }
 
         private void Awake()
         {
@@ -62,6 +63,8 @@ namespace Code.GameLogic
             
             _instance = this;
             DontDestroyOnLoad(gameObject);
+
+            stateMachine = gameObject.AddComponent<Code.GameLogic.States.GameStateMachine>();
 
             playerInput = new PlayerInput();
             playerInput.Enable();
@@ -277,6 +280,9 @@ namespace Code.GameLogic
                 Debug.Log($"[GameManager] Dealer: {dealerIndex}, Mano: {_currentManoSeatIndex}");
 
                 UpdateDeckAndVira();
+
+                // Start the State Machine!
+                stateMachine.ChangeState(new Code.GameLogic.States.PlayerTurnState());
                 StartTurn(_currentTrickStartSeatIndex);
             }
             else

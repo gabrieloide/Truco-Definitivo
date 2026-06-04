@@ -13,13 +13,18 @@ namespace Code.GameLogic
         private readonly string[] _cardSuit = { "Gold", "Cup", "Sword", "Cudgel" };
         public List<Card> _fullDeck = new List<Card>();
         /*[SyncVar]*/ public Card cardVira;
+        
+        [SerializeField] private Code.Cards.CardDatabase _cardDatabase;
 
         private void Start()
         {
-            // if (isServer)
-            // {
-            //     CreateDeck();
-            // }
+            if (_cardDatabase == null)
+            {
+                _cardDatabase = Resources.Load<Code.Cards.CardDatabase>("CardDatabase");
+                if (_cardDatabase == null) Debug.LogError("[DeckCreator] No se encontró CardDatabase en Resources!");
+                else _cardDatabase.Initialize();
+            }
+
             CreateDeck();
         }
 
@@ -34,7 +39,15 @@ namespace Code.GameLogic
                     if (number == 8 || number == 9)
                         continue;
 
-                    _fullDeck.Add(new Card { suit = cardType, value = number });
+                    // Encontrar el ID correspondiente en la base de datos
+                    int cardId = -1;
+                    if (_cardDatabase != null)
+                    {
+                        var data = _cardDatabase.GetAllCards().FirstOrDefault(c => c.suit.ToString() == cardType && c.value == number);
+                        if (data != null) cardId = data.id;
+                    }
+
+                    _fullDeck.Add(new Card { suit = cardType, value = number, dbId = cardId });
                 }
             }
         }
@@ -89,6 +102,7 @@ namespace Code.GameLogic
         public string suit;
         public int value;
         public int realValue;
+        public int dbId; // Referencia al ID del ScriptableObject en la base de datos
 
         public Card() { }
 

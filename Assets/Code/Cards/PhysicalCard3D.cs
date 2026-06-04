@@ -10,9 +10,11 @@ namespace Code.Cards
         [Header("UI References")]
         public TMP_Text numberText;
         public TMP_Text suitText;
+        public SpriteRenderer cardImageRenderer;
 
         public int cardValue;
         public string cardSuit;
+        public int cardDbId;
         public PlayerLocal owner;
 
         private void OnCardDataChanged(int oldVal, int newVal) { UpdateVisuals(); }
@@ -27,13 +29,33 @@ namespace Code.Cards
         {
             if (numberText != null) numberText.text = cardValue.ToString();
             if (suitText != null) suitText.text = cardSuit;
+
+            if (cardImageRenderer != null && cardDbId > 0)
+            {
+                var db = Resources.Load<Code.Cards.CardDatabase>("CardDatabase");
+                if (db != null)
+                {
+                    db.Initialize();
+                    var data = db.GetCardById(cardDbId);
+                    if (data != null && data.cardSprite != null)
+                    {
+                        cardImageRenderer.sprite = data.cardSprite;
+                        
+                        // Ocultar textos si ya tenemos la imagen bonita de la carta española
+                        if (numberText != null) numberText.gameObject.SetActive(false);
+                        if (suitText != null) suitText.gameObject.SetActive(false);
+                    }
+                }
+            }
         }
 
         // [Server]
-        public void SetupCard(int value, string suit)
+        public void SetupCard(int value, string suit, int dbId = 0)
         {
             cardValue = value;
             cardSuit = suit;
+            cardDbId = dbId;
+            UpdateVisuals();
         }
 
         public string GetInteractText()
