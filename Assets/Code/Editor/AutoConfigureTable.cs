@@ -36,7 +36,8 @@ namespace Code.Editor
             chairs = chairs.OrderBy(c => 
             {
                 Vector3 dir = c.transform.position - center;
-                return Mathf.Atan2(dir.z, dir.x);
+                // Multiplicar por -1 invierte el orden (cambia de horario a antihorario o viceversa)
+                return -Mathf.Atan2(dir.z, dir.x);
             }).ToList();
 
             seatManager.allChairs = chairs;

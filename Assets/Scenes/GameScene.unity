@@ -134,7 +134,7 @@ MonoBehaviour:
   sitTransform: {fileID: 859422129}
   deckAnchor: {fileID: 0}
   cardDestination: {fileID: 332076903}
-  tableCamera: {fileID: 0}
+  cameraPosition: {fileID: 859422129}
   isOccupied: 0
   occupant: {fileID: 0}
 --- !u!1001 &34957619
@@ -400,7 +400,7 @@ Transform:
   m_GameObject: {fileID: 96473321}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071069, y: -0, z: -0, w: 0.7071067}
-  m_LocalPosition: {x: 0.00034999847, y: 0.000069998205, z: 0.0038300012}
+  m_LocalPosition: {x: 0.00034999847, y: 0.00007, z: 0.00764}
   m_LocalScale: {x: 0.01, y: 0.01, z: 0.01}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -909,7 +909,7 @@ MonoBehaviour:
   sitTransform: {fileID: 1192526805}
   deckAnchor: {fileID: 0}
   cardDestination: {fileID: 1152015391}
-  tableCamera: {fileID: 0}
+  cameraPosition: {fileID: 1192526805}
   isOccupied: 0
   occupant: {fileID: 0}
 --- !u!1 &332076902
@@ -937,7 +937,7 @@ Transform:
   m_GameObject: {fileID: 332076902}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: -0.0000010207295, z: 0.7071068, w: 0.0000010207295}
-  m_LocalPosition: {x: -2.981, y: 1.0326498, z: 0.086}
+  m_LocalPosition: {x: -3.12, y: 1.0326498, z: 0.086}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1663,6 +1663,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isServer: 1
+  localPlayer: {fileID: 0}
+  defaultLocalSeatIndex: 0
   serverPlayers: []
   allPlayers: []
   currentPlayerTurn: 0
@@ -1724,10 +1726,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   allChairs:
-  - {fileID: 1752032450}
+  - {fileID: 303976923}
   - {fileID: 1422723896}
   - {fileID: 21816976}
-  - {fileID: 303976923}
+  - {fileID: 1752032450}
 --- !u!4 &662107251
 Transform:
   m_ObjectHideFlags: 0
@@ -2546,13 +2548,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 859422128}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.50015754, y: -0.4998424, z: -0.49984178, w: 0.5001582}
-  m_LocalPosition: {x: -2.269, y: 0.805, z: 0.024000168}
+  m_LocalRotation: {x: 0, y: 0.7071068, z: -0, w: -0.7071068}
+  m_LocalPosition: {x: -2.269, y: 1.463, z: 0.078}
   m_LocalScale: {x: 0.01, y: 0.01, z: 0.01}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 543450652068028564}
-  m_LocalEulerAnglesHint: {x: 0.036, y: -90, z: -90}
+  m_LocalEulerAnglesHint: {x: 0, y: 270, z: 0}
 --- !u!1001 &866726362
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3603,7 +3605,7 @@ Transform:
   m_GameObject: {fileID: 1192526804}
   serializedVersion: 2
   m_LocalRotation: {x: 0.5, y: 0.5, z: 0.5, w: 0.5}
-  m_LocalPosition: {x: 0.00035000048, y: 0.00006999522, z: 0.0038301067}
+  m_LocalPosition: {x: 0.00035, y: 0.00007, z: 0.0081}
   m_LocalScale: {x: 0.01, y: 0.01, z: 0.01}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4048,7 +4050,7 @@ MonoBehaviour:
   sitTransform: {fileID: 96473322}
   deckAnchor: {fileID: 0}
   cardDestination: {fileID: 2130729795}
-  tableCamera: {fileID: 0}
+  cameraPosition: {fileID: 96473322}
   isOccupied: 0
   occupant: {fileID: 0}
 --- !u!1001 &1433811963
@@ -5015,7 +5017,7 @@ MonoBehaviour:
   sitTransform: {fileID: 2038750132}
   deckAnchor: {fileID: 0}
   cardDestination: {fileID: 1306747604}
-  tableCamera: {fileID: 0}
+  cameraPosition: {fileID: 2038750132}
   isOccupied: 0
   occupant: {fileID: 0}
 --- !u!1 &1811824804
@@ -5891,7 +5893,7 @@ Transform:
   m_GameObject: {fileID: 2038750131}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.00034999847, y: 0.0104, z: 0.0038300012}
+  m_LocalPosition: {x: 0.00034999847, y: 0.0365, z: -0.0093}
   m_LocalScale: {x: 0.01, y: 0.01, z: 0.01}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6249,7 +6251,7 @@ Transform:
   m_GameObject: {fileID: 919132147607435822}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 3.5970001, y: -1.2576497, z: -1.3339996}
+  m_LocalPosition: {x: 3.78, y: -1.2576497, z: -1.3339996}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
