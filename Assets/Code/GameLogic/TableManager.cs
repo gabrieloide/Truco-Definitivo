@@ -86,7 +86,9 @@ namespace Code.GameLogic
             // 2. Spawn the Vira card next to the deck (un poco más al centro)
             Vector3 viraPos = deckPos + (anchor.forward * 0.15f);
             
-            _currentViraObj = Instantiate(card3DPrefab, viraPos, baseRot);
+            // Apply a 90-degree rotation on X so the card lays flat on the table (face up)
+            Quaternion flatRot = baseRot * Quaternion.Euler(90f, 0f, 0f);
+            _currentViraObj = Instantiate(card3DPrefab, viraPos, flatRot);
             
             var physicalCard = _currentViraObj.GetComponent<Code.Cards.PhysicalCard3D>();
             if (physicalCard != null)
@@ -131,7 +133,9 @@ namespace Code.GameLogic
             // Stack upwards: base position + height offset per card
             float heightOffset = cardsCount * 0.025f; // Slight height increase for stacking
             Vector3 targetPos = basePos.position + Vector3.up * heightOffset;
-            Quaternion targetRot = basePos.rotation;
+            
+            // Apply a 90-degree rotation on X so the card lays flat on the table (face up)
+            Quaternion targetRot = basePos.rotation * Quaternion.Euler(90f, 0f, 0f);
             
             // Start from player position for animation
             Vector3 startPos = player.transform.position + Vector3.up * 1.5f;
