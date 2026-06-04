@@ -223,8 +223,7 @@ namespace Code.GameLogic
                         {
                             if (!chair.isOccupied)
                             {
-                                chair.occupant = npc.gameObject;
-                                chair.isOccupied = true;
+                                SeatManager.Instance.RequestSeat(npc.gameObject, chair);
                                 break;
                             }
                         }

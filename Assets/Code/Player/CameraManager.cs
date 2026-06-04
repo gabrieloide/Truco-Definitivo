@@ -93,11 +93,32 @@ namespace Code.Player
         {
             if (!isLocalPlayer) return;
 
-            if (vcamSeated != null && cameraPosition != null)
+            if (vcamSeated != null)
             {
-                vcamSeated.transform.position = cameraPosition.position;
-                vcamSeated.transform.rotation = cameraPosition.rotation;
-                _seatedBaseRotation = cameraPosition.rotation;
+                if (cameraPosition != null)
+                {
+                    vcamSeated.transform.position = cameraPosition.position;
+                    vcamSeated.transform.rotation = cameraPosition.rotation;
+                    _seatedBaseRotation = cameraPosition.rotation;
+                }
+                else
+                {
+                    // Fallback si el usuario no asignó un Transform vacío en el Inspector
+                    Debug.LogWarning("[CameraManager] No se asignó Camera Position en la silla. Usando sitTransform con un offset hacia arriba.");
+                    
+                    var chair = SeatManager.Instance.allChairs.Find(c => c.occupant != null && c.occupant.GetComponent<CameraManager>() == this);
+                    if (chair != null && chair.sitTransform != null)
+                    {
+                        vcamSeated.transform.position = chair.sitTransform.position + Vector3.up * 1.5f;
+                        Vector3 lookTarget = TableManager.Instance.viraPosition.position;
+                        vcamSeated.transform.LookAt(lookTarget);
+                        _seatedBaseRotation = vcamSeated.transform.rotation;
+                    }
+                    else
+                    {
+                        _seatedBaseRotation = vcamSeated.transform.rotation;
+                    }
+                }
                 _currentPan = 0f;
             }
 

@@ -91,10 +91,13 @@ namespace Code.GameLogic
             var movement = player.GetComponent<PlayerMovement3D>();
             var camManager = player.GetComponent<CameraManager>();
 
-            if (chair != null && movement != null)
+            if (chair != null)
             {
-                movement.isSeated = true;
-                movement.UpdateCursorState();
+                if (movement != null)
+                {
+                    movement.isSeated = true;
+                    movement.UpdateCursorState();
+                }
                 
                 // Teleport and lock physics
                 var rb = player.GetComponent<Rigidbody>();
@@ -111,7 +114,7 @@ namespace Code.GameLogic
                 lookTarget.y = player.transform.position.y;
                 player.transform.LookAt(lookTarget);
                 
-                Debug.Log($"[SeatManager] Teleportando jugador a {chair.sitTransform.position} y mirando a la mesa.");
+                Debug.Log($"[SeatManager] Teleportando jugador {player.name} a {chair.sitTransform.position} y mirando a la mesa.");
             }
 
             if (chair != null && camManager != null)
