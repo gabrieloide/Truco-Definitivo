@@ -614,6 +614,25 @@ namespace Code.Player
                 NetworkManager.singleton.StopServer();
             }
 
+            if (GameManager.Instance != null)
+            {
+                Destroy(GameManager.Instance.gameObject);
+            }
+
+            var localPlayer = FindAnyObjectByType<PlayerLocal>();
+            if (localPlayer != null)
+            {
+                Destroy(localPlayer.gameObject);
+            }
+
+            var debugCommands = FindAnyObjectByType<DebugCommands>();
+            if (debugCommands != null)
+            {
+                Destroy(debugCommands.gameObject);
+            }
+
+            Destroy(gameObject);
+
             SceneChanger.Instance.ChangeScene("LobbyScene");
             SceneManager.LoadScene("LobbyScene");
         }

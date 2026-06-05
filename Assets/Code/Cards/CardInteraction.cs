@@ -6,9 +6,11 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using Code.Scripts.Audio;
 
+using UnityEngine.EventSystems;
+
 namespace Code.Cards
 {
-    public class CardInteraction : MonoBehaviour
+    public class CardInteraction : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
     {
         private Vector3 _startPosition;
         private Quaternion _startRotation;
@@ -22,8 +24,6 @@ namespace Code.Cards
 
         private void Start()
         {
-            _startPosition = transform.localPosition;
-            _startRotation = transform.localRotation;
             _animator = GetComponent<JuicyCardAnimator>();
             if (_animator == null)
             {
@@ -31,26 +31,82 @@ namespace Code.Cards
             }
         }
 
+        public void SetRestingPosition(Vector3 pos, Quaternion rot)
+        {
+            _startPosition = pos;
+            _startRotation = rot;
+        }
+
         private void Update()
         {
-            if (Input.GetMouseButtonDown(1)) // Click derecho
+            // Handled by event system
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            HandlePointerEnter();
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            HandlePointerExit();
+        }
+
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            if (eventData.button == PointerEventData.InputButton.Left)
             {
-                if (isSelected || isUp)
+                HandleClick();
+            }
+            else if (eventData.button == PointerEventData.InputButton.Right)
+            {
+                HandleRightClick();
+            }
+        }
+
+        // --- Compatibilidad con Physics normal (por si no se usa PhysicsRaycaster) ---
+        private void OnMouseEnter()
+        {
+            HandlePointerEnter();
+        }
+
+        private void OnMouseExit()
+        {
+            HandlePointerExit();
+        }
+
+        private void OnMouseDown()
+        {
+            HandleClick();
+        }
+        
+        private void OnMouseOver()
+        {
+            if (UnityEngine.Input.GetMouseButtonDown(1))
+            {
+                HandleRightClick();
+            }
+        }
+
+        public void HandleRightClick()
+        {
+            if (isSelected || isUp)
+            {
+                var player = GetComponent<PhysicalCard3D>()?.owner;
+                if (player != null && player.player != null && player.player.canPlayCard)
                 {
-                    var player = GetComponent<PhysicalCard3D>()?.owner;
-                    if (player != null && player.player != null && player.player.canPlayCard)
+                    // Bloquear interacciones adicionales inmediatamente
+                    player.player.canPlayCard = false;
+                    if (player.selectedCardInteraction == this)
                     {
-                        if (player.selectedCardInteraction == this)
-                        {
-                            player.selectedCardInteraction = null;
-                        }
-                        PlayCardToTable(true);
+                        player.selectedCardInteraction = null;
                     }
+                    PlayCardToTable(true);
                 }
             }
         }
 
-        private void OnMouseDown()
+        public void HandleClick()
         {
             var player = GetComponent<PhysicalCard3D>()?.owner;
             var movement = player.GetComponent<PlayerMovement3D>();
@@ -118,7 +174,7 @@ namespace Code.Cards
             gameObject.SetActive(false); // Hide UI card
         }
 
-        private void OnMouseEnter()
+        public void HandlePointerEnter()
         {
             if (!_isOnHand || isSelected) return;
             var player = GetComponent<PhysicalCard3D>()?.owner;
@@ -133,7 +189,7 @@ namespace Code.Cards
             }
         }
 
-        private void OnMouseExit()
+        public void HandlePointerExit()
         {
             if (!_isOnHand || isSelected) return;
             var player = GetComponent<PhysicalCard3D>()?.owner;
@@ -146,6 +202,19 @@ namespace Code.Cards
             {
                 AudioManager.Instance.PlaySFX("card_hover");
             }
+        }
+
+        private void OnDrawGizmos()
+        {
+            Gizmos.color = new UnityEngine.Color(0, 1, 0, 0.5f);
+            
+            // Usar la escala predeterminada de la carta
+            Vector3 cardScale = new Vector3(0.151111543f, 0.217364341f, 0.00313752703f);
+            
+            // Dibujar el cubo respetando la rotación y posición actual
+            Matrix4x4 rotationMatrix = Matrix4x4.TRS(transform.position, transform.rotation, cardScale);
+            Gizmos.matrix = rotationMatrix;
+            Gizmos.DrawWireCube(Vector3.zero, Vector3.one);
         }
     }
 }

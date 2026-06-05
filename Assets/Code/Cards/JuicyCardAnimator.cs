@@ -27,8 +27,13 @@ namespace Code.Cards
         private Sequence _squashSequence;
         private Tween _outlineTween;
 
-        private Renderer _renderer;
+        private Transform _visualTransform;
         private Material _cardMaterial;
+
+        // Para evitar el bug de oscilación cuando el BoxCollider está en la misma raíz
+        private Vector3 _originalBoxCenter;
+        private Vector3 _originalBoxSize;
+        private bool _boxExpanded = false;
 
         private void Awake()
         {
@@ -37,11 +42,17 @@ namespace Code.Cards
 
         private void Start()
         {
-            _renderer = GetComponentInChildren<MeshRenderer>();
-            if (_renderer == null) _renderer = GetComponentInChildren<SpriteRenderer>();
-            if (_renderer != null)
+            // Always try to animate the first child (which holds the visual mesh or canvas)
+            // so the root (which holds the BoxCollider) never moves, preventing oscillation.
+            if (transform.childCount > 0)
+                _visualTransform = transform.GetChild(0);
+            else
+                _visualTransform = transform; // Fallback, but will cause oscillation
+
+            var renderer = GetComponentInChildren<Renderer>(true);
+            if (renderer != null)
             {
-                _cardMaterial = _renderer.material;
+                _cardMaterial = renderer.material;
             }
         }
 
@@ -99,16 +110,39 @@ namespace Code.Cards
 
             if (isHovered)
             {
-                // Escalar hacia arriba
+                // Escalar hacia arriba (la raíz se escala para afectar a los colisionadores si se desea, o solo el renderer)
                 _scaleTween = transform.DOScale(_originalScale * hoverScaleMultiplier, duration).SetEase(Ease.OutQuad);
                 
                 // Mover hacia adelante/arriba
                 Vector3 targetLocalPos = startLocalPos + Vector3.up * hoverYOffset;
-                _moveTween = transform.DOLocalMove(targetLocalPos, duration).SetEase(Ease.OutQuad);
+                
+                if (_visualTransform != transform)
+                {
+                    // Movemos visualmente el hijo, dejando la raíz y su colisionador en su sitio
+                    _moveTween = _visualTransform.DOLocalMove(Vector3.up * hoverYOffset, duration).SetEase(Ease.OutQuad);
+                    Quaternion targetLocalRot = Quaternion.Euler(hoverRotationOffset);
+                    _rotateTween = _visualTransform.DOLocalRotateQuaternion(targetLocalRot, duration).SetEase(Ease.OutQuad);
+                }
+                else
+                {
+                    // [OSCILLATION BUG FIX] El visual es el mismo objeto que la raíz (donde está el BoxCollider).
+                    // Al moverlo hacia arriba, el colisionador se escapará del ratón. 
+                    // Solución: Estiramos el BoxCollider hacia abajo temporalmente.
+                    var box = GetComponent<BoxCollider>();
+                    if (box != null && !_boxExpanded)
+                    {
+                        _originalBoxCenter = box.center;
+                        _originalBoxSize = box.size;
+                        // Ajustar asumiendo que up es el eje vertical de la carta
+                        box.size = new Vector3(_originalBoxSize.x, _originalBoxSize.y + hoverYOffset, _originalBoxSize.z);
+                        box.center = new Vector3(_originalBoxCenter.x, _originalBoxCenter.y - (hoverYOffset / 2f), _originalBoxCenter.z);
+                        _boxExpanded = true;
+                    }
 
-                // Rotar para enfocar mejor a la cámara
-                Quaternion targetLocalRot = startLocalRot * Quaternion.Euler(hoverRotationOffset);
-                _rotateTween = transform.DOLocalRotateQuaternion(targetLocalRot, duration).SetEase(Ease.OutQuad);
+                    _moveTween = transform.DOLocalMove(targetLocalPos, duration).SetEase(Ease.OutQuad);
+                    Quaternion targetLocalRot = startLocalRot * Quaternion.Euler(hoverRotationOffset);
+                    _rotateTween = transform.DOLocalRotateQuaternion(targetLocalRot, duration).SetEase(Ease.OutQuad);
+                }
 
                 // Animar outline si el material lo soporta (por ejemplo, MK Toon)
                 if (_cardMaterial != null && _cardMaterial.HasProperty("_OutlineSize"))
@@ -124,8 +158,25 @@ namespace Code.Cards
                 _scaleTween = transform.DOScale(_originalScale, duration).SetEase(Ease.OutQuad);
                 
                 // Regresar a posición y rotación originales de la mano
-                _moveTween = transform.DOLocalMove(startLocalPos, duration).SetEase(Ease.OutQuad);
-                _rotateTween = transform.DOLocalRotateQuaternion(startLocalRot, duration).SetEase(Ease.OutQuad);
+                if (_visualTransform != transform)
+                {
+                    _moveTween = _visualTransform.DOLocalMove(Vector3.zero, duration).SetEase(Ease.OutQuad);
+                    _rotateTween = _visualTransform.DOLocalRotateQuaternion(Quaternion.identity, duration).SetEase(Ease.OutQuad);
+                }
+                else
+                {
+                    // Restaurar el BoxCollider a su tamaño original
+                    var box = GetComponent<BoxCollider>();
+                    if (box != null && _boxExpanded)
+                    {
+                        box.center = _originalBoxCenter;
+                        box.size = _originalBoxSize;
+                        _boxExpanded = false;
+                    }
+
+                    _moveTween = transform.DOLocalMove(startLocalPos, duration).SetEase(Ease.OutQuad);
+                    _rotateTween = transform.DOLocalRotateQuaternion(startLocalRot, duration).SetEase(Ease.OutQuad);
+                }
 
                 // Animar outline de regreso a 0
                 if (_cardMaterial != null && _cardMaterial.HasProperty("_OutlineSize"))

@@ -15,7 +15,7 @@ namespace Code.Player
 
         private IInteractable _currentInteractable;
         private Camera _mainCamera;
-        private RaycastHit[] _hits = new RaycastHit[10];
+        private RaycastHit[] _hits = new RaycastHit[50];
 
         private void Start()
         {
@@ -31,20 +31,67 @@ namespace Code.Player
             // Check for 'E' key, Input System action, or Left Mouse Click
             bool interactPressed = (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame) 
                                 || _inputActions.Player.Interact.triggered 
-                                || (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame);
+                                || (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+                                || UnityEngine.Input.GetMouseButtonDown(0);
+
+            bool rightClickPressed = (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
+                                  || UnityEngine.Input.GetMouseButtonDown(1);
 
             if (interactPressed)
             {
                 PerformInteraction();
             }
+            else if (rightClickPressed)
+            {
+                if (_currentInteractable != null)
+                {
+                    // Intentar obtener CardInteraction si el interactable actual es una carta
+                    var interactableMono = _currentInteractable as MonoBehaviour;
+                    if (interactableMono != null)
+                    {
+                        var cardInteraction = interactableMono.GetComponent<Code.Cards.CardInteraction>();
+                        if (cardInteraction != null)
+                        {
+                            cardInteraction.HandleRightClick();
+                        }
+                    }
+                }
+            }
         }
 
         private void HandleRaycast()
         {
-            if (_mainCamera == null) return;
+            if (_mainCamera == null)
+            {
+                // First try to find the Cinemachine camera, since we know this game uses Cinemachine
+                var brain = Object.FindFirstObjectByType<Unity.Cinemachine.CinemachineBrain>();
+                if (brain != null)
+                {
+                    _mainCamera = brain.GetComponent<Camera>();
+                }
+                
+                if (_mainCamera == null) _mainCamera = Camera.main;
+                
+                if (_mainCamera == null)
+                {
+                    _mainCamera = Object.FindFirstObjectByType<Camera>();
+                    if (_mainCamera == null) return;
+                }
+            }
 
-            // Start ray from mouse position
-            Vector2 mousePos = Mouse.current != null ? Mouse.current.position.ReadValue() : new Vector2(Screen.width / 2f, Screen.height / 2f);
+            // Start ray from mouse position using New Input System, with Legacy Input fallback
+            Vector2 mousePos;
+            if (Mouse.current != null)
+                mousePos = Mouse.current.position.ReadValue();
+            else
+                mousePos = UnityEngine.Input.mousePosition;
+
+            // If mouse is perfectly at 0,0 and we are locked, we might be using crosshair. But since you are seated, use actual mouse.
+            if (mousePos == Vector2.zero && Cursor.lockState == CursorLockMode.Locked)
+            {
+                mousePos = new Vector2(Screen.width / 2f, Screen.height / 2f);
+            }
+
             Ray ray = _mainCamera.ScreenPointToRay(mousePos);
 
             // Use RaycastNonAlloc to prevent GC allocation. Usamos ~0 para detectar todas las capas y no depender de la configuración del Editor.
@@ -52,6 +99,10 @@ namespace Code.Player
             
             // Sort only the valid hits by distance
             System.Array.Sort(_hits, 0, hitCount, Comparer<RaycastHit>.Create((x, y) => x.distance.CompareTo(y.distance)));
+
+            IInteractable newInteractable = null;
+
+            IInteractable bestInteractable = null;
 
             for (int i = 0; i < hitCount; i++)
             {
@@ -65,16 +116,49 @@ namespace Code.Player
                 
                 if (interactable != null)
                 {
-                    // Ignore our own root body, but allow interacting with our children (like the Cards in our hand!)
+                    // Ignore our own root body
                     if (hit.collider.gameObject == gameObject)
                         continue;
 
-                    _currentInteractable = interactable;
-                    return;
+                    if (bestInteractable == null)
+                    {
+                        bestInteractable = interactable;
+                    }
+
+                    // Prioritize cards because they are in the foreground and might be inside a large trigger zone
+                    if (interactable is Code.Cards.PhysicalCard3D)
+                    {
+                        bestInteractable = interactable;
+                        break;
+                    }
                 }
             }
+            newInteractable = bestInteractable;
 
-            _currentInteractable = null;
+            if (newInteractable != _currentInteractable)
+            {
+                if (_currentInteractable != null)
+                {
+                    var oldMono = _currentInteractable as MonoBehaviour;
+                    if (oldMono != null)
+                    {
+                        var oldCard = oldMono.GetComponent<Code.Cards.CardInteraction>();
+                        if (oldCard != null) oldCard.HandlePointerExit();
+                    }
+                }
+                
+                if (newInteractable != null)
+                {
+                    var newMono = newInteractable as MonoBehaviour;
+                    if (newMono != null)
+                    {
+                        var newCard = newMono.GetComponent<Code.Cards.CardInteraction>();
+                        if (newCard != null) newCard.HandlePointerEnter();
+                    }
+                }
+                
+                _currentInteractable = newInteractable;
+            }
         }
 
         private InputSystem_Actions _inputActions;

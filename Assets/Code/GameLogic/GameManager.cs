@@ -163,6 +163,15 @@ namespace Code.GameLogic
             teams.Add(new Team("Team 2"));
         }
 
+        private void OnDestroy()
+        {
+            if (playerInput != null)
+            {
+                playerInput.Disable();
+                playerInput.Dispose();
+            }
+        }
+
         // Las escuchas de TableManager.OnCardPlaced ahora están en PlayerTurnState
 
         public GameObject[] GetOpponentTeam(GameObject currentPlayer)
@@ -210,12 +219,14 @@ namespace Code.GameLogic
         {
             if (_instance != null && _instance != this) return; // Prevent ghost instances from running
 
-            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "GameScene")
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != "GameScene")
             {
-                isGameScene = true;
+                isGameScene = false;
+                _gameSceneStarted = false;
+                return;
             }
 
-            if (!isGameScene) return;
+            isGameScene = true;
 
             // Debug for PlayerHUD presence
             if (Time.frameCount % 300 == 0) // Every ~5 seconds at 60fps
@@ -233,6 +244,11 @@ namespace Code.GameLogic
 
         private void RunOnlyOnce()
         {
+            if (Camera.main != null && Camera.main.GetComponent<UnityEngine.EventSystems.PhysicsRaycaster>() == null)
+            {
+                Camera.main.gameObject.AddComponent<UnityEngine.EventSystems.PhysicsRaycaster>();
+            }
+
             _gameSceneStarted = true;
             
             // Ensure only one DeckCreator exists in the scene to prevent Vira or shuffle desyncs
@@ -335,9 +351,26 @@ namespace Code.GameLogic
                     return;
                 }
 
-                _totalPlayersCount = 1 + npcs.Count;
-                dealerIndex = (SeatManager.Instance.allChairs.Count - 1) % SeatManager.Instance.allChairs.Count;
+                int occupiedCount = 0;
+                foreach (var chair in SeatManager.Instance.allChairs)
+                {
+                    if (chair.occupant != null) occupiedCount++;
+                }
+                _totalPlayersCount = occupiedCount;
+                
+                int startingDealer = (SeatManager.Instance.allChairs.Count - 1);
+                dealerIndex = startingDealer;
+                // Move to a valid dealer if startingDealer is empty
+                while (SeatManager.Instance.allChairs[dealerIndex].occupant == null)
+                {
+                    dealerIndex = (dealerIndex + 1) % SeatManager.Instance.allChairs.Count;
+                }
+
                 currentManoSeatIndex = (dealerIndex + 1) % SeatManager.Instance.allChairs.Count;
+                while (SeatManager.Instance.allChairs[currentManoSeatIndex].occupant == null)
+                {
+                    currentManoSeatIndex = (currentManoSeatIndex + 1) % SeatManager.Instance.allChairs.Count;
+                }
                 currentTrickStartSeatIndex = currentManoSeatIndex;
 
 
@@ -432,8 +465,10 @@ namespace Code.GameLogic
 
         public void EndTurn()
         {
+            if (isHandResolved || _gameSceneStarted == false) return;
+
             // Bloqueamos el turno actual para todos antes de evaluar
-            var players = this.allPlayers;
+            var players = UnityEngine.Object.FindObjectsByType<Code.Player.Player>(UnityEngine.FindObjectsSortMode.None);
             foreach (var p in players) p.canPlayCard = false;
             
             // Usamos ResetTurnState para asegurar que los NPCs detengan cualquier acción pendiente
@@ -624,6 +659,12 @@ namespace Code.GameLogic
         public void ResolveHandWinner(string teamName, int points)
         {
             isHandResolved = true;
+
+            // Stop all pending turns immediately
+            foreach (var npc in npcs) npc.ResetTurnState();
+            var players = UnityEngine.Object.FindObjectsByType<Code.Player.Player>(UnityEngine.FindObjectsSortMode.None);
+            foreach (var p in players) p.canPlayCard = false;
+
             Team winningTeam = null;
             foreach (var team in teams)
             {
@@ -736,16 +777,32 @@ namespace Code.GameLogic
 
             // Limpiar estados de turno de todos los NPCs y jugadores
             foreach (var npc in npcs) npc.ResetTurnState();
-            var players = this.allPlayers;
+            var players = UnityEngine.Object.FindObjectsByType<Code.Player.Player>(UnityEngine.FindObjectsSortMode.None);
             foreach (var p in players) p.canPlayCard = false;
 
             // Reset announcements state for the new hand
             var announceManager = FindAnyObjectByType<AnnouncementManager>();
             if (announceManager != null) announceManager.ResetState();
 
-            dealerIndex = (dealerIndex + 1) % SeatManager.Instance.allChairs.Count;
-            int manoSeatIndex = (dealerIndex + 1) % SeatManager.Instance.allChairs.Count;
-            _manoTeamIndex = (manoSeatIndex % 2) + 1; // Team 1 or 2
+            int startingDealer = dealerIndex;
+            do
+            {
+                dealerIndex = (dealerIndex + 1) % SeatManager.Instance.allChairs.Count;
+            } while (SeatManager.Instance.allChairs[dealerIndex].occupant == null && dealerIndex != startingDealer);
+
+            int manoSeatIndex = dealerIndex;
+            do
+            {
+                manoSeatIndex = (manoSeatIndex + 1) % SeatManager.Instance.allChairs.Count;
+            } while (SeatManager.Instance.allChairs[manoSeatIndex].occupant == null && manoSeatIndex != dealerIndex);
+
+            // Determinar el equipo basándose en el ocupante de la silla
+            var occupant = SeatManager.Instance.allChairs[manoSeatIndex].occupant;
+            var playerComp = occupant != null ? occupant.GetComponent<Code.Player.Player>() : null;
+            var npcComp = occupant != null ? occupant.GetComponent<NPCPlayer>() : null;
+            Team manoTeam = playerComp != null ? playerComp.team : (npcComp != null ? npcComp.team : null);
+            _manoTeamIndex = manoTeam != null ? teams.IndexOf(manoTeam) + 1 : 1;
+
             currentTrickStartSeatIndex = manoSeatIndex;
             
             

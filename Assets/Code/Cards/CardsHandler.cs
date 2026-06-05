@@ -14,7 +14,7 @@ namespace Code.Cards
 {
     public class CardsHandler : MonoBehaviour
     {
-        public float upDuration = 0.98f;
+        public float upDuration = 0.2f;
         public Texture2D mouseOverTexture;
         public Texture2D mouseOutTexture;
 
@@ -72,9 +72,15 @@ namespace Code.Cards
             }
 
             var cardInteraction = c.GetComponent<CardInteraction>();
+            if (cardInteraction == null)
+            {
+                cardInteraction = c.AddComponent<CardInteraction>();
+            }
+
             if (cardInteraction != null)
             {
                 cardInteraction.Card = card;
+                cardInteraction.SetRestingPosition(localPos, localRot);
             }
 
             // Animar el reparto con JuicyCardAnimator
@@ -160,5 +166,34 @@ namespace Code.Cards
                 SetLayerRecursively(child.gameObject, newLayer);
             }
         }
+
+#if UNITY_EDITOR
+        private void OnDrawGizmosSelected()
+        {
+            Transform parent = handTransform != null ? handTransform : (Camera.main != null ? Camera.main.transform : transform);
+            if (parent == null) return;
+
+            Gizmos.color = new UnityEngine.Color(0, 1, 0, 0.6f);
+            Vector3 realCardScale = new Vector3(0.151111543f, 0.217364341f, 0.00313752703f);
+
+            for (int i = 0; i < 3; i++)
+            {
+                Vector3 localPos = new Vector3((i - 1) * 0.25f, -0.3f, 0.6f);
+                Quaternion localRot = Quaternion.Euler(70, (i - 1) * 15f, 0) * Quaternion.Euler(0, 180, 0);
+
+                Vector3 worldPos = parent.TransformPoint(localPos);
+                Quaternion worldRot = parent.rotation * localRot;
+
+                Matrix4x4 oldMatrix = Gizmos.matrix;
+                Gizmos.matrix = Matrix4x4.TRS(worldPos, worldRot, realCardScale);
+                Gizmos.DrawWireCube(Vector3.zero, Vector3.one);
+                
+                // Dibujar cruz para identificar la orientación frontal de la carta
+                Gizmos.DrawLine(new Vector3(-0.5f, -0.5f, 0), new Vector3(0.5f, 0.5f, 0));
+                Gizmos.DrawLine(new Vector3(-0.5f, 0.5f, 0), new Vector3(0.5f, -0.5f, 0));
+                Gizmos.matrix = oldMatrix;
+            }
+        }
+#endif
     }
 }

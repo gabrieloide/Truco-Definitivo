@@ -25,6 +25,38 @@ namespace Code.Cards
             {
                 animator = gameObject.AddComponent<JuicyCardAnimator>();
             }
+
+            var existingCollider = GetComponent<Collider>();
+            if (existingCollider == null)
+            {
+                var col = gameObject.AddComponent<BoxCollider>();
+                var renderer = GetComponentInChildren<Renderer>();
+                if (renderer != null)
+                {
+                    // Convert world bounds to local size
+                    col.size = transform.InverseTransformVector(renderer.bounds.size);
+                    col.center = transform.InverseTransformPoint(renderer.bounds.center);
+                    // Ensure a minimum thickness for the Z axis
+                    if (Mathf.Abs(col.size.z) < 0.01f)
+                    {
+                        var size = col.size;
+                        size.z = 0.01f;
+                        col.size = size;
+                    }
+                }
+                else
+                {
+                    col.size = new Vector3(1f, 1.5f, 0.01f);
+                }
+            }
+            else if (existingCollider is MeshCollider meshCollider)
+            {
+                // Unity SILENTLY DISABLES MeshColliders that are triggers but not convex!
+                if (meshCollider.isTrigger && !meshCollider.convex)
+                {
+                    meshCollider.convex = true;
+                }
+            }
         }
 
         private void OnCardDataChanged(int oldVal, int newVal) { UpdateVisuals(); }

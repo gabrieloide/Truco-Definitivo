@@ -13,6 +13,8 @@ GameObject:
   - component: {fileID: 5666145703638630076}
   - component: {fileID: -7473314115045960810}
   - component: {fileID: -1803157582106366722}
+  - component: {fileID: -1400876653232859556}
+  - component: {fileID: -7270785798951376516}
   m_Layer: 6
   m_Name: 3DCard
   m_TagString: Untagged
@@ -127,3 +129,53 @@ MonoBehaviour:
   cardSuit: 
   cardDbId: 0
   owner: {fileID: 0}
+  cardReference:
+    cardOwner: {fileID: 0}
+    ownerObj: {fileID: 0}
+    suit: 
+    value: 0
+    realValue: 0
+    dbId: 0
+    isBurned: 0
+--- !u!114 &-1400876653232859556
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9104489508758994168}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f2e8c00fbb76ab40bdf5034f2480470, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isUp: 0
+  cardPosition: 0
+  Card:
+    cardOwner: {fileID: 0}
+    ownerObj: {fileID: 0}
+    suit: 
+    value: 0
+    realValue: 0
+    dbId: 0
+    isBurned: 0
+  isSelected: 0
+--- !u!114 &-7270785798951376516
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9104489508758994168}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 914041ed43b00394ab4d947548ef260a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hoverScaleMultiplier: 1.15
+  hoverYOffset: 0.05
+  hoverRotationOffset: {x: 5, y: 0, z: 0}
+  playJumpPower: 1.2
+  playDuration: 0.6
+  hoverOutlineColor: {r: 0, g: 0, b: 0, a: 1}
+  hoverOutlineSize: 30

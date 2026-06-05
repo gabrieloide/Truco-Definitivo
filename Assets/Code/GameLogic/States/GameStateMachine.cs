@@ -32,5 +32,13 @@ namespace Code.GameLogic.States
                 _currentState.UpdateState();
             }
         }
+
+        private void OnDestroy()
+        {
+            if (_currentState != null)
+            {
+                _currentState.ExitState();
+            }
+        }
     }
 }
