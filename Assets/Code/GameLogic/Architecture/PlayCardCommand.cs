@@ -9,9 +9,10 @@ namespace Code.GameLogic.Architecture
         private readonly GameObject player;
         private readonly Vector3? startPos;
 
-        public PlayCardCommand(Card card, GameObject player, Vector3? startPos = null)
+        public PlayCardCommand(Card card, GameObject player, Vector3? startPos = null, bool isBurned = false)
         {
             this.card = card;
+            this.card.isBurned = isBurned;
             this.player = player;
             this.startPos = startPos;
         }

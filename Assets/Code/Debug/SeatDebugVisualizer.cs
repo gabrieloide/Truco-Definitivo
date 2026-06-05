@@ -17,6 +17,7 @@ namespace Code.DebugTools
         public bool showCardDestinations = true;
         public bool showSeatLabels = true;
         public bool showCardTrajectory = true;
+        public bool showDealerViraAndDeck = true;
         public float gizmoScale = 0.3f;
 
         private static readonly Color[] seatColors = new Color[]
@@ -169,6 +170,74 @@ namespace Code.DebugTools
                             DrawParabolicArc(from, to, 0.8f, 20);
                             DrawArrowHead(to, (to - from).normalized, gizmoScale * 0.3f);
                         }
+                    }
+                }
+
+                // ===== 4.5. MAZO Y VIRA DEL REPARTIDOR =====
+                if (showDealerViraAndDeck && chair.cardDestination != null)
+                {
+                    Transform anchor = chair.cardDestination;
+                    Vector3 basePos = anchor.position;
+                    Quaternion baseRot = anchor.rotation;
+
+                    float deckHeight = tableManager != null ? tableManager.deckHeightOffset : 0.01f;
+                    float viraHeight = tableManager != null ? tableManager.viraHeightOffset : 0.02f;
+
+                    // Offset para el Mazo: A la derecha y un poco atrás de donde el jugador pone su carta
+                    Vector3 deckOffset = (anchor.right * 0.25f) + (anchor.forward * -0.1f);
+                    Vector3 deckPos = basePos + deckOffset + (anchor.up * deckHeight);
+
+                    // Mazo/Deck visual outline
+                    Color deckColor = new Color(seatColor.r, seatColor.g, seatColor.b, 0.7f);
+                    Gizmos.color = deckColor;
+
+                    // Draw a wire cube for the deck stack
+                    Matrix4x4 oldMatrix = Gizmos.matrix;
+                    Gizmos.matrix = Matrix4x4.TRS(deckPos, baseRot, Vector3.one);
+                    
+                    float deckW = gizmoScale * 0.25f;
+                    float deckH = gizmoScale * 0.4f;
+                    float deckThickness = gizmoScale * 0.15f;
+                    Gizmos.DrawWireCube(Vector3.zero, new Vector3(deckW * 2f, deckThickness, deckH * 2f));
+                    
+                    // Draw a small line to indicate the deck top/bottom
+                    Gizmos.DrawLine(new Vector3(-deckW, deckThickness / 2f, -deckH), new Vector3(deckW, deckThickness / 2f, deckH));
+                    
+                    // Vira position: next to the deck (un poco más al centro, which is forward by 0.15f)
+                    Vector3 viraWorldPos = basePos + deckOffset + (anchor.forward * 0.15f) + (anchor.up * viraHeight);
+                    Gizmos.matrix = Matrix4x4.TRS(viraWorldPos, baseRot, Vector3.one);
+
+                    Color viraColor = new Color(seatColor.r, seatColor.g, seatColor.b, 0.9f);
+                    Gizmos.color = viraColor;
+
+                    float viraW = gizmoScale * 0.25f;
+                    float viraH = gizmoScale * 0.4f;
+                    
+                    // Draw a flat card outline for the Vira
+                    Vector3 v1 = new Vector3(-viraW, 0, viraH);
+                    Vector3 v2 = new Vector3(viraW, 0, viraH);
+                    Vector3 v3 = new Vector3(viraW, 0, -viraH);
+                    Vector3 v4 = new Vector3(-viraW, 0, -viraH);
+
+                    Gizmos.DrawLine(v1, v2);
+                    Gizmos.DrawLine(v2, v3);
+                    Gizmos.DrawLine(v3, v4);
+                    Gizmos.DrawLine(v4, v1);
+                    // Draw diagonal cross to represent vira
+                    Gizmos.color = new Color(seatColor.r, seatColor.g, seatColor.b, 0.4f);
+                    Gizmos.DrawLine(v1, v3);
+                    Gizmos.DrawLine(v2, v4);
+
+                    Gizmos.matrix = oldMatrix;
+
+                    if (showSeatLabels)
+                    {
+                        GUIStyle dealerLabelStyle = new GUIStyle();
+                        dealerLabelStyle.normal.textColor = seatColor;
+                        dealerLabelStyle.fontStyle = FontStyle.Normal;
+                        dealerLabelStyle.fontSize = 9;
+                        UnityEditor.Handles.Label(deckPos + Vector3.up * 0.15f, $"Mazo {i}", dealerLabelStyle);
+                        UnityEditor.Handles.Label(viraWorldPos + Vector3.up * 0.15f, $"Vira {i}", dealerLabelStyle);
                     }
                 }
             }

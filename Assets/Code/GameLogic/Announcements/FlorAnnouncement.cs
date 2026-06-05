@@ -20,7 +20,8 @@ namespace Code.GameLogic.Announcement
 
         public void CanDeclareFlower()
         {
-            var playerLocal = FindAnyObjectByType<PlayerLocal>();
+            var allPlayers = FindObjectsByType<PlayerLocal>(FindObjectsSortMode.None);
+            var playerLocal = allPlayers.FirstOrDefault(p => p.isLocalPlayer && p.gameObject.activeInHierarchy);
             if (playerLocal == null) return;
 
             var cardsHandler = playerLocal.cardsHandler;
@@ -32,7 +33,7 @@ namespace Code.GameLogic.Announcement
                 return;
             }
 
-            var deckCreator = FindAnyObjectByType<DeckCreator>();
+            var deckCreator = DeckCreator.Instance;
             if (deckCreator == null) return;
 
             // Get cards from CardsHandler
@@ -46,6 +47,8 @@ namespace Code.GameLogic.Announcement
 
             bool isFlor = TrucoRules.IsFlor(hand, deckCreator.cardVira);
             playerLocal.player.haveFlower = isFlor;
+
+            string handStr = string.Join(", ", hand.Select(c => $"{c.value} of {c.suit}"));
 
             if (isFlor) Debug.Log($"[Flor] El jugador tiene FLOR.");
 
@@ -66,7 +69,7 @@ namespace Code.GameLogic.Announcement
 
         public override void UpdateTotalScore()
         {
-            var deckCreator = FindAnyObjectByType<DeckCreator>();
+            var deckCreator = DeckCreator.Instance;
             if (deckCreator == null) return;
             var vira = deckCreator.cardVira;
 
@@ -120,21 +123,18 @@ namespace Code.GameLogic.Announcement
 
             if (allFlores.Count == 0)
             {
-                Debug.Log("[FlorAnnouncement] Ningún jugador tiene Flor para cobrar.");
                 return;
             }
 
             var team1Flores = allFlores.FindAll(f => f.TeamName == "Team 1");
             var team2Flores = allFlores.FindAll(f => f.TeamName == "Team 2");
 
-            Debug.Log($"[FlorAnnouncement] Flores encontradas: Equipo 1 = {team1Flores.Count} | Equipo 2 = {team2Flores.Count}");
 
             if (team1Flores.Count > 0 && team2Flores.Count == 0)
             {
                 // Solo el Equipo 1 tiene Flor
                 int totalPoints = 0;
                 foreach (var f in team1Flores) totalPoints += f.Points;
-                Debug.Log($"[FlorAnnouncement] Solo Equipo 1 tiene Flor. Ganando {totalPoints} piedras.");
                 GameManager.Instance.AddAnnouncementPoints("Team 1", totalPoints);
             }
             else if (team2Flores.Count > 0 && team1Flores.Count == 0)
@@ -142,13 +142,11 @@ namespace Code.GameLogic.Announcement
                 // Solo el Equipo 2 tiene Flor
                 int totalPoints = 0;
                 foreach (var f in team2Flores) totalPoints += f.Points;
-                Debug.Log($"[FlorAnnouncement] Solo Equipo 2 tiene Flor. Ganando {totalPoints} piedras.");
                 GameManager.Instance.AddAnnouncementPoints("Team 2", totalPoints);
             }
             else if (team1Flores.Count > 0 && team2Flores.Count > 0)
             {
                 // CONTRAFLOR: Ambos equipos tienen Flor
-                Debug.Log("[FlorAnnouncement] ¡CONTRAFLOR! Ambos equipos tienen Flor. Resolviendo disputa...");
 
                 FlorData bestTeam1 = team1Flores[0];
                 foreach (var f in team1Flores)
@@ -176,7 +174,6 @@ namespace Code.GameLogic.Announcement
                     // Empate en puntaje de Flor: Gana el equipo que es Mano
                     int manoTeamIndex = GameManager.Instance.ManoTeamIndex;
                     winnerTeam = "Team " + manoTeamIndex;
-                    Debug.Log($"[FlorAnnouncement] Empate de Contraflor ({bestTeam1.ComparisonScore} pts). Gana la Mano: {winnerTeam}");
                 }
 
                 int totalPoints = 0;
@@ -188,7 +185,6 @@ namespace Code.GameLogic.Announcement
                     PlayerHUD.Instance.NotifyEvent($"CONTRAFLOR: TEAM 1 ({bestTeam1.ComparisonScore}) VS TEAM 2 ({bestTeam2.ComparisonScore})", 4.0f);
                 }
 
-                Debug.Log($"[FlorAnnouncement] Ganador de Contraflor: {winnerTeam} ({bestTeam1.ComparisonScore} vs {bestTeam2.ComparisonScore} pts). Total ganado: {totalPoints} piedras.");
                 GameManager.Instance.AddAnnouncementPoints(winnerTeam, totalPoints);
             }
         }

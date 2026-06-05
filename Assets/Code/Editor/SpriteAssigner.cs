@@ -71,7 +71,6 @@ namespace Code.Editor
             EditorUtility.SetDirty(importer);
             importer.SaveAndReimport();
 
-            Debug.Log("[Truco] Imagen recortada exitosamente. Asignando sprites a CardDatabase...");
 
             // 2. Asignar a CardDatabase
             string dbPath = "Assets/Resources/CardDatabase.asset";
@@ -106,7 +105,6 @@ namespace Code.Editor
             }
 
             AssetDatabase.SaveAssets();
-            Debug.Log($"[Truco] Se han asignado {assignedCount} sprites correctamente a los ScriptableObjects!");
         }
     }
 }

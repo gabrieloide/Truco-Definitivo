@@ -4,17 +4,30 @@ using System.Linq;
 using Code.Player;
 // using Mirror;
 using UnityEngine;
+using Code.Scripts.Audio;
 using Random = UnityEngine.Random;
 
 namespace Code.GameLogic
 {
     public class DeckCreator : MonoBehaviour
     {
+        public static DeckCreator Instance { get; private set; }
+
         private readonly string[] _cardSuit = { "Gold", "Cup", "Sword", "Cudgel" };
         public List<Card> _fullDeck = new List<Card>();
         /*[SyncVar]*/ public Card cardVira;
         
         [SerializeField] private Code.Cards.CardDatabase _cardDatabase;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
 
         private void Start()
         {
@@ -25,7 +38,7 @@ namespace Code.GameLogic
                 else _cardDatabase.Initialize();
             }
 
-            CreateDeck();
+            // DO NOT call CreateDeck() here because DealingState handles ShuffleAndSetVira()
         }
 
         // [Server]
@@ -50,15 +63,34 @@ namespace Code.GameLogic
                     _fullDeck.Add(new Card { suit = cardType, value = number, dbId = cardId });
                 }
             }
+
+            // Check for duplicates in _fullDeck
+            var dupes = _fullDeck.GroupBy(c => new {c.suit, c.value}).Where(g => g.Count() > 1).ToList();
+            if (dupes.Count > 0) {
+                Debug.LogError($"[DeckCreator] CRITICAL BUG! _fullDeck has duplicates AFTER CreateDeck: {string.Join(", ", dupes.Select(d => $"{d.Key.value} of {d.Key.suit}"))}");
+            } else {
+                Debug.Log($"[DeckCreator] CreateDeck finished perfectly. Deck size: {_fullDeck.Count}");
+            }
         }
 
         // [Server]
         public void ShuffleAndSetVira()
         {
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX("card_shuffle_rattle");
+            }
             CreateDeck(); // Refresh deck
             
             // Shuffle
-            _fullDeck = _fullDeck.OrderBy(x => Random.value).ToList();
+            var oldState = Random.state;
+            _fullDeck = _fullDeck.OrderBy(x => System.Guid.NewGuid()).ToList();
+            
+            Debug.Log($"[DeckCreator] Deck shuffled. First 5 cards: {_fullDeck[0].GetDisplayName()}, {_fullDeck[1].GetDisplayName()}, {_fullDeck[2].GetDisplayName()}, {_fullDeck[3].GetDisplayName()}, {_fullDeck[4].GetDisplayName()}");
+            
+            // Check for duplicates AGAIN after shuffle
+            var dupes = _fullDeck.GroupBy(c => new {c.suit, c.value}).Where(g => g.Count() > 1).ToList();
+            if (dupes.Count > 0) Debug.LogError("[DeckCreator] CRITICAL BUG! Duplicates found AFTER shuffle!");
 
             // Pick Vira
             int viraIndex = Random.Range(0, _fullDeck.Count);
@@ -74,7 +106,6 @@ namespace Code.GameLogic
             // Also update the vira's real value just in case
             cardVira.realValue = TrucoRules.GetCardRealValue(cardVira, cardVira);
 
-            Debug.Log($"[SERVER] Vira selected: {cardVira.value} of {cardVira.suit}");
         }
 
         // [Server]
@@ -103,6 +134,7 @@ namespace Code.GameLogic
         public int value;
         public int realValue;
         public int dbId; // Referencia al ID del ScriptableObject en la base de datos
+        public bool isBurned = false;
 
         public Card() { }
 

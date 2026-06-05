@@ -12,7 +12,6 @@ public class MyNetworkingManager : NetworkManager
     public override void OnStartHost()
     {
         base.OnStartHost();
-        Debug.Log("OnStartHost");
     }
 
     public override void OnClientDisconnect()
@@ -36,11 +35,9 @@ public class MyNetworkingManager : NetworkManager
 
         if (playerLocal == null)
         {
-            Debug.Log("Player controller is null");
             return;
         }
 
-        Debug.Log("This is the client");
 
         FindAnyObjectByType<Lobby>().AddPlayerToLobby($"player{count}");
     }

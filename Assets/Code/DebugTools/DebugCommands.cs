@@ -68,12 +68,10 @@ public class DebugCommands : MonoBehaviour
                 {
                     _chatCommands.TryGetValue(linea, out IChatCommand command);
                     //command.Execute();
-                    Debug.Log("Línea: " + linea);
                 }
             }
             else
             {
-                Debug.Log("El archivo no existe.");
             }
         }
 

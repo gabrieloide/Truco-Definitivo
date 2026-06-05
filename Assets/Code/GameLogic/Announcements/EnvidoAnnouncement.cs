@@ -21,9 +21,8 @@ namespace Code.GameLogic.Announcement
         {
             if (global::AnnounceState.Envido != global::AnnounceState.Envido) return; // Legacy check
 
-            Debug.Log("[EnvidoAnnouncement] Resolviendo Envido...");
             
-            var deckCreator = FindAnyObjectByType<DeckCreator>();
+            var deckCreator = DeckCreator.Instance;
             if (deckCreator == null) return;
 
             var vira = deckCreator.cardVira;
@@ -70,7 +69,6 @@ namespace Code.GameLogic.Announcement
                 // Si alguien tiene Flor, el Envido se anula automáticamente
                 if (score == -1)
                 {
-                    Debug.Log($"[EnvidoAnnouncement] Envido ANULADO porque el jugador humano {p.playerName} tiene FLOR.");
                     return;
                 }
 
@@ -85,7 +83,6 @@ namespace Code.GameLogic.Announcement
                 // Si alguien tiene Flor, el Envido se anula automáticamente
                 if (score == -1) 
                 {
-                    Debug.Log($"[EnvidoAnnouncement] Envido ANULADO porque el jugador {npc.playerName} tiene FLOR.");
                     return; 
                 }
 
@@ -93,7 +90,6 @@ namespace Code.GameLogic.Announcement
                 else if (npc.team != null && npc.team.teamName == "Team 2") bestScoreTeam2 = Mathf.Max(bestScoreTeam2, score);
             }
 
-            Debug.Log($"[EnvidoAnnouncement] Resultados: Equipo 1 = {bestScoreTeam1} | Equipo 2 = {bestScoreTeam2}");
 
             string winnerTeam = "";
             if (bestScoreTeam1 > bestScoreTeam2) winnerTeam = "Team 1";
@@ -103,7 +99,6 @@ namespace Code.GameLogic.Announcement
                 // Tie: Mano wins.
                 int manoTeamIndex = GameManager.Instance.ManoTeamIndex; // 1 or 2
                 winnerTeam = "Team " + manoTeamIndex;
-                Debug.Log($"[EnvidoAnnouncement] Empate en Envido. Gana el equipo Mano: {winnerTeam}");
             }
 
             // Notificar los puntajes comparados en la pantalla
@@ -170,7 +165,8 @@ namespace Code.GameLogic.Announcement
                 for (int j = 0; j < cardPlayer.GetLength(1); j++)
                 {
                     if (cardPlayer[i, j] != null && cardPlayer[i, j].cardOwner != null && cardPlayer[i, j].cardOwner.player != null)
-                        Debug.Log(cardPlayer[i, j].cardOwner.player.playerName + " " + cardPlayer[i, j].suit + " " + cardPlayer[i, j].value);
+                    {
+                    }
                 }
             }
         }

@@ -17,28 +17,55 @@ namespace Code.Player
         private List<GameObject> _visualCards = new List<GameObject>();
         public bool isMyTurn = false;
 
+        public void ClearCards()
+        {
+            hand.Clear();
+            foreach (var v in _visualCards) if (v != null) Destroy(v);
+            _visualCards.Clear();
+        }
+
+        public void ReceiveSingleCard(Card card)
+        {
+            hand.Add(card);
+
+            int i = _visualCards.Count;
+            Transform parent = handTransform != null ? handTransform : transform;
+            Vector3 localPos = new Vector3((i - 1) * 0.2f, 0, 0);
+            Quaternion localRot = Quaternion.Euler(0, 0, 180); // Boca abajo para nosotros
+
+            GameObject c = Instantiate(card3DPrefab, parent);
+            _visualCards.Add(c);
+
+            var juicyAnimator = c.GetComponent<JuicyCardAnimator>();
+            if (juicyAnimator == null) juicyAnimator = c.AddComponent<JuicyCardAnimator>();
+
+            Vector3 startWorldPos;
+            if (TableManager.Instance != null)
+            {
+                startWorldPos = TableManager.Instance.CurrentDeckPosition;
+                startWorldPos.y -= 0.015f; // Animación sale desde debajo del mazo
+            }
+            else
+            {
+                startWorldPos = parent.position;
+            }
+
+            juicyAnimator.AnimateToHand(startWorldPos, localPos, localRot, 0.5f, 0f, () =>
+            {
+                if (Code.Scripts.Audio.AudioManager.Instance != null)
+                {
+                    Code.Scripts.Audio.AudioManager.Instance.PlaySFX("card_deal_swoosh");
+                }
+            });
+        }
+
         public void ReceiveCards(List<Card> cards)
         {
-            hand = cards;
-            
-            // Limpiamos mano anterior si hubiera
-            foreach(var v in _visualCards) Destroy(v);
-            _visualCards.Clear();
-
-            // Spawneamos las cartas visualmente en el NPC
-            for (int i = 0; i < hand.Count; i++)
+            ClearCards();
+            for (int i = 0; i < cards.Count; i++)
             {
-                Transform parent = handTransform != null ? handTransform : transform;
-                Vector3 pos = new Vector3((i - 1) * 0.2f, 0, 0);
-                
-                GameObject c = Instantiate(card3DPrefab, parent);
-                c.transform.localPosition = pos;
-                c.transform.localRotation = Quaternion.Euler(0, 0, 180); // Boca abajo para nosotros, o ajusta según necesites
-                
-                _visualCards.Add(c);
+                ReceiveSingleCard(cards[i]);
             }
-            
-            Debug.Log($"[NPC {playerName}] He recibido {cards.Count} cartas físicas.");
         }
 
         private Coroutine _turnCoroutine;
@@ -67,7 +94,7 @@ namespace Code.Player
             // 1. Canto en primera ronda
             if (GameManager.Instance.round == 0)
             {
-                var vira = FindAnyObjectByType<DeckCreator>().cardVira;
+                var vira = DeckCreator.Instance.cardVira;
                 if (NPCDecisionMaker.ShouldAnnounceFlor(hand, vira))
                 {
                     Announce(AnnounceState.ALey);
@@ -85,7 +112,7 @@ namespace Code.Player
             // 2. Truco
             var trucoAnnounce = FindAnyObjectByType<Code.GameLogic.Announcement.TrucoAnnouncement>();
             int trucoLevel = trucoAnnounce != null ? trucoAnnounce.acceptAmount : 0;
-            if (NPCDecisionMaker.ShouldAnnounceTruco(hand, FindAnyObjectByType<DeckCreator>().cardVira) && trucoLevel == 0)
+            if (NPCDecisionMaker.ShouldAnnounceTruco(hand, DeckCreator.Instance.cardVira) && trucoLevel == 0)
             {
                 Announce(AnnounceState.Truco);
                 announcementOccurred = true;
@@ -109,7 +136,6 @@ namespace Code.Player
 
         private void Announce(AnnounceState state)
         {
-            Debug.Log($"[NPC {playerName}] Canta: {state}");
             var am = FindAnyObjectByType<AnnouncementManager>();
             if (am != null) am.ReceiveAnnounceFromNPC(state, gameObject);
         }
@@ -123,7 +149,7 @@ namespace Code.Player
         {
             yield return new WaitForSeconds(Random.Range(1f, 2.5f));
 
-            var vira = FindAnyObjectByType<DeckCreator>().cardVira;
+            var vira = DeckCreator.Instance.cardVira;
             var am = FindAnyObjectByType<AnnouncementManager>();
 
             if (state == AnnounceState.Envido && NPCDecisionMaker.ShouldAnnounceFlor(hand, vira))
@@ -135,12 +161,10 @@ namespace Code.Player
             bool accept = NPCDecisionMaker.ShouldAcceptAnnounce(state.ToString(), hand, vira);
             if (accept)
             {
-                Debug.Log($"[NPC {playerName}] Dice: ¡QUIERO! ({state})");
                 if (am != null) am.AcceptFromNPC(gameObject);
             }
             else
             {
-                Debug.Log($"[NPC {playerName}] Dice: NO QUIERO ({state})");
                 if (am != null) am.DeclineFromNPC(gameObject);
             }
         }
@@ -163,7 +187,7 @@ namespace Code.Player
                     yield break;
                 }
 
-                Card cardToPlay = NPCDecisionMaker.SelectCardToPlay(hand, TableManager.Instance.CardsInTable, FindAnyObjectByType<DeckCreator>().cardVira);
+                Card cardToPlay = NPCDecisionMaker.SelectCardToPlay(hand, TableManager.Instance.CardsInTable, DeckCreator.Instance.cardVira);
                 if (cardToPlay == null) cardToPlay = hand[0];
                 
                 hand.Remove(cardToPlay);
@@ -177,7 +201,6 @@ namespace Code.Player
                     Destroy(visualCard);
                 }
 
-                Debug.Log($"[NPC {playerName}] Juega: {cardToPlay.value} de {cardToPlay.suit} (valor real: {cardToPlay.realValue})");
                 
                 // IMPORTANTE: Liberar el turno ANTES de ejecutar el comando que avanza el juego
                 isMyTurn = false;

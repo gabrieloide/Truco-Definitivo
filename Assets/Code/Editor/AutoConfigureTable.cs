@@ -31,22 +31,37 @@ namespace Code.Editor
             // 2. Find center of table (Vira position)
             Vector3 center = tableManager.viraPosition != null ? tableManager.viraPosition.position : Vector3.zero;
 
-            // 3. Sort chairs clockwise around the center
+            // 3. Sort chairs counter-clockwise around the center
             // We use Atan2 to get the angle of each chair relative to the center
             chairs = chairs.OrderBy(c => 
             {
                 Vector3 dir = c.transform.position - center;
-                // Multiplicar por -1 invierte el orden (cambia de horario a antihorario o viceversa)
-                return -Mathf.Atan2(dir.z, dir.x);
+                return Mathf.Atan2(dir.z, dir.x);
             }).ToList();
+
+            // Rotate the list so that the chair named "Chair1" is at index 0 (so the player is first)
+            int playerChairIndex = chairs.FindIndex(c => c.name.ToLower().Contains("chair1"));
+            if (playerChairIndex != -1)
+            {
+                var rotatedChairs = new List<ChairInteractable>();
+                for (int i = 0; i < chairs.Count; i++)
+                {
+                    rotatedChairs.Add(chairs[(playerChairIndex + i) % chairs.Count]);
+                }
+                chairs = rotatedChairs;
+            }
+            else
+            {
+            }
 
             seatManager.allChairs = chairs;
             EditorUtility.SetDirty(seatManager);
 
-            // 4. Find all card positions (Transforms with "CardPosition" or similar)
+            // 4. Find all card positions (Transforms with "CardPosition" or similar, excluding hands)
             var allTransforms = FindObjectsByType<Transform>(FindObjectsSortMode.None);
             var cardPositions = allTransforms
                 .Where(t => t.name.ToLower().Contains("cardpos") || t.name.ToLower().Contains("carddest"))
+                .Where(t => !t.name.ToLower().Contains("hand"))
                 .ToList();
 
             // 5. For each chair, assign the CLOSEST card position
@@ -66,7 +81,6 @@ namespace Code.Editor
             // Force Unity to save the changes in the scene
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
             
-            Debug.Log($"[AutoConfigure] ¡Éxito! Se configuraron {chairs.Count} sillas en orden circular y se asignaron sus destinos de cartas más cercanos.");
         }
     }
 }

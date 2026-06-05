@@ -27,6 +27,7 @@ Material:
   m_ValidKeywords:
   - _MK_ALBEDO_MAP
   - _MK_ENVIRONMENT_REFLECTIONS_AMBIENT
+  - _MK_GOOCH_RAMP
   - _MK_LIGHT_CEL
   - _MK_RECEIVE_SHADOWS
   - _MK_SPECULAR_ISOTROPIC
@@ -92,7 +93,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _GoochRamp:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: af6ef52655fb9ae468c2f83f92312808, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _HatchingBrightMap:
@@ -175,8 +176,8 @@ Material:
     m_Floats:
     - _AddPrecomputedVelocity: 0
     - _AdditionalLightsFalloff: 1
-    - _AdditionalLightsThreshold: 0.5
-    - _AdvancedTab: 0
+    - _AdditionalLightsThreshold: 1
+    - _AdvancedTab: 1
     - _AlbedoMapIntensity: 1
     - _AlembicMotionVectors: 0
     - _AlphaClip: 0
@@ -222,7 +223,7 @@ Material:
     - _GoochDarkRemapFadeWithIndirect: 0
     - _GoochDarkRemapMax: 1
     - _GoochDarkRemapMin: 0
-    - _GoochRampIntensity: 0.5
+    - _GoochRampIntensity: 1
     - _HatchingMapScale: 1
     - _Hue: 0
     - _IndirectFade: 1
@@ -251,7 +252,7 @@ Material:
     - _RimThresholdOffset: 0.25
     - _Saturation: 1
     - _SketchMapScale: 1
-    - _Smoothness: 0.5
+    - _Smoothness: 1
     - _SmoothnessTextureChannel: 0
     - _Specular: 1
     - _SpecularHighlights: 1
@@ -268,7 +269,7 @@ Material:
     - _StencilRef: 0
     - _StencilWriteMask: 255
     - _StencilZFail: 0
-    - _StylizeTab: 0
+    - _StylizeTab: 1
     - _Surface: 0
     - _ThresholdMapScale: 1
     - _VertexAnimation: 0
@@ -285,7 +286,7 @@ Material:
     - _DissolveBorderColor: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _GoochBrightColor: {r: 1, g: 1, b: 1, a: 1}
-    - _GoochDarkColor: {r: 0, g: 0, b: 0, a: 1}
+    - _GoochDarkColor: {r: 0.16037738, g: 0.16037738, b: 0.16037738, a: 1}
     - _IridescenceColor: {r: 1, g: 1, b: 1, a: 0.5}
     - _RimBrightColor: {r: 1, g: 1, b: 1, a: 1}
     - _RimColor: {r: 1, g: 1, b: 1, a: 1}

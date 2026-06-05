@@ -15,7 +15,16 @@
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "c5405291d3aff4969dc18b1cf1265cf80fd29fc8"
+      "hash": "c53d6c6ed1125d01e0f02dfa85a98ecbc341d63c"
+    },
+    "com.gabrieloide.startertools": {
+      "version": "https://github.com/gabrieloide/Unity-Starting-Tools.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.inputsystem": "1.4.0"
+      },
+      "hash": "bb22ca5736399f6dc95b57d148f0a4eb0fc96bc7"
     },
     "com.unity.2d.animation": {
       "version": "10.1.3",

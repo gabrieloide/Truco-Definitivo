@@ -19,7 +19,6 @@ namespace Code.GameLogic
 
             if (!movement.isSeated)
             {
-                Debug.Log("You must be seated to play a card on the table.");
                 return;
             }
 
@@ -30,7 +29,6 @@ namespace Code.GameLogic
             }
             else
             {
-                Debug.Log("No card selected. Click a card in your hand first.");
             }
         }
     }

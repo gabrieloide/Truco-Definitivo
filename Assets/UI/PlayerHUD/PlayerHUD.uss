@@ -153,7 +153,9 @@
 }
 
 #notification-label {
-    display: none;
+    display: flex;
+    opacity: 0;
+    scale: 0.5;
     background-color: #242933;
     color: #FFF2C8;
     font-size: 64px;
@@ -169,6 +171,15 @@
     -unity-text-outline-width: 2px;
     -unity-text-outline-color: #A38543;
     text-shadow: 0px 6px 0px rgba(0,0,0,0.6);
+    
+    transition-property: opacity, scale;
+    transition-duration: 0.25s;
+    transition-timing-function: ease-out-back;
+}
+
+#notification-label.visible {
+    opacity: 1;
+    scale: 1;
 }
 
 /* =========================================================
@@ -204,11 +215,17 @@
     align-items: center; /* Center buttons within their column */
 }
 
-/* Action Bar (Cantos): Horizontal Stack */
+/* Action Bar (Cantos): 2x2 Grid using flex-wrap and max-width */
 #hud-action-bar {
     flex-direction: row;
     align-items: flex-end;
     flex-wrap: wrap;
+    width: 350px; /* Force explicit width to ensure 2x2 wrapping */
+    max-width: 350px;
+}
+
+#hud-action-bar .hud-btn {
+    width: 160px;
 }
 
 /* =========================================================
@@ -312,6 +329,7 @@
    HIERARCHY MODAL (ESCALERA)
    ========================================================= */
 .hierarchy-modal-overlay {
+    display: none;
     position: absolute;
     top: 0;
     left: 0;
@@ -320,7 +338,17 @@
     background-color: rgba(10, 14, 20, 0.9); /* Dark overlay */
     justify-content: center;
     align-items: center;
-    display: none; /* Hidden by default */
+    opacity: 0;
+    pointer-events: none;
+    transition-property: opacity;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-out;
+}
+
+.hierarchy-modal-overlay.visible {
+    display: flex;
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .hierarchy-panel {
@@ -335,17 +363,27 @@
     max-width: 90%;
     max-height: 80%;
     flex-direction: column;
+    
+    scale: 0.8;
+    transition-property: scale;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-out-back;
+}
+
+.hierarchy-modal-overlay.visible .hierarchy-panel {
+    scale: 1;
 }
 
 .hierarchy-title {
     color: #E6C875;
-    font-size: 36px;
+    font-size: 26px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
     margin-bottom: 20px;
     -unity-text-outline-width: 1px;
     -unity-text-outline-color: #A38543;
     text-shadow: 0px 3px 0px rgba(0,0,0,0.6);
+    white-space: normal;
 }
 
 .hierarchy-scroll {
@@ -371,3 +409,25 @@
 .hierarchy-item--mid { background-color: #FF9A55; color: #ffffff; }
 .hierarchy-item--low { background-color: #546E7A; color: #ffffff; }
 .hierarchy-item--lowest { background-color: #37474F; color: #B0BEC5; }
+
+/* RESPONSE TITLE (TE CANTARON ENVIDO/TRUCO/ETC) */
+.hud-response-title__text {
+    color: #FFF2C8;
+    font-size: 16px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    background-color: #242933;
+    padding: 8px 16px;
+    border-radius: 10px;
+    border-width: 4px;
+    border-color: #E6C875;
+    border-bottom-width: 6px;
+    border-bottom-color: #A38543;
+    margin: 6px;
+    margin-bottom: 12px;
+    width: 200px;
+    white-space: normal;
+    text-shadow: 0px 2px 0px rgba(0,0,0,0.5);
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgba(0,0,0,0.8);
+}

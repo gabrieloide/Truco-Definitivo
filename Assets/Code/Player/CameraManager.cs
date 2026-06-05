@@ -22,6 +22,19 @@ namespace Code.Player
         private Quaternion _seatedBaseRotation;
         private float _currentPan = 0f;
 
+        public static CameraManager Instance { get; private set; }
+
+        private void Awake()
+        {
+            if (isLocalPlayer)
+            {
+                if (Instance != null && Instance != this)
+                {
+                }
+                Instance = this;
+            }
+        }
+
         private void Start()
         {
             if (!isLocalPlayer)
@@ -96,7 +109,11 @@ namespace Code.Player
 
         public void SetSeatedCamera(Transform cameraPosition)
         {
-            if (!isLocalPlayer) return;
+
+            if (!isLocalPlayer)
+            {
+                return;
+            }
 
             if (vcamSeated != null)
             {
@@ -119,13 +136,15 @@ namespace Code.Player
                 }
                 else
                 {
-                    Debug.LogWarning("[CameraManager] No se asignó Camera Position. Usando sitTransform con offset.");
-                    var chair = SeatManager.Instance.allChairs.Find(c => c.occupant != null && c.occupant.GetComponent<CameraManager>() == this);
+                    var localPlayerObj = FindAnyObjectByType<PlayerLocal>()?.gameObject;
+                    var chair = SeatManager.Instance.allChairs.Find(c => c.occupant != null && (c.occupant == localPlayerObj || c.occupant.GetComponentInChildren<CameraManager>(true) == this));
                     if (chair != null && chair.sitTransform != null)
                     {
                         objectToMove.SetParent(chair.sitTransform);
                         objectToMove.localPosition = Vector3.up * 1.5f;
-                        Vector3 lookTarget = TableManager.Instance.viraPosition.position;
+                        Vector3 lookTarget = (TableManager.Instance != null && TableManager.Instance.viraPosition != null) 
+                            ? TableManager.Instance.viraPosition.position 
+                            : (TableManager.Instance != null ? TableManager.Instance.transform.position : Vector3.zero);
                         objectToMove.LookAt(lookTarget);
                         _seatedBaseRotation = objectToMove.rotation;
                     }
@@ -139,12 +158,15 @@ namespace Code.Player
                 // Forzar el corte instantáneo en Cinemachine para que no haga transición lenta
                 vcamSeated.PreviousStateIsValid = false;
             }
+            else
+            {
+                Debug.LogError("[CameraManager] ERROR: vcamSeated es NULL!");
+            }
 
             if (vcamWalking != null) vcamWalking.Priority = 0;
             if (vcamAlternative != null) vcamAlternative.Priority = 0;
             if (vcamSeated != null) vcamSeated.Priority = 100;
 
-            Debug.Log($"[CameraManager] Cámara de mesa activada y movida. Seated: {vcamSeated?.name} (Prio 100)");
         }
 
         public void ToggleAlternativeCamera()
@@ -172,6 +194,18 @@ namespace Code.Player
                 }
             }
 
+            Code.Cards.CardsHandler cardsHandler = null;
+            var allPlayers = FindObjectsByType<PlayerLocal>(FindObjectsSortMode.None);
+            foreach (var p in allPlayers)
+            {
+                if (p.isLocalPlayer && p.gameObject.activeInHierarchy)
+                {
+                    cardsHandler = p.cardsHandler;
+                    if (cardsHandler == null) cardsHandler = p.GetComponentInChildren<Code.Cards.CardsHandler>(true);
+                    break;
+                }
+            }
+
             // Si la cámara alternativa está activa, la desactivamos y volvemos a la normal
             if (vcamAlternative.Priority > 50)
             {
@@ -187,6 +221,8 @@ namespace Code.Player
                     vcamWalking.gameObject.SetActive(true);
                     vcamWalking.Priority = 100;
                 }
+
+                if (cardsHandler != null) cardsHandler.ToggleCardsVisibility(true);
             }
             // Si no está activa, la activamos y apagamos las demás
             else
@@ -195,6 +231,8 @@ namespace Code.Player
                 vcamAlternative.Priority = 100;
                 if (vcamSeated != null) vcamSeated.Priority = 0;
                 if (vcamWalking != null) vcamWalking.Priority = 0;
+
+                if (cardsHandler != null) cardsHandler.ToggleCardsVisibility(false);
             }
         }
     }

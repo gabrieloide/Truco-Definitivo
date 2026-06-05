@@ -6,7 +6,6 @@ namespace Code.GameLogic.States
     {
         public override void EnterState()
         {
-            Debug.Log("[PlayerTurnState] Esperando acción del jugador...");
             TableManager.OnCardPlaced += HandleCardPlaced;
             global::Code.Core.GameEventManager.OnAnnounceButtonClicked += HandleAnnounce;
         }
@@ -17,14 +16,12 @@ namespace Code.GameLogic.States
 
         public override void ExitState()
         {
-            Debug.Log("[PlayerTurnState] Saliendo del turno activo.");
             TableManager.OnCardPlaced -= HandleCardPlaced;
             global::Code.Core.GameEventManager.OnAnnounceButtonClicked -= HandleAnnounce;
         }
 
         private void HandleCardPlaced(Card card, GameObject player)
         {
-            Debug.Log($"[PlayerTurnState] Carta jugada por {player.name}. Finalizando turno en breve...");
             GameManager.Instance.StartCoroutine(DelayedEndTurn());
         }
 
@@ -37,12 +34,15 @@ namespace Code.GameLogic.States
 
         private void HandleAnnounce(string announceType)
         {
-            if (announceType == "EnvidoButton")
+            var announceManager = UnityEngine.Object.FindAnyObjectByType<global::Code.Player.AnnouncementManager>();
+            if (announceManager != null)
             {
-                Debug.Log("[PlayerTurnState] ¡Envido cantado! Transicionando a EnvidoPhaseState...");
-                StateMachine.ChangeState(new EnvidoPhaseState());
+                announceManager.SendAnnounceToClient(announceType);
             }
-            // Add other announcements here (Truco, Flor, etc)
+            else
+            {
+                Debug.LogError("[PlayerTurnState] ERROR: AnnouncementManager no encontrado en la escena al cantar.");
+            }
         }
     }
 }

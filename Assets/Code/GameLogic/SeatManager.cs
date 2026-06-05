@@ -34,17 +34,14 @@ namespace Code.GameLogic
         // [Server]
         public void RequestSeat(GameObject player, ChairInteractable chair)
         {
-            Debug.Log($"[SeatManager] RequestSeat recibida de {player.name} para la silla {chair.name}");
 
             if (chair.isOccupied) 
             {
-                Debug.LogWarning("[SeatManager] La silla ya está ocupada.");
                 return;
             }
 
             if (chair.sitTransform == null)
             {
-                Debug.LogWarning("[SeatManager] La silla no tiene asignado un 'Sit Transform'. Usando el transform de la silla como fallback.");
                 chair.sitTransform = chair.transform;
             }
 
@@ -57,7 +54,6 @@ namespace Code.GameLogic
 
             // RpcSitPlayer(player.GetComponent<NetworkIdentity>().connectionToClient, player, chair.gameObject);
             RpcSitPlayer(player, chair.gameObject);
-            Debug.Log("[SeatManager] Proceso de sentarse completado en el servidor local.");
         }
 
         public void AutoSeatLocalPlayer(GameObject player)
@@ -70,7 +66,6 @@ namespace Code.GameLogic
                     return;
                 }
             }
-            Debug.LogWarning("[SeatManager] No hay sillas disponibles para el jugador local.");
         }
 
         // [Server]
@@ -89,7 +84,6 @@ namespace Code.GameLogic
         {
             var chair = chairObj.GetComponent<ChairInteractable>();
             var movement = player.GetComponent<PlayerMovement3D>();
-            var camManager = player.GetComponent<CameraManager>();
 
             if (chair != null)
             {
@@ -110,17 +104,43 @@ namespace Code.GameLogic
                 
                 player.transform.position = chair.sitTransform.position;
                 // Make the player always face the center of the table (viraPosition) and stay upright
-                Vector3 lookTarget = TableManager.Instance.viraPosition.position;
+                Vector3 lookTarget = (TableManager.Instance != null && TableManager.Instance.viraPosition != null) 
+                    ? TableManager.Instance.viraPosition.position 
+                    : (TableManager.Instance != null ? TableManager.Instance.transform.position : Vector3.zero);
                 lookTarget.y = player.transform.position.y;
                 player.transform.LookAt(lookTarget);
                 
-                Debug.Log($"[SeatManager] Teleportando jugador {player.name} a {chair.sitTransform.position} y mirando a la mesa.");
             }
 
-            if (chair != null && camManager != null)
+            // Only update the camera if the player who is sitting down is the local player!
+            bool isLocal = player.GetComponent<PlayerLocal>() != null || player.GetComponentInChildren<PlayerLocal>(true) != null;
+            if (chair != null && isLocal)
             {
-                Debug.Log("[SeatManager] Solicitando cambio de cámara a CameraManager.");
-                camManager.SetSeatedCamera(chair.cameraPosition);
+                var camManager = player.GetComponent<CameraManager>();
+                if (camManager == null)
+                {
+                    camManager = player.GetComponentInChildren<CameraManager>(true);
+                }
+                if (camManager == null)
+                {
+                    camManager = CameraManager.Instance;
+                }
+                if (camManager == null)
+                {
+                    camManager = FindAnyObjectByType<CameraManager>();
+                }
+
+                if (camManager != null)
+                {
+                    camManager.SetSeatedCamera(chair.cameraPosition);
+                }
+                else
+                {
+                    Debug.LogError("[SeatManager] ERROR: Jugador local sentándose pero no se encontró el CameraManager.");
+                }
+            }
+            else if (chair != null)
+            {
             }
         }
 
@@ -128,12 +148,34 @@ namespace Code.GameLogic
         private void RpcStandPlayer(/*NetworkConnection conn,*/ GameObject player)
         {
             var movement = player.GetComponent<PlayerMovement3D>();
-            var camManager = player.GetComponent<CameraManager>();
             var rb = player.GetComponent<Rigidbody>();
 
             if (movement != null) movement.isSeated = false;
             if (rb != null) rb.isKinematic = false;
-            if (camManager != null) camManager.SetWalkingCamera();
+
+            // Only update the camera if the player who is standing up is the local player!
+            bool isLocal = player.GetComponent<PlayerLocal>() != null || player.GetComponentInChildren<PlayerLocal>(true) != null;
+            if (isLocal)
+            {
+                var camManager = player.GetComponent<CameraManager>();
+                if (camManager == null)
+                {
+                    camManager = player.GetComponentInChildren<CameraManager>(true);
+                }
+                if (camManager == null)
+                {
+                    camManager = CameraManager.Instance;
+                }
+                if (camManager == null)
+                {
+                    camManager = FindAnyObjectByType<CameraManager>();
+                }
+
+                if (camManager != null)
+                {
+                    camManager.SetWalkingCamera();
+                }
+            }
         }
     }
 }

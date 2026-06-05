@@ -104,13 +104,11 @@ namespace Code.UI
 
         private void HandleSingleplayer()
         {
-            Debug.Log("[MainMenu] Starting Singleplayer...");
             UnityEngine.SceneManagement.SceneManager.LoadScene("GameScene");
         }
 
         private void HandleHostRoom()
         {
-            Debug.Log("[MainMenu] Hosting Room...");
             // TODO: Call NetworkManager to host server/host match
             // After successful creation, transition to lobby:
             ShowScreen(_screenLobby);
@@ -120,7 +118,6 @@ namespace Code.UI
         {
             var codeInput = _root.Q<TextField>("input-room-code");
             string code = codeInput != null ? codeInput.value : "";
-            Debug.Log($"[MainMenu] Joining Room with code: {code}");
             // TODO: Call NetworkManager to join by code
             // After successful join, transition to lobby:
             ShowScreen(_screenLobby);
@@ -128,26 +125,22 @@ namespace Code.UI
 
         private void HandleLeaveLobby()
         {
-            Debug.Log("[MainMenu] Leaving Lobby...");
             // TODO: Call NetworkManager to disconnect
             ShowScreen(_screenPlay);
         }
 
         private void HandleReadyState()
         {
-            Debug.Log("[MainMenu] Player is Ready!");
             // TODO: Toggle ready state over network
         }
 
         private void HandleStartGame()
         {
-            Debug.Log("[MainMenu] Starting Game!");
             // TODO: Call NetworkManager to load GameScene
         }
 
         private void HandleQuit()
         {
-            Debug.Log("[MainMenu] Quitting Application...");
             Application.Quit();
         }
     }

@@ -5,6 +5,7 @@ using DG.Tweening;
 // using Mirror;
 using UnityEngine;
 using UnityEngine.Serialization;
+using Code.Scripts.Audio;
 
 namespace Code.GameLogic
 {
@@ -36,68 +37,122 @@ namespace Code.GameLogic
         [Header("3D Card Transforms")]
         public Transform viraPosition;
         public GameObject deckVisualPrefab; // Prefab for the stack of cards
+        public float viraHeightOffset = 0.02f; // Altura adicional para la vira sobre la mesa
+        public float deckHeightOffset = 0.01f; // Altura adicional para el mazo sobre la mesa
         private GameObject _currentViraObj;
         private GameObject _currentDeckObj;
+
+        public Vector3 CurrentDeckPosition
+        {
+            get
+            {
+                if (_currentDeckObj != null) return _currentDeckObj.transform.position;
+                if (viraPosition != null) return viraPosition.position;
+                return transform.position;
+            }
+        }
         [Header("Table Configuration")]
         
         // Track how many cards each player has played on their spot
         private Dictionary<GameObject, int> _cardsPerPlayer = new Dictionary<GameObject, int>();
         private List<GameObject> _spawnedCards = new List<GameObject>();
+        private bool _isDeckPlacedOnce = false;
+
+        // [Server]
+        public void SpawnDeck3D(int dealerSeatIndex = -1)
+        {
+            Transform anchor = transform;
+            if (dealerSeatIndex != -1 && SeatManager.Instance != null && SeatManager.Instance.allChairs.Count > dealerSeatIndex)
+            {
+                var chair = SeatManager.Instance.allChairs[dealerSeatIndex];
+                if (chair != null && chair.cardDestination != null) anchor = chair.cardDestination;
+            }
+            if (anchor == null) anchor = this.transform;
+
+            Vector3 basePos = anchor.position;
+            Quaternion baseRot = anchor.rotation;
+
+            // Offset para el Mazo: A la derecha y un poco atrás
+            Vector3 deckOffset = (anchor.right * 0.25f) + (anchor.forward * -0.1f);
+            Vector3 deckPos = basePos + deckOffset + (anchor.up * deckHeightOffset);
+            Quaternion deckRot = baseRot * Quaternion.Euler(0, UnityEngine.Random.Range(-5f, 5f), 0);
+
+            if (_currentDeckObj == null && DeckCreator.Instance != null)
+            {
+                _currentDeckObj = DeckCreator.Instance.gameObject;
+            }
+
+            if (_currentDeckObj != null)
+            {
+                if (!_isDeckPlacedOnce)
+                {
+                    _currentDeckObj.transform.position = deckPos;
+                    _currentDeckObj.transform.rotation = deckRot;
+                    _isDeckPlacedOnce = true;
+                }
+                else
+                {
+                    if (AudioManager.Instance != null)
+                    {
+                        AudioManager.Instance.PlaySFX("cards_sweep_shove");
+                    }
+                    _currentDeckObj.transform.DOJump(deckPos, 0.5f, 1, 0.6f).SetEase(DG.Tweening.Ease.InOutQuad);
+                    _currentDeckObj.transform.DORotateQuaternion(deckRot, 0.6f).SetEase(DG.Tweening.Ease.InOutQuad);
+                }
+            }
+        }
 
         // [Server]
         public void SpawnVira3D(Card card, int dealerSeatIndex = -1)
         {
             if (card3DPrefab == null) return;
             
-            // Clean up old vira/deck if they exist
+            // Clean up old vira
             if (_currentViraObj != null) Destroy(_currentViraObj);
-            if (_currentDeckObj != null) Destroy(_currentDeckObj);
 
             Transform anchor = transform;
             if (dealerSeatIndex != -1 && SeatManager.Instance != null && SeatManager.Instance.allChairs.Count > dealerSeatIndex)
             {
                 var chair = SeatManager.Instance.allChairs[dealerSeatIndex];
-                if (chair != null && chair.cardDestination != null)
-                {
-                    anchor = chair.cardDestination;
-                }
+                if (chair != null && chair.cardDestination != null) anchor = chair.cardDestination;
             }
-            
-            if (anchor == null)
-            {
-                Debug.LogWarning("[TableManager] No anchor found for Vira. Using TableManager transform.");
-                anchor = this.transform;
-            }
+            if (anchor == null) anchor = this.transform;
 
             Vector3 basePos = anchor.position;
             Quaternion baseRot = anchor.rotation;
 
-            // Offset para el Mazo: A la derecha y un poco atrás de donde el jugador pone su carta
-            // Usamos 'right' y '-forward' relativo al ancla de la mesa
+            // Offset
             Vector3 deckOffset = (anchor.right * 0.25f) + (anchor.forward * -0.1f);
-            Vector3 deckPos = basePos + deckOffset;
-
-            // 1. Spawn the Deck Visual
-            if (deckVisualPrefab != null)
-            {
-                Quaternion deckRot = baseRot * Quaternion.Euler(0, UnityEngine.Random.Range(-5f, 5f), 0);
-                _currentDeckObj = Instantiate(deckVisualPrefab, deckPos, deckRot);
-            }
-
-            // 2. Spawn the Vira card next to the deck (un poco más al centro)
-            Vector3 viraPos = deckPos + (anchor.forward * 0.15f);
+            Vector3 deckPos = basePos + deckOffset + (anchor.up * deckHeightOffset);
+            Vector3 viraPos = basePos + deckOffset + (anchor.forward * 0.15f) + (anchor.up * viraHeightOffset);
             
-            // Apply a 90-degree rotation on X so the card lays flat on the table (face up)
-            Quaternion flatRot = baseRot * Quaternion.Euler(90f, 0f, 0f);
-            _currentViraObj = Instantiate(card3DPrefab, viraPos, flatRot);
+            Quaternion flatRot = baseRot * Quaternion.Euler(90f, 180f, 0f);
+            
+            _currentViraObj = Instantiate(card3DPrefab, deckPos, baseRot);
             
             var physicalCard = _currentViraObj.GetComponent<Code.Cards.PhysicalCard3D>();
-            if (physicalCard != null)
-            {
-                physicalCard.SetupCard(card.value, card.suit);
-            }
-            
-            Debug.Log($"[TableManager] Vira and Deck spawned near Seat {dealerSeatIndex} using offset from tableCardPositions.");
+            if (physicalCard != null) physicalCard.SetupCard(card.value, card.suit);
+
+            var juicyAnimator = _currentViraObj.GetComponent<Code.Cards.JuicyCardAnimator>();
+            if (juicyAnimator == null) juicyAnimator = _currentViraObj.AddComponent<Code.Cards.JuicyCardAnimator>();
+
+            if (AudioManager.Instance != null) AudioManager.Instance.PlaySFX("vira_slide_swoosh");
+
+            juicyAnimator.AnimateViraReveal(
+                startPos: deckPos,
+                targetPos: viraPos,
+                targetRot: flatRot,
+                duration: 0.7f,
+                onImpact: () =>
+                {
+                    if (AudioManager.Instance != null) AudioManager.Instance.PlaySFX("vira_flip_chirp");
+                    if (JuiceVFXManager.Instance != null)
+                    {
+                        JuiceVFXManager.Instance.ShakeCamera(0.12f, 0.03f);
+                        JuiceVFXManager.Instance.PlayImpactParticles(viraPos);
+                    }
+                }
+            );
         }
 
         // [Server]
@@ -105,7 +160,6 @@ namespace Code.GameLogic
         {
             if (card3DPrefab == null)
             {
-                Debug.LogWarning("Card 3D Prefab is not assigned in TableManager.");
                 return;
             }
 
@@ -139,6 +193,12 @@ namespace Code.GameLogic
             // Apply a 90-degree rotation on X so the card lays flat on the table (face up)
             Quaternion targetRot = basePos.rotation * Quaternion.Euler(90f, 0f, 0f);
             
+            if (card.isBurned)
+            {
+                // Face down
+                targetRot = basePos.rotation * Quaternion.Euler(-90f, 0f, 0f);
+            }
+            
             // Start from custom pos or player position for animation
             Vector3 startPos = customStartPos.HasValue ? customStartPos.Value : player.transform.position + Vector3.up * 1.5f;
             
@@ -147,14 +207,97 @@ namespace Code.GameLogic
             var physicalCard = cardObj.GetComponent<Code.Cards.PhysicalCard3D>();
             if (physicalCard != null)
             {
-                physicalCard.SetupCard(card.value, card.suit);
+                if (card.isBurned)
+                {
+                    physicalCard.SetupCard(0, ""); // No pintar la cara
+                }
+                else
+                {
+                    physicalCard.SetupCard(card.value, card.suit);
+                }
             }
             
-            // Animate card to table
-            cardObj.transform.DOMove(targetPos, 0.6f).SetEase(DG.Tweening.Ease.OutQuart);
-            cardObj.transform.DORotateQuaternion(targetRot, 0.6f).SetEase(DG.Tweening.Ease.OutQuart);
+            // Animate card to table using JuicyCardAnimator
+            var juicyAnimator = cardObj.GetComponent<Code.Cards.JuicyCardAnimator>();
+            if (juicyAnimator == null)
+            {
+                juicyAnimator = cardObj.AddComponent<Code.Cards.JuicyCardAnimator>();
+            }
+
+            juicyAnimator.AnimatePlayToTable(
+                targetPos,
+                targetRot,
+                duration: 0.6f,
+                onImpact: () =>
+                {
+                    if (JuiceVFXManager.Instance != null)
+                    {
+                        JuiceVFXManager.Instance.ShakeCamera(0.15f, 0.05f);
+                        JuiceVFXManager.Instance.PlayImpactParticles(targetPos);
+                    }
+                    if (AudioManager.Instance != null)
+                    {
+                        AudioManager.Instance.PlaySFX("card_slam_thud");
+                    }
+                }
+            );
             
             _spawnedCards.Add(cardObj);
+        }
+
+        public void AnimateCardsToDeck(System.Action onComplete = null)
+        {
+            if (_currentDeckObj == null || (_spawnedCards.Count == 0 && _currentViraObj == null))
+            {
+                ClearTable();
+                onComplete?.Invoke();
+                return;
+            }
+
+            Vector3 deckPos = _currentDeckObj.transform.position;
+            float duration = 0.5f;
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX("cards_sweep_shove");
+            }
+
+            int cardsAnimating = _spawnedCards.Count;
+            if (_currentViraObj != null) cardsAnimating++;
+
+            if (cardsAnimating == 0)
+            {
+                ClearTable();
+                onComplete?.Invoke();
+                return;
+            }
+
+            System.Action onCardComplete = () =>
+            {
+                cardsAnimating--;
+                if (cardsAnimating <= 0)
+                {
+                    ClearTable();
+                    onComplete?.Invoke();
+                }
+            };
+
+            foreach (var cardObj in _spawnedCards)
+            {
+                if (cardObj != null)
+                {
+                    cardObj.transform.DOMove(deckPos, duration).SetEase(DG.Tweening.Ease.InBack).OnComplete(() => onCardComplete());
+                }
+                else
+                {
+                    onCardComplete();
+                }
+            }
+
+            if (_currentViraObj != null)
+            {
+                _currentViraObj.transform.DOMove(deckPos, duration).SetEase(DG.Tweening.Ease.InBack).OnComplete(() => onCardComplete());
+            }
         }
 
         public void ClearTable()
@@ -164,6 +307,9 @@ namespace Code.GameLogic
             {
                 if (cardObj != null) Destroy(cardObj);
             }
+            if (_currentViraObj != null) Destroy(_currentViraObj);
+            // Deck is purposely NOT destroyed so it can be animated to the next dealer
+
             _spawnedCards.Clear();
             _cardsPerPlayer.Clear();
             CardsInTable.Clear();
@@ -172,9 +318,36 @@ namespace Code.GameLogic
         public void PlaceCard(Card card, GameObject player, Vector3? startPos = null)
         {
             card.ownerObj = player;
+            
+            // Calculate/re-evaluate realValue based on the current Vira card
+            var deckCreator = DeckCreator.Instance;
+            if (deckCreator != null && deckCreator.cardVira != null)
+            {
+                card.realValue = TrucoRules.GetCardRealValue(card, deckCreator.cardVira);
+            }
+            else
+            {
+            }
+
+            if (card.isBurned)
+            {
+                card.realValue = -1;
+            }
+
             CardsInTable.Add(card);
             SpawnCard3D(card, player, startPos);
             
+            // Disable turn state immediately for local player to avoid double clicks
+            var playerLocal = player.GetComponent<Code.Player.PlayerLocal>();
+            if (playerLocal != null && playerLocal.player != null)
+            {
+                playerLocal.player.canPlayCard = false;
+                if (global::Code.Player.PlayerHUD.Instance != null)
+                {
+                    global::Code.Player.PlayerHUD.Instance.UpdateTurnState(false, playerLocal.player.playerName);
+                }
+            }
+
             // Disparar evento de dominio
             OnCardPlaced?.Invoke(card, player);
         }
@@ -204,7 +377,6 @@ namespace Code.GameLogic
         {
             if (CardsInTable == null || CardsInTable.Count == 0)
             {
-                Debug.Log("There is no enough cards on the table to evaluate");
                 return;
             }
 
@@ -241,7 +413,6 @@ namespace Code.GameLogic
 
                 if (differentTeams)
                 {
-                    Debug.Log("[TableManager] ¡EMPARDADO! Varios equipos tienen la misma carta más alta.");
                     GameManager.Instance.HandleTrickResult(null); // Null means tie
                     RpcHighestCard(highestCards[0], null); // Simplified RPC
                     OnTrickEvaluated?.Invoke();
@@ -250,7 +421,6 @@ namespace Code.GameLogic
             }
             
             Card winningCard = highestCards[0];
-            Debug.Log($"[TableManager] Ganador de la baza: {GetPlayerName(winningCard)} del equipo {GetTeamName(winningCard)}");
             
             GameManager.Instance.HandleTrickResult(winningCard.ownerObj);
 
@@ -264,12 +434,9 @@ namespace Code.GameLogic
         {
             if (highestCard == null)
             {
-                Debug.Log("=== Trick Tied ===");
                 return;
             }
-
-            Debug.Log("=== Final Results ===");
-            Debug.Log($"Highest Card: Value={highestCard.realValue}, Suit={highestCard.suit}, " +
+            Debug.Log($"Highest Card: {highestCard.value} of {highestCard.suit}, " +
                       $"Owner={GetPlayerName(highestCard)}, Team={GetTeamName(highestCard)}");
         }
     }

@@ -56,7 +56,6 @@ namespace Code.Player
             // Register player to game manager for solo mode
             if (GameManager.Instance != null)
             {
-                Debug.Log($"[PlayerLocal] Registrando a {gameObject.name} en el GameManager.");
                 GameManager.Instance.AddPlayerToServer(this);
             }
             else
@@ -86,7 +85,6 @@ namespace Code.Player
         // [Command]
         private void CmdRequestPlayerFromServer()
         {
-            Debug.Log("This message is to the server");
 
             // Check if GameManager.Instance is null
             if (GameManager.Instance == null)
@@ -120,8 +118,6 @@ namespace Code.Player
 
 
                 RpcServerPlayerToClient(localPlayer, localPlayer.player.playerName, localPlayer.player.team.teamName);
-                Debug.Log("[SERVER] Player name: " + localPlayer.player.playerName);
-                Debug.Log("[SERVER] Team name: " + localPlayer.player.team.teamName);
             }
         }
 
@@ -132,11 +128,8 @@ namespace Code.Player
             if (isServer)
                 return;
 
-            Debug.Log("Adding players to the local");
 
             //debug player name and team name
-            Debug.Log("Player name: " + playerName);
-            Debug.Log("Team name: " + teamName);
 
             GameManager.Instance.serverPlayers.Add(localPlayer);
             player.playerName = playerName;

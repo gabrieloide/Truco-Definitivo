@@ -2011,7 +2011,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1105370806
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2029,8 +2029,8 @@ MonoBehaviour:
   headlessStartMode: 1
   editorAutoStart: 0
   sendRate: 60
-  offlineScene: Assets/Scenes/LobbyScene.unity
-  onlineScene: Assets/Scenes/LobbyScene.unity
+  offlineScene: 
+  onlineScene: 
   offlineSceneLoadDelay: 0
   transport: {fileID: 1105370807}
   networkAddress: localhost
@@ -2766,6 +2766,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isServer: 1
+  localPlayer: {fileID: 0}
+  defaultLocalSeatIndex: 0
   serverPlayers: []
   allPlayers: []
   currentPlayerTurn: 0

@@ -51,7 +51,6 @@ namespace Code.DebugTools
                 chair.deckAnchor = deckObj.transform;
             }
             
-            Debug.Log($"[ChairSetupTool] Anchors configured for {gameObject.name}");
         }
 
         private void OnDrawGizmosSelected()
@@ -77,7 +76,7 @@ namespace Code.DebugTools
 
 #if UNITY_EDITOR
     [CustomEditor(typeof(ChairSetupTool))]
-    public class ChairSetupToolEditor : Editor
+    public class ChairSetupToolEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {

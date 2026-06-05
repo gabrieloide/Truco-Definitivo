@@ -83,7 +83,6 @@ namespace Code.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log($"[CardDataGenerator] Se generaron/actualizaron {generatedCards.Count} cartas y se enlazaron en la CardDatabase.");
         }
     }
 }

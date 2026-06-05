@@ -30,7 +30,6 @@ namespace Code.GameLogic.Announcement
                 _ => "Truco"
             };
 
-            Debug.Log($"[TrucoAnnouncement] ¡{stateName} ACEPTADO!");
             int points = IncreasingAmount()[acceptAmount];
             GameManager.Instance.currentHandValue = points;
         }

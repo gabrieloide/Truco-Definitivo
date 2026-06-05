@@ -20,7 +20,6 @@ namespace Code.Player
         private void Start()
         {
             _mainCamera = Camera.main;
-            Debug.Log($"[PlayerInteract] Script activo en {gameObject.name}. Rango: {interactRange}");
         }
 
         private void Update()
@@ -101,7 +100,6 @@ namespace Code.Player
 
             if (_currentInteractable != null)
             {
-                Debug.Log($"[PlayerInteract] Interactuando con: {(_currentInteractable as MonoBehaviour)?.name ?? "Objeto"}");
                 // Usamos la raíz para que PhysicalCard3D encuentre al PlayerLocal siempre
                 _currentInteractable.Interact(transform.root.gameObject);
             }

@@ -88,7 +88,6 @@ namespace Code.Networking
         {
             if (GameManager.Instance.serverPlayers.Count % 2 != 0)
             {
-                Debug.Log("There is no enough players in Lobby.");
                 return;
             }
             

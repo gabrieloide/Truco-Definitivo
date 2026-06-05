@@ -1,0 +1,237 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 181112d7567425045903582327fb0c80, type: 3}
+  m_Name: AudioDatabase
+  m_EditorClassIdentifier: 
+  audioDataList:
+  - id: backyard_truco
+    clip: {fileID: 8300000, guid: 6666d4f9941bbb04e88c2e2c1b82cd08, type: 3}
+    volume: 0.067
+    pitch: 1
+    loop: 1
+    audioMixerGroup: {fileID: 0}
+  - id: canto_aley_gong
+    clip: {fileID: 8300000, guid: 58923ad6accc0f8458a3ec972401c92d, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: canto_contraflor_chime
+    clip: {fileID: 8300000, guid: 57de6b899c0e1d141849794de73dc810, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: canto_contraflor_resto_blast
+    clip: {fileID: 8300000, guid: 4cd41d2b570bade4f819be1a11fbbdeb, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: canto_envido_wood
+    clip: {fileID: 8300000, guid: 153e4e2fdc97f674f8fed818e6d63b4e, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: canto_faltaenvido_sweep
+    clip: {fileID: 8300000, guid: a5b8c37e9878e874cac098feeae23a33, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: canto_flor_bell
+    clip: {fileID: 8300000, guid: 5d90b0707e0de764098425a5e0222a5b, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: canto_realenvido_wood
+    clip: {fileID: 8300000, guid: 0f32d3d3117f3af43bff76ea1a0cbd4f, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: canto_retruco_raise
+    clip: {fileID: 8300000, guid: 3487606455ae78c4094612c12ca61734, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: canto_truco_warn
+    clip: {fileID: 8300000, guid: 46d6e3438d9601040aa86061070bbee4, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: canto_valecuatro_siren
+    clip: {fileID: 8300000, guid: 273dad9acb495434f915002bc29c5dff, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: card_deal_swoosh
+    clip: {fileID: 8300000, guid: 81da8a640198ff843999c515da048f43, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: card_deselect_tone
+    clip: {fileID: 8300000, guid: ddb613e0ac651594d8d6ecea0b3cb5a2, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: card_fly_whistle
+    clip: {fileID: 8300000, guid: 970cc62895ddeea44a69815cf3c4edca, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: card_hover
+    clip: {fileID: 8300000, guid: 3a96bea941b73654db5ba454cd70a116, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: card_select_tone
+    clip: {fileID: 8300000, guid: 3fe8d9f989b18094a9d8bd4f09dd1fd0, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: card_shuffle_rattle
+    clip: {fileID: 8300000, guid: 4e4e7bfb67c93bb41b7d36d68ddbb0fd, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: card_slam_thud
+    clip: {fileID: 8300000, guid: 3a52f057316037241bcf8da361b004cb, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: cards_sweep_shove
+    clip: {fileID: 8300000, guid: cfccb15cb1fcf054cb0160f0f27cefea, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: confirm_quiero_positive
+    clip: {fileID: 8300000, guid: 70bcf6a448da967488c97eb0923fe3b4, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: decline_noquiero_neg
+    clip: {fileID: 8300000, guid: 2f70f009e363ce940a5c9a7398b77808, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: fold_go_to_deck_slide
+    clip: {fileID: 8300000, guid: 25d48968e38444a4f92487b827802109, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: main_menu_truco
+    clip: {fileID: 8300000, guid: 2b9ed61ba88b1364186d21a49e042429, type: 3}
+    volume: 0.067
+    pitch: 1
+    loop: 1
+    audioMixerGroup: {fileID: 0}
+  - id: match_defeat_sadness
+    clip: {fileID: 8300000, guid: 48f530c6db8ec914a800f70f07d1c12d, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: match_victory_melody
+    clip: {fileID: 8300000, guid: 9bb4d146e1cb46a4585b85d1920dfb13, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: modal_close_whoosh
+    clip: {fileID: 8300000, guid: 46a370c753b6e7e40aec203020abd340, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: modal_open_whoosh
+    clip: {fileID: 8300000, guid: bfaf0595c8546c147a41502e24d7d454, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: parda_tie_dissonance
+    clip: {fileID: 8300000, guid: 9a44532f532924b42b2e411e1be8525f, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: score_add_chalk
+    clip: {fileID: 8300000, guid: 9aa4414166fe77345aa2d66cfe51e2ef, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: score_buenas_fanfare
+    clip: {fileID: 8300000, guid: 59b6eb262cba35d4684907d8897448f1, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: slider_tick_pop
+    clip: {fileID: 8300000, guid: 02a5fbf44d25fa34988c39c5cbbc5f44, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: trick_won_coin
+    clip: {fileID: 8300000, guid: f3fa6ca16f474764da48d773f294c17c, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: turn_alert_ping
+    clip: {fileID: 8300000, guid: dc435251ec71e694c993aed94889ddc9, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: ui_button_click_press
+    clip: {fileID: 8300000, guid: 03a03f074d4d1e24c9e1eec0fd1d1e14, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: ui_button_hover_pop
+    clip: {fileID: 8300000, guid: 72b1e7a33329b9c4bb093de64923f9fe, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: vira_flip_chirp
+    clip: {fileID: 8300000, guid: 5fa27444fdb72fd4e8db5cc9254f77a2, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}
+  - id: vira_slide_swoosh
+    clip: {fileID: 8300000, guid: a8d6f02b3b57ace4ea4a6f8beaca1ab0, type: 3}
+    volume: 1
+    pitch: 1
+    loop: 0
+    audioMixerGroup: {fileID: 0}

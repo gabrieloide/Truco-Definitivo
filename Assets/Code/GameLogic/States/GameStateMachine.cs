@@ -13,7 +13,6 @@ namespace Code.GameLogic.States
         {
             if (_currentState != null)
             {
-                Debug.Log($"[StateMachine] Saliendo de estado: {_currentState.GetType().Name}");
                 _currentState.ExitState();
             }
 
@@ -21,7 +20,6 @@ namespace Code.GameLogic.States
 
             if (_currentState != null)
             {
-                Debug.Log($"[StateMachine] Entrando a estado: {_currentState.GetType().Name}");
                 _currentState.Initialize(this);
                 _currentState.EnterState();
             }

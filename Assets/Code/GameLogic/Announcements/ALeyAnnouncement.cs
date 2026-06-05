@@ -14,7 +14,6 @@ namespace Code.GameLogic.Announcement
 
         public override void UpdateTotalScore()
         {
-            Debug.Log("¡A Ley! Verificando si el oponente tiene Flor...");
             // No score increase for A Ley per user rules
         }
     }

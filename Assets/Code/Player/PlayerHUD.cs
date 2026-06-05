@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Code.GameLogic;
 using Mirror;
 using TMPro;
@@ -8,6 +9,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
+using Code.Scripts.Audio;
 
 namespace Code.Player
 {
@@ -34,6 +36,7 @@ namespace Code.Player
 
         [Header("Response Buttons")]
         private VisualElement _responseBar;
+        private Label _responseTitleLabel;
         private Button _acceptButton;
         private Button _declineButton;
         private Button _moreButton;
@@ -53,6 +56,13 @@ namespace Code.Player
         private VisualElement _quitConfirmModal;
         private Button _confirmYesButton;
         private Button _confirmNoButton;
+        private Button _infoButton;
+        private Button _cameraButton;
+
+        [Header("Card Action Menu")]
+        private VisualElement _cardActionMenu;
+        private Button _cardPlayBtn;
+        private Button _cardBurnBtn;
 
         private void Awake()
         {
@@ -100,10 +110,8 @@ namespace Code.Player
 
         public void NotifyEvent(string message, float duration = 3f)
         {
-            Debug.Log($"[PlayerHUD] NotifyEvent called: {message}");
             if (_notificationLabel == null) 
             {
-                Debug.LogWarning("[PlayerHUD] _notificationLabel is null, searching again...");
                 _notificationLabel = _root?.Q<Label>("notification-label");
                 if (_notificationLabel == null)
                 {
@@ -113,8 +121,7 @@ namespace Code.Player
             }
 
             _notificationLabel.text = message;
-            _notificationLabel.style.display = DisplayStyle.Flex;
-            _notificationLabel.style.opacity = 1f;
+            _notificationLabel.AddToClassList("visible");
 
             // Auto-hide after duration
             CancelInvoke("HideNotification");
@@ -124,7 +131,48 @@ namespace Code.Player
         private void HideNotification()
         {
             if (_notificationLabel != null)
-                _notificationLabel.style.display = DisplayStyle.None;
+                _notificationLabel.RemoveFromClassList("visible");
+        }
+
+        private void Update()
+        {
+            if (_cardActionMenu == null) return;
+            
+            bool shouldShow = false;
+            
+            if (Application.isMobilePlatform)
+            {
+                var allPlayers = FindObjectsByType<PlayerLocal>(FindObjectsSortMode.None);
+                var playerLocal = allPlayers.FirstOrDefault(p => p.isLocalPlayer && p.gameObject.activeInHierarchy);
+                if (playerLocal != null && playerLocal.selectedCardInteraction != null)
+                {
+                    shouldShow = true;
+                }
+            }
+            
+            _cardActionMenu.style.display = shouldShow ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        private void OnCardPlayClicked()
+        {
+            var allPlayers = FindObjectsByType<PlayerLocal>(FindObjectsSortMode.None);
+            var playerLocal = allPlayers.FirstOrDefault(p => p.isLocalPlayer && p.gameObject.activeInHierarchy);
+            if (playerLocal != null && playerLocal.selectedCardInteraction != null)
+            {
+                playerLocal.selectedCardInteraction.PlayCardToTable(false);
+                playerLocal.selectedCardInteraction = null;
+            }
+        }
+
+        private void OnCardBurnClicked()
+        {
+            var allPlayers = FindObjectsByType<PlayerLocal>(FindObjectsSortMode.None);
+            var playerLocal = allPlayers.FirstOrDefault(p => p.isLocalPlayer && p.gameObject.activeInHierarchy);
+            if (playerLocal != null && playerLocal.selectedCardInteraction != null)
+            {
+                playerLocal.selectedCardInteraction.PlayCardToTable(true);
+                playerLocal.selectedCardInteraction = null;
+            }
         }
 
         private void InitializeUI()
@@ -165,6 +213,7 @@ namespace Code.Player
 
             // Response Buttons
             _responseBar = _root.Q<VisualElement>("hud-response-bar");
+            _responseTitleLabel = _root.Q<Label>("response-title-label");
             _acceptButton = _root.Q<Button>("accept-button");
             _declineButton = _root.Q<Button>("decline-button");
             _moreButton = _root.Q<Button>("more-button");
@@ -178,77 +227,58 @@ namespace Code.Player
             {
                 _stonesSlider.RegisterValueChangedCallback(evt => {
                     if (_sliderLabel != null) _sliderLabel.text = $"+{evt.newValue} {(evt.newValue == 1 ? "PIEDRA" : "PIEDRAS")}";
+                    if (AudioManager.Instance != null)
+                    {
+                        AudioManager.Instance.PlaySFX("slider_tick_pop");
+                    }
                 });
             }
 
             // Hierarchy Modal
             _hierarchyModal = _root.Q<VisualElement>("hierarchy-modal");
             _closeHierarchyButton = _root.Q<Button>("close-hierarchy-button");
-            if (_closeHierarchyButton != null)
-            {
-                _closeHierarchyButton.clicked -= HideCardHierarchy;
-                _closeHierarchyButton.clicked += HideCardHierarchy;
-            }
+            SetupButton(_closeHierarchyButton, HideCardHierarchy);
 
             // Pause Modal
             _pauseModal = _root.Q<VisualElement>("pause-modal");
             _resumeButton = _root.Q<Button>("resume-button");
             _quitButton = _root.Q<Button>("quit-button");
-            if (_resumeButton != null) 
-            {
-                _resumeButton.clicked -= TogglePauseMenu;
-                _resumeButton.clicked += TogglePauseMenu;
-            }
-            if (_quitButton != null) 
-            {
-                _quitButton.clicked -= ShowQuitConfirm;
-                _quitButton.clicked += ShowQuitConfirm;
-            }
+            SetupButton(_resumeButton, TogglePauseMenu);
+            SetupButton(_quitButton, ShowQuitConfirm);
 
             // Quit Confirm Modal
             _quitConfirmModal = _root.Q<VisualElement>("quit-confirm-modal");
-            if (_quitConfirmModal != null) _quitConfirmModal.style.display = DisplayStyle.None;
-            
             _confirmYesButton = _root.Q<Button>("confirm-yes-button");
-            if (_confirmYesButton != null) 
-            {
-                _confirmYesButton.clicked -= ConfirmQuitGame;
-                _confirmYesButton.clicked += ConfirmQuitGame;
-            }
-
             _confirmNoButton = _root.Q<Button>("confirm-no-button");
-            if (_confirmNoButton != null) 
-            {
-                _confirmNoButton.clicked -= CancelQuit;
-                _confirmNoButton.clicked += CancelQuit;
-            }
+            SetupButton(_confirmYesButton, ConfirmQuitGame);
+            SetupButton(_confirmNoButton, CancelQuit);
 
             // Info Button (to open Hierarchy)
-            var infoButton = _root.Q<Button>("info-button");
-            if (infoButton != null) 
-            {
-                infoButton.clicked -= ShowCardHierarchy;
-                infoButton.clicked += ShowCardHierarchy;
-            }
+            _infoButton = _root.Q<Button>("info-button");
+            SetupButton(_infoButton, ShowCardHierarchy);
 
             // Camera Button
-            var cameraButton = _root.Q<Button>("camera-button");
-            if (cameraButton != null) 
-            {
-                cameraButton.clicked -= ToggleCamera;
-                cameraButton.clicked += ToggleCamera;
-            }
+            _cameraButton = _root.Q<Button>("camera-button");
+            SetupButton(_cameraButton, ToggleCamera);
 
-            // 2. Suscribirse a los eventos de los botones (limpiando primero por si InitializeUI se llama múltiples veces)
-            if (_aleyButton != null) { _aleyButton.clicked -= OnALeyClicked; _aleyButton.clicked += OnALeyClicked; }
-            if (_envidoButton != null) { _envidoButton.clicked -= OnEnvidoClicked; _envidoButton.clicked += OnEnvidoClicked; }
-            if (_trucoButton != null) { _trucoButton.clicked -= OnTrucoClicked; _trucoButton.clicked += OnTrucoClicked; }
-            if (_florButton != null) { _florButton.clicked -= OnFlorClicked; _florButton.clicked += OnFlorClicked; }
-            if (_pauseButton != null) { _pauseButton.clicked -= OnPauseClicked; _pauseButton.clicked += OnPauseClicked; }
+            // Card Action Menu
+            _cardActionMenu = _root.Q<VisualElement>("card-action-menu");
+            _cardPlayBtn = _root.Q<Button>("card-play-btn");
+            _cardBurnBtn = _root.Q<Button>("card-burn-btn");
 
-            if (_acceptButton != null) { _acceptButton.clicked -= OnAcceptClicked; _acceptButton.clicked += OnAcceptClicked; }
-            if (_declineButton != null) { _declineButton.clicked -= OnDeclineClicked; _declineButton.clicked += OnDeclineClicked; }
-            if (_moreButton != null) { _moreButton.clicked -= OnMoreClicked; _moreButton.clicked += OnMoreClicked; }
+            SetupButton(_cardPlayBtn, OnCardPlayClicked);
+            SetupButton(_cardBurnBtn, OnCardBurnClicked);
+
+            // 2. Suscribirse a los eventos de los botones
+            SetupButton(_aleyButton, OnALeyClicked);
+            SetupButton(_envidoButton, OnEnvidoClicked);
+            SetupButton(_trucoButton, OnTrucoClicked);
+            SetupButton(_florButton, OnFlorClicked);
+            SetupButton(_pauseButton, OnPauseClicked);
+
+            SetupButton(_acceptButton, OnAcceptClicked);
+            SetupButton(_declineButton, OnDeclineClicked);
+            SetupButton(_moreButton, OnMoreClicked);
 
             // Ocultar los botones inicialmente
             SetActionsVisible(false);
@@ -257,26 +287,26 @@ namespace Code.Player
 
         private void OnDisable()
         {
-            if (_aleyButton != null) _aleyButton.clicked -= OnALeyClicked;
-            if (_envidoButton != null) _envidoButton.clicked -= OnEnvidoClicked;
-            if (_trucoButton != null) _trucoButton.clicked -= OnTrucoClicked;
-            if (_florButton != null) _florButton.clicked -= OnFlorClicked;
-            if (_pauseButton != null) _pauseButton.clicked -= OnPauseClicked;
+            CleanupButton(_aleyButton, OnALeyClicked);
+            CleanupButton(_envidoButton, OnEnvidoClicked);
+            CleanupButton(_trucoButton, OnTrucoClicked);
+            CleanupButton(_florButton, OnFlorClicked);
+            CleanupButton(_pauseButton, OnPauseClicked);
 
-            if (_acceptButton != null) _acceptButton.clicked -= OnAcceptClicked;
-            if (_declineButton != null) _declineButton.clicked -= OnDeclineClicked;
-            if (_moreButton != null) _moreButton.clicked -= OnMoreClicked;
-            if (_closeHierarchyButton != null) _closeHierarchyButton.clicked -= HideCardHierarchy;
-            if (_resumeButton != null) _resumeButton.clicked -= TogglePauseMenu;
-            if (_quitButton != null) _quitButton.clicked -= ShowQuitConfirm;
-            if (_confirmYesButton != null) _confirmYesButton.clicked -= ConfirmQuitGame;
-            if (_confirmNoButton != null) _confirmNoButton.clicked -= CancelQuit;
+            CleanupButton(_acceptButton, OnAcceptClicked);
+            CleanupButton(_declineButton, OnDeclineClicked);
+            CleanupButton(_moreButton, OnMoreClicked);
+            
+            CleanupButton(_closeHierarchyButton, HideCardHierarchy);
+            CleanupButton(_resumeButton, TogglePauseMenu);
+            CleanupButton(_quitButton, ShowQuitConfirm);
+            CleanupButton(_confirmYesButton, ConfirmQuitGame);
+            CleanupButton(_confirmNoButton, CancelQuit);
+            CleanupButton(_infoButton, ShowCardHierarchy);
+            CleanupButton(_cameraButton, ToggleCamera);
 
-            var infoButton = _root?.Q<Button>("info-button");
-            if (infoButton != null) infoButton.clicked -= ShowCardHierarchy;
-
-            var cameraButton = _root?.Q<Button>("camera-button");
-            if (cameraButton != null) cameraButton.clicked -= ToggleCamera;
+            CleanupButton(_cardPlayBtn, OnCardPlayClicked);
+            CleanupButton(_cardBurnBtn, OnCardBurnClicked);
 
             GameManager.OnTurnStarted -= HandleTurnStarted;
             GameManager.OnScoreChanged -= UpdateScore;
@@ -368,7 +398,8 @@ namespace Code.Player
             SetButtonVisible(_trucoButton, isFirstRound && !WasCalled(AnnounceState.Truco));
 
             // Flor solo si el jugador realmente la tiene Y es la primera ronda Y no se cantó
-            var playerLocal = FindAnyObjectByType<PlayerLocal>();
+            var allPlayers = FindObjectsByType<PlayerLocal>(FindObjectsSortMode.None);
+            var playerLocal = allPlayers.FirstOrDefault(p => p.isLocalPlayer && p.gameObject.activeInHierarchy);
             bool hasFlor = playerLocal != null && playerLocal.player != null && playerLocal.player.haveFlower;
             SetButtonVisible(_florButton, hasFlor && isFirstRound && !WasCalled(AnnounceState.Flor));
 
@@ -378,7 +409,7 @@ namespace Code.Player
                 return announceManager.WasAnnouncementCalledThisHand(state);
             }
         }
-        public void ShowResponseButtons(bool visible, string acceptText = "QUIERO", string declineText = "NO QUIERO", bool showMore = false, bool showSlider = false)
+        public void ShowResponseButtons(bool visible, string acceptText = "QUIERO", string declineText = "NO QUIERO", bool showMore = false, bool showSlider = false, string title = "")
         {
             if (_responseBar != null)
                 _responseBar.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
@@ -390,6 +421,19 @@ namespace Code.Player
                 if (_moreButton != null) _moreButton.style.display = showMore ? DisplayStyle.Flex : DisplayStyle.None;
                 
                 if (_sliderContainer != null) _sliderContainer.style.display = showSlider ? DisplayStyle.Flex : DisplayStyle.None;
+
+                if (_responseTitleLabel != null)
+                {
+                    if (string.IsNullOrEmpty(title))
+                    {
+                        _responseTitleLabel.style.display = DisplayStyle.None;
+                    }
+                    else
+                    {
+                        _responseTitleLabel.text = title.ToUpper();
+                        _responseTitleLabel.style.display = DisplayStyle.Flex;
+                    }
+                }
 
                 // Hide normal action buttons when responding
                 SetActionsVisible(false);
@@ -410,49 +454,41 @@ namespace Code.Player
         
         private void OnALeyClicked()
         {
-            Debug.Log("[PlayerHUD] ¡A Ley! presionado en UI Toolkit.");
             global::Code.Core.GameEventManager.EmitAnnounceButtonClicked("ALeyButton");
         }
 
         private void OnEnvidoClicked()
         {
-            Debug.Log("[PlayerHUD] ¡Envido! presionado en UI Toolkit.");
             global::Code.Core.GameEventManager.EmitAnnounceButtonClicked("EnvidoButton");
         }
 
         private void OnTrucoClicked()
         {
-            Debug.Log("[PlayerHUD] ¡Quiero Truco! presionado en UI Toolkit.");
             global::Code.Core.GameEventManager.EmitAnnounceButtonClicked("TrucoButton");
         }
 
         private void OnFlorClicked()
         {
-            Debug.Log("[PlayerHUD] ¡Flor! presionado en UI Toolkit.");
             global::Code.Core.GameEventManager.EmitAnnounceButtonClicked("FlorButton");
         }
 
         private void OnAcceptClicked()
         {
-            Debug.Log("[PlayerHUD] Accept clicked");
             global::Code.Core.GameEventManager.EmitAcceptButtonClicked();
         }
 
         private void OnDeclineClicked()
         {
-            Debug.Log("[PlayerHUD] Decline clicked");
             global::Code.Core.GameEventManager.EmitDeclineButtonClicked();
         }
 
         private void OnMoreClicked()
         {
-            Debug.Log("[PlayerHUD] More clicked");
             global::Code.Core.GameEventManager.EmitMoreButtonClicked();
         }
 
         private void OnPauseClicked()
         {
-            Debug.Log("[PlayerHUD] Click en botón de pausa de la UI (II).");
             if (PlayerHUD.Instance != null)
             {
                 PlayerHUD.Instance.TogglePauseMenu();
@@ -471,46 +507,72 @@ namespace Code.Player
                 return;
             }
             
-            bool isPauseModalFlex = _pauseModal.style.display == DisplayStyle.Flex;
-            bool isConfirmModalFlex = _quitConfirmModal != null && _quitConfirmModal.style.display == DisplayStyle.Flex;
-            bool isPaused = isPauseModalFlex || isConfirmModalFlex;
+            bool isPauseVisible = _pauseModal.ClassListContains("visible");
+            bool isConfirmVisible = _quitConfirmModal != null && _quitConfirmModal.ClassListContains("visible");
+            bool isPaused = isPauseVisible || isConfirmVisible;
 
-            Debug.Log($"[PlayerHUD] TogglePauseMenu llamado. isPaused = {isPaused} (pauseModal={isPauseModalFlex}, confirmModal={isConfirmModalFlex})");
 
             if (isPaused)
             {
-                Debug.Log("[PlayerHUD] Ocultando menús de pausa.");
-                _pauseModal.style.display = DisplayStyle.None;
-                if (_quitConfirmModal != null) _quitConfirmModal.style.display = DisplayStyle.None;
+                _pauseModal.RemoveFromClassList("visible");
+                if (_quitConfirmModal != null) _quitConfirmModal.RemoveFromClassList("visible");
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlaySFX("modal_close_whoosh");
+                }
             }
             else
             {
-                Debug.Log("[PlayerHUD] Mostrando menú de pausa.");
-                _pauseModal.style.display = DisplayStyle.Flex;
-                if (_quitConfirmModal != null) _quitConfirmModal.style.display = DisplayStyle.None;
+                _pauseModal.AddToClassList("visible");
+                if (_quitConfirmModal != null) _quitConfirmModal.RemoveFromClassList("visible");
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlaySFX("modal_open_whoosh");
+                }
             }
         }
 
         private void ShowQuitConfirm()
         {
-            if (_pauseModal != null) _pauseModal.style.display = DisplayStyle.None;
-            if (_quitConfirmModal != null) _quitConfirmModal.style.display = DisplayStyle.Flex;
+            if (_pauseModal != null) _pauseModal.RemoveFromClassList("visible");
+            if (_quitConfirmModal != null) _quitConfirmModal.AddToClassList("visible");
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX("modal_open_whoosh");
+            }
         }
 
         private void CancelQuit()
         {
-            if (_quitConfirmModal != null) _quitConfirmModal.style.display = DisplayStyle.None;
-            if (_pauseModal != null) _pauseModal.style.display = DisplayStyle.Flex;
+            if (_quitConfirmModal != null) _quitConfirmModal.RemoveFromClassList("visible");
+            if (_pauseModal != null) _pauseModal.AddToClassList("visible");
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX("modal_open_whoosh");
+            }
         }
 
         private void ConfirmQuitGame()
         {
-            Debug.Log("[PlayerHUD] Cargando MainMenu y limpiando estado...");
             
             // Destruir GameManager si existe para reiniciar la partida la próxima vez
             if (GameManager.Instance != null)
             {
                 Destroy(GameManager.Instance.gameObject);
+            }
+
+            // Destruir el jugador local (PlayerLocal) si existe
+            var localPlayer = FindAnyObjectByType<PlayerLocal>();
+            if (localPlayer != null)
+            {
+                Destroy(localPlayer.gameObject);
+            }
+
+            // Destruir el DebugCommands si existe
+            var debugCommands = FindAnyObjectByType<DebugCommands>();
+            if (debugCommands != null)
+            {
+                Destroy(debugCommands.gameObject);
             }
 
             // Destruir también al jugador local / PlayerHUD que tiene DontDestroyOnLoad
@@ -558,30 +620,35 @@ namespace Code.Player
 
         private void UpdateLocalPlayerTeam()
         {
-            if (_teamLabel == null) return;
-            
-            var playerLocal = FindAnyObjectByType<PlayerLocal>();
-            if (playerLocal != null && playerLocal.player != null && playerLocal.player.team != null)
+            if (_teamLabel != null)
             {
-                _teamLabel.text = playerLocal.player.team.teamName;
+                _teamLabel.text = "TEAM 1    -    TEAM 2";
                 _teamLabel.style.display = DisplayStyle.Flex;
-            }
-            else
-            {
-                _teamLabel.style.display = DisplayStyle.None;
             }
         }
 
         public void ShowCardHierarchy()
         {
             if (_hierarchyModal != null)
-                _hierarchyModal.style.display = DisplayStyle.Flex;
+            {
+                _hierarchyModal.AddToClassList("visible");
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlaySFX("modal_open_whoosh");
+                }
+            }
         }
 
         private void HideCardHierarchy()
         {
             if (_hierarchyModal != null)
-                _hierarchyModal.style.display = DisplayStyle.None;
+            {
+                _hierarchyModal.RemoveFromClassList("visible");
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlaySFX("modal_close_whoosh");
+                }
+            }
         }
 
         private void ToggleCamera()
@@ -605,7 +672,44 @@ namespace Code.Player
                     return;
                 }
             }
-            Debug.LogWarning("[PlayerHUD] No se encontró ningún CameraManager con isLocalPlayer = true, ni en el localPlayer ni en la escena.");
+        }
+
+        private void OnButtonHover(PointerEnterEvent evt)
+        {
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX("ui_button_hover_pop");
+            }
+        }
+
+        private void SetupButton(Button button, System.Action onClickAction)
+        {
+            if (button == null) return;
+            
+            button.clicked -= onClickAction;
+            button.clicked += onClickAction;
+            
+            button.clicked -= PlayClickSound;
+            button.clicked += PlayClickSound;
+            
+            button.UnregisterCallback<PointerEnterEvent>(OnButtonHover);
+            button.RegisterCallback<PointerEnterEvent>(OnButtonHover);
+        }
+
+        private void CleanupButton(Button button, System.Action onClickAction)
+        {
+            if (button == null) return;
+            button.clicked -= onClickAction;
+            button.clicked -= PlayClickSound;
+            button.UnregisterCallback<PointerEnterEvent>(OnButtonHover);
+        }
+
+        private void PlayClickSound()
+        {
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX("ui_button_click_press");
+            }
         }
     }
 }

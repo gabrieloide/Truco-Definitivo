@@ -50,7 +50,6 @@ namespace Code.Networking
             ChangeButtonState(false);
             _lobbyObject.SetActive(true);
             _startButtonGame.SetActive(false);
-            Debug.Log("Client connected");
         }
 
 

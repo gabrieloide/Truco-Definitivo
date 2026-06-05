@@ -1,15 +1,13 @@
 using UnityEngine;
-using TMPro;
 using Code.Player;
 using Code.GameLogic;
+using System.Linq;
 
 namespace Code.Cards
 {
     public class PhysicalCard3D : MonoBehaviour, IInteractable
     {
-        [Header("UI References")]
-        public TMP_Text numberText;
-        public TMP_Text suitText;
+        [Header("Visual References")]
         public SpriteRenderer cardImageRenderer; // Opción A: Usar SpriteRenderer
         public MeshRenderer cardMeshRenderer;    // Opción B: Usar Material/MeshRenderer
 
@@ -17,6 +15,17 @@ namespace Code.Cards
         public string cardSuit;
         public int cardDbId;
         public PlayerLocal owner;
+        public Card cardReference;
+        public JuicyCardAnimator animator { get; private set; }
+
+        private void Awake()
+        {
+            animator = GetComponent<JuicyCardAnimator>();
+            if (animator == null)
+            {
+                animator = gameObject.AddComponent<JuicyCardAnimator>();
+            }
+        }
 
         private void OnCardDataChanged(int oldVal, int newVal) { UpdateVisuals(); }
         private void OnCardDataChanged(string oldVal, string newVal) { UpdateVisuals(); }
@@ -28,75 +37,119 @@ namespace Code.Cards
 
         private void UpdateVisuals()
         {
-            if (numberText != null) numberText.text = cardValue.ToString();
-            if (suitText != null) suitText.text = cardSuit;
+            if (string.IsNullOrEmpty(cardSuit) || cardValue == 0) return;
 
-            if (cardDbId > 0)
+            var db = Resources.Load<Code.Cards.CardDatabase>("CardDatabase");
+            if (db != null)
             {
-                var db = Resources.Load<Code.Cards.CardDatabase>("CardDatabase");
-                if (db != null)
+                db.Initialize();
+                // Buscar por valor y palo para que sea 100% robusto y no dependa de IDs
+                var data = db.GetAllCards().FirstOrDefault(c => c.suit.ToString() == cardSuit && c.value == cardValue);
+                if (data != null && data.cardSprite != null)
                 {
-                    db.Initialize();
-                    var data = db.GetCardById(cardDbId);
-                    if (data != null && data.cardSprite != null)
+                    // Opción A: Si usa SpriteRenderer
+                    if (cardImageRenderer != null)
                     {
-                        // Opción A: Si usa SpriteRenderer
-                        if (cardImageRenderer != null)
+                        cardImageRenderer.sprite = data.cardSprite;
+                    }
+
+                    // Opción B: Si prefiere usar un Material (MeshRenderer)
+                    if (cardMeshRenderer != null)
+                    {
+                        Material mat = cardMeshRenderer.material; // Esto crea una instancia del material
+
+                        Rect spriteRect = data.cardSprite.textureRect;
+                        float texWidth = data.cardSprite.texture.width;
+                        float texHeight = data.cardSprite.texture.height;
+
+                        Vector2 scale = new Vector2(spriteRect.width / texWidth, spriteRect.height / texHeight);
+                        Vector2 offset = new Vector2(spriteRect.x / texWidth, spriteRect.y / texHeight);
+
+                        // Diagnóstico de propiedades de textura en el editor
+                        #if UNITY_EDITOR
+                        string[] texProps = mat.GetTexturePropertyNames();
+                        #endif
+
+                        // Intentamos asignar a todas las propiedades de textura comunes (incluido MK Toon)
+                        string[] targetProperties = { "_BaseMap", "_MainTex", "_AlbedoMap", "_AlbedoTex", "_BaseColorMap", "_Albedo" };
+                        bool textureAssigned = false;
+                        foreach (string prop in targetProperties)
                         {
-                            cardImageRenderer.sprite = data.cardSprite;
+                            if (mat.HasProperty(prop))
+                            {
+                                mat.SetTexture(prop, data.cardSprite.texture);
+                                mat.SetTextureScale(prop, scale);
+                                mat.SetTextureOffset(prop, offset);
+                                textureAssigned = true;
+                            }
                         }
 
-                        // Opción B: Si prefiere usar un Material (MeshRenderer)
-                        if (cardMeshRenderer != null)
+                        if (textureAssigned)
                         {
-                            // Como el sprite es parte de un spritesheet, no podemos simplemente asignar la textura.
-                            // Tenemos que calcular el Offset y Scale basándonos en las coordenadas del sprite.
-                            Material mat = cardMeshRenderer.material; // Esto crea una instancia del material
-                            mat.mainTexture = data.cardSprite.texture;
-
-                            Rect spriteRect = data.cardSprite.textureRect;
-                            float texWidth = data.cardSprite.texture.width;
-                            float texHeight = data.cardSprite.texture.height;
-
-                            Vector2 scale = new Vector2(spriteRect.width / texWidth, spriteRect.height / texHeight);
-                            Vector2 offset = new Vector2(spriteRect.x / texWidth, spriteRect.y / texHeight);
-
-                            mat.mainTextureScale = scale;
-                            mat.mainTextureOffset = offset;
+                            // Para MK Toon, es necesario habilitar explícitamente el keyword de albedo map
+                            mat.EnableKeyword("_MK_ALBEDO_MAP");
                         }
-                        
-                        // Ocultar textos si ya tenemos la imagen de la carta
-                        if (numberText != null) numberText.gameObject.SetActive(false);
-                        if (suitText != null) suitText.gameObject.SetActive(false);
+                        else
+                        {
+                        }
+
+                        // Limpiamos los tintes de color en las propiedades de color comunes
+                        string[] colorProperties = { "_BaseColor", "_Color", "_AlbedoColor", "_ColorTint" };
+                        foreach (string prop in colorProperties)
+                        {
+                            if (mat.HasProperty(prop))
+                            {
+                                mat.SetColor(prop, Color.white);
+                            }
+                        }
                     }
                 }
+                else
+                {
+                }
+            }
+            else
+            {
+                Debug.LogError("[PhysicalCard3D] No se pudo cargar CardDatabase desde Resources.");
             }
         }
 
         // [Server]
-        public void SetupCard(int value, string suit, int dbId = 0)
+        public void SetupCard(Card card, int value, string suit, int dbId = 0)
         {
+            cardReference = card;
             cardValue = value;
             cardSuit = suit;
             cardDbId = dbId;
             UpdateVisuals();
         }
 
+        // [Server]
+        public void SetupCard(int value, string suit, int dbId = 0)
+        {
+            SetupCard(null, value, suit, dbId);
+        }
+
         public string GetInteractText()
         {
+            var deckCreator = FindAnyObjectByType<Code.GameLogic.DeckCreator>();
+            if (deckCreator != null && deckCreator.cardVira != null)
+            {
+                int realValue = Code.GameLogic.TrucoRules.GetCardRealValue(cardReference, deckCreator.cardVira);
+                if (realValue == 100) return $"Jugar Perico ({cardValue} de {cardSuit})";
+                if (realValue == 99) return $"Jugar Perica ({cardValue} de {cardSuit})";
+            }
             return $"Jugar {cardValue} de {cardSuit}";
         }
 
         public void Interact(GameObject interactor)
         {
-            Debug.Log($"[PhysicalCard3D] Interact llamado por {interactor.name}");
             PlayerLocal interactorPlayer = interactor.GetComponentInParent<PlayerLocal>();
             
             // Si no lo encontramos por jerarquía, lo buscamos en la escena (válido para Singleplayer)
             if (interactorPlayer == null)
             {
                 interactorPlayer = FindAnyObjectByType<PlayerLocal>();
-                Debug.Log($"[PhysicalCard3D] Buscando PlayerLocal en la escena... Encontrado: {(interactorPlayer != null ? interactorPlayer.name : "NULO")}");
             }
 
             if (interactorPlayer == null)
@@ -109,27 +162,28 @@ namespace Code.Cards
             {
                 if (GameManager.Instance != null && GameManager.Instance.isAnnouncementPending)
                 {
-                    Debug.LogWarning("[PhysicalCard3D] Esperando respuesta al canto...");
                     return;
                 }
 
                 if (!owner.player.canPlayCard)
                 {
-                    Debug.LogWarning($"[PhysicalCard3D] No es tu turno todavía. (Jugador: {owner.name})");
                     return;
                 }
 
-                Debug.Log($"[PhysicalCard3D] Carta {cardValue} de {cardSuit} jugada con éxito por {interactorPlayer.name}");
                 
                 // Logic to play the card
-                Code.GameLogic.Architecture.ICommand playCommand = new Code.GameLogic.Architecture.PlayCardCommand(new Code.GameLogic.Card(cardValue, cardSuit), owner.gameObject, transform.position);
+                Card cardToPlay = cardReference;
+                if (cardToPlay == null)
+                {
+                    cardToPlay = new Code.GameLogic.Card(cardValue, cardSuit) { dbId = cardDbId };
+                }
+                Code.GameLogic.Architecture.ICommand playCommand = new Code.GameLogic.Architecture.PlayCardCommand(cardToPlay, owner.gameObject, transform.position);
                 playCommand.Execute();
                 
                 Destroy(gameObject);
             }
             else
             {
-                Debug.LogWarning($"[PhysicalCard3D] No puedes jugar esta carta. Dueño: {(owner != null ? owner.name : "NULO")}, Interactor: {interactorPlayer.name}. ¿Son el mismo objeto?: {interactorPlayer == owner}");
             }
         }
     }

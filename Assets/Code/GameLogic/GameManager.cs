@@ -9,6 +9,7 @@ using Unity.Collections;
 using UnityEngine;
 using TMPro;
 using UnityEngine.Serialization;
+using Code.Scripts.Audio;
 
 namespace Code.GameLogic
 {
@@ -40,6 +41,9 @@ namespace Code.GameLogic
         public PlayerLocal localPlayer; // Referencia al jugador local (asignada manual o dinámicamente)
         public int defaultLocalSeatIndex = 0; // Índice de la silla donde el jugador local debería empezar
 
+        [Header("Prefabs")]
+        public GameObject deckPrefab;
+
         public List<PlayerLocal> serverPlayers = new List<PlayerLocal>();
         public List<Code.Player.Player> allPlayers = new List<Code.Player.Player>();
 
@@ -49,6 +53,7 @@ namespace Code.GameLogic
         public int round;
         public int dealerIndex = 0; // The seat index of the player who is dealing
         public bool devMode;
+        public bool isHandResolved = false; // Flag to stop trick resolution if hand already ended
 
         public bool isGameScene;
         [HideInInspector] public PlayerInput playerInput;
@@ -56,6 +61,86 @@ namespace Code.GameLogic
         public List<Team> teams = new List<Team>();
         public bool isAnnouncementPending = false; // Bloquea el flujo del juego para esperar respuesta
         public Code.GameLogic.States.GameStateMachine stateMachine { get; private set; }
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void SetupAudioManager()
+        {
+            try
+            {
+                var audioManagerInstance = AudioManager.Instance;
+                if (audioManagerInstance == null)
+                {
+                    Debug.LogError("[GameManager] AudioManager.Instance es nulo al inicializar!");
+                    return;
+                }
+
+                var fieldInfo = typeof(AudioManager).GetField("_database", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (fieldInfo == null)
+                {
+                    Debug.LogError("[GameManager] No se pudo encontrar el campo privado '_database' en AudioManager.");
+                    return;
+                }
+
+                var database = (AudioDatabase)fieldInfo.GetValue(audioManagerInstance);
+                if (database == null)
+                {
+                    var dbAsset = Resources.Load<AudioDatabase>("Audio/AudioDatabase");
+                    if (dbAsset != null)
+                    {
+                        fieldInfo.SetValue(audioManagerInstance, dbAsset);
+                    }
+                    else
+                    {
+                        Debug.LogError("[GameManager] ¡No se pudo cargar Audio/AudioDatabase de Resources!");
+                    }
+                }
+                else
+                {
+                }
+
+                // Force loop=true on music tracks at runtime to guarantee proper looping
+                // regardless of YAML serialization state
+                var db = (AudioDatabase)fieldInfo.GetValue(audioManagerInstance);
+                if (db != null)
+                {
+                    foreach (var audioData in db.audioDataList)
+                    {
+                        if (audioData.id == "backyard_truco" || audioData.id == "main_menu_truco")
+                        {
+                            audioData.loop = true;
+                        }
+                    }
+                }
+
+                UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoadedPlayMusic;
+                UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoadedPlayMusic;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[GameManager] Error al configurar el AudioManager: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+
+        private static void OnSceneLoadedPlayMusic(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            try
+            {
+                var audioManagerInstance = AudioManager.Instance;
+                if (audioManagerInstance == null) return;
+                
+                if (scene.name == "GameScene")
+                {
+                    audioManagerInstance.PlayMusic("backyard_truco", crossfade: true, duration: 1.5f);
+                }
+                else if (scene.name == "MainMenu" || scene.name == "LobbyScene")
+                {
+                    audioManagerInstance.PlayMusic("main_menu_truco", crossfade: true, duration: 1.5f);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[GameManager] Error al cambiar música de escena: {ex.Message}");
+            }
+        }
 
         private void Awake()
         {
@@ -67,6 +152,7 @@ namespace Code.GameLogic
             
             _instance = this;
             DontDestroyOnLoad(gameObject);
+            UnityEngine.Random.InitState((int)System.DateTime.Now.Ticks);
 
             stateMachine = gameObject.AddComponent<Code.GameLogic.States.GameStateMachine>();
 
@@ -122,6 +208,8 @@ namespace Code.GameLogic
 
         private void Update()
         {
+            if (_instance != null && _instance != this) return; // Prevent ghost instances from running
+
             if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "GameScene")
             {
                 isGameScene = true;
@@ -135,9 +223,7 @@ namespace Code.GameLogic
                 var hud = FindAnyObjectByType<PlayerHUD>();
                 if (hud == null)
                 {
-                    Debug.LogWarning("[GameManager] CRITICAL: No se encontró ningún PlayerHUD en la escena.");
                 }
-                Debug.Log($"[GameManager] Status: isGameScene={isGameScene}, _gameSceneStarted={_gameSceneStarted}");
             }
 
             if (_gameSceneStarted) return;
@@ -148,29 +234,30 @@ namespace Code.GameLogic
         private void RunOnlyOnce()
         {
             _gameSceneStarted = true;
-            Debug.Log("[GameManager] RunOnlyOnce: Iniciando partida...");
             
-            // Intentar encontrar DeckCreator de forma más exhaustiva (incluyendo inactivos)
-            var deckCreator = FindFirstObjectByType<DeckCreator>(FindObjectsInactive.Include);
+            // Ensure only one DeckCreator exists in the scene to prevent Vira or shuffle desyncs
+            DeckCreator deckCreator = DeckCreator.Instance;
             
-            // Si sigue sin aparecer, intentamos crearlo dinámicamente o buscarlo en los hijos del GameManager
             if (deckCreator == null)
             {
-                deckCreator = GetComponentInChildren<DeckCreator>();
-            }
-
-            if (deckCreator == null)
-            {
-                Debug.LogWarning("[GameManager] DeckCreator no encontrado en la escena. Intentando crearlo dinámicamente...");
-                GameObject go = new GameObject("DeckCreator_Generated");
-                deckCreator = go.AddComponent<DeckCreator>();
+                if (deckPrefab != null)
+                {
+                    GameObject go = Instantiate(deckPrefab);
+                    go.name = "DeckCreator_Generated";
+                    deckCreator = go.GetComponent<DeckCreator>();
+                    if (deckCreator == null) deckCreator = go.AddComponent<DeckCreator>();
+                }
+                else
+                {
+                    GameObject go = new GameObject("DeckCreator_Generated");
+                    deckCreator = go.AddComponent<DeckCreator>();
+                }
             }
 
             var localPlayer = FindAnyObjectByType<PlayerLocal>();
             
             if (localPlayer == null)
             {
-                Debug.Log("[GameManager] Buscando Player component...");
                 var p = FindAnyObjectByType<Code.Player.Player>();
                 if (p != null) localPlayer = p.GetComponent<PlayerLocal>();
             }
@@ -178,7 +265,6 @@ namespace Code.GameLogic
 #if UNITY_EDITOR
             if (localPlayer == null)
             {
-                Debug.Log("[GameManager] Editor: Spawning local player from prefab...");
                 var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Player.prefab");
                 if (prefab != null)
                 {
@@ -190,11 +276,9 @@ namespace Code.GameLogic
 
             npcs = FindObjectsByType<NPCPlayer>(FindObjectsSortMode.None).ToList();
             allPlayers = FindObjectsByType<Code.Player.Player>(FindObjectsSortMode.None).ToList();
-            Debug.Log($"[GameManager] NPCs encontrados: {npcs.Count}");
 
             if (deckCreator != null && (localPlayer != null || FindAnyObjectByType<Code.Player.Player>() != null))
             {
-                Debug.Log("[GameManager] DeckCreator y Player encontrados. Configurando mesa...");
                 var mainPlayerComponent = localPlayer != null ? localPlayer.player : FindAnyObjectByType<Code.Player.Player>();
                 var mainCardsHandler = localPlayer != null ? localPlayer.cardsHandler : FindAnyObjectByType<CardsHandler>();
                 var playerGameObject = localPlayer != null ? localPlayer.gameObject : mainPlayerComponent.gameObject;
@@ -256,7 +340,6 @@ namespace Code.GameLogic
                 currentManoSeatIndex = (dealerIndex + 1) % SeatManager.Instance.allChairs.Count;
                 currentTrickStartSeatIndex = currentManoSeatIndex;
 
-                Debug.Log($"[GameManager] Inicializado. Dealer: {dealerIndex}, Mano: {currentManoSeatIndex}");
 
                 // Start the State Machine directly with DealingState!
                 // DealingState will now handle shuffling, dealing, updating vira, and starting the turn.
@@ -264,7 +347,6 @@ namespace Code.GameLogic
             }
             else
             {
-                Debug.LogWarning($"[GameManager] No se pudo iniciar: deckCreator={deckCreator!=null}, localPlayer={localPlayer!=null}");
             }
 
             OnStartGame();
@@ -293,7 +375,14 @@ namespace Code.GameLogic
             }
 
             GameObject occupant = targetChair.occupant;
-            Debug.Log($"[GameManager] Turno de: {occupant.name} (Silla {currentPlayerTurn})");
+
+            if (occupant.GetComponent<PlayerLocal>() != null)
+            {
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlaySFX("turn_alert_ping");
+                }
+            }
 
             var playerComp = occupant.GetComponent<Code.Player.Player>();
             if (playerComp != null) playerComp.canPlayCard = true;
@@ -309,18 +398,16 @@ namespace Code.GameLogic
         // [ClientRpc]
         private void OnStartGame()
         {
-            Debug.Log("Game has started! Check the Vira.");
         }
 
         public void UpdateDeckAndVira()
         {
             if (SeatManager.Instance == null || TableManager.Instance == null) return;
 
-            var deckCreator = FindAnyObjectByType<DeckCreator>();
+            var deckCreator = DeckCreator.Instance;
             
             if (deckCreator != null)
             {
-                Debug.Log($"[GameManager] El repartidor es la silla {dealerIndex}. Colocando mazo y vira...");
                 // Pasamos el índice del repartidor para que TableManager calcule el offset desde su posición de carta
                 TableManager.Instance.SpawnVira3D(deckCreator.cardVira, dealerIndex);
             }
@@ -336,7 +423,6 @@ namespace Code.GameLogic
             {
                 serverPlayers.Add(player);
                 playerCount++;
-                Debug.Log($"[GameManager] Jugador {player.name} añadido al servidor. Total: {playerCount}");
             }
         }
 
@@ -356,7 +442,6 @@ namespace Code.GameLogic
             int cardsPlayed = TableManager.Instance.CardsInTable.Count;
             int totalExpectedCards = _totalPlayersCount;
 
-            Debug.Log($"[GameManager] EndTurn: Cartas en mesa {cardsPlayed}/{totalExpectedCards}. Ronda {round}");
 
             if (cardsPlayed >= totalExpectedCards)
             {
@@ -367,7 +452,6 @@ namespace Code.GameLogic
             // Turno normal dentro de una baza: Siguiente silla en sentido ANTIHORARIO (incrementando índice)
             int nextIndex = (currentPlayerTurn + 1) % SeatManager.Instance.allChairs.Count;
             
-            Debug.Log($"[GameManager] Turno finalizado. Siguiente en sentido antihorario: Silla {nextIndex}");
             StartTurn(nextIndex);
         }
 
@@ -384,10 +468,9 @@ namespace Code.GameLogic
             // Esperar 2.2 segundos para asimilar quién ganó y ver las cartas en mesa
             yield return new WaitForSeconds(2.2f);
 
-            // Si la mano finalizó en el camino, abortamos la transición
-            if (round == 0 && roundBeforeEvaluation != 0)
+            // Si la mano ya fue resuelta (alguien ganó), abortamos la transición
+            if (isHandResolved)
             {
-                Debug.Log("[GameManager] La mano finalizó en DelayedTrickResolution.");
                 yield break;
             }
 
@@ -396,7 +479,6 @@ namespace Code.GameLogic
 
             if (round >= 3)
             {
-                Debug.Log("[GameManager] Fin de la 3ra ronda. Iniciando nueva mano.");
                 StartNewHand();
             }
             else
@@ -405,7 +487,6 @@ namespace Code.GameLogic
                 {
                     currentTrickStartSeatIndex = lastTrickWinnerSeatIndex;
                 }
-                Debug.Log($"[GameManager] Baza finalizada. Sale el anterior ganador: Silla {currentTrickStartSeatIndex}");
                 StartTurn(currentTrickStartSeatIndex);
             }
         }
@@ -439,13 +520,32 @@ namespace Code.GameLogic
                 string resultMsg = (winnerTeam == 0) ? "¡EMPATE!" : $"GANADOR: {teamNameResult.ToUpper()}";
                 if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(resultMsg, 2f);
                 
-                Debug.Log($"[GameManager] Baza {trickWinners.Count}: {resultMsg}");
+
+                if (AudioManager.Instance != null)
+                {
+                    if (winnerTeam == 0)
+                    {
+                        AudioManager.Instance.PlaySFX("parda_tie_dissonance");
+                    }
+                    else
+                    {
+                        var playerLocal = FindAnyObjectByType<PlayerLocal>();
+                        if (playerLocal != null && playerLocal.player != null && playerLocal.player.team == team)
+                        {
+                            AudioManager.Instance.PlaySFX("trick_won_coin");
+                        }
+                    }
+                }
             }
             else
             {
                 string resultMsg = "¡EMPATE!";
                 if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(resultMsg, 2f);
-                Debug.Log($"[GameManager] Baza {trickWinners.Count}: {resultMsg}");
+
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlaySFX("parda_tie_dissonance");
+                }
             }
 
             trickWinners.Add(winnerTeam);
@@ -499,7 +599,6 @@ namespace Code.GameLogic
 
             if (handWinner != 0)
             {
-                Debug.Log($"[GameManager] ¡MANO FINALIZADA! Ganador: Equipo {handWinner} por {currentHandValue} puntos.");
                 ResolveHandWinner(teams[handWinner - 1].teamName, currentHandValue); 
             }
         }
@@ -512,43 +611,127 @@ namespace Code.GameLogic
                 {
                     team.teamScore += points;
                     if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{teamName.ToUpper()} GANA {points} PIEDRAS!");
-                    Debug.Log($"[GameManager] Añadidos {points} puntos de ANUNCIO al equipo {teamName}. Total: {team.teamScore}");
                     break;
                 }
+            }
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX("score_add_chalk");
             }
             RpcUpdateScores(teams[0].teamScore, teams[1].teamScore, teams[0].roundsWon, teams[1].roundsWon);
         }
 
         public void ResolveHandWinner(string teamName, int points)
         {
+            isHandResolved = true;
+            Team winningTeam = null;
             foreach (var team in teams)
             {
                 if (team.teamName == teamName)
                 {
                     team.teamScore += points;
+                    winningTeam = team;
                     if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{teamName.ToUpper()} GANA LA MANO (+{points})!");
-                    Debug.Log($"[GameManager] Equipo {teamName} gana la MANO por {points} puntos.");
                     break;
                 }
             }
-            StartCoroutine(DelayedNewHand());
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX("score_add_chalk");
+            }
+
+            // Check if game is over (score >= 30)
+            bool gameOver = false;
+            Team matchWinner = null;
+            foreach (var team in teams)
+            {
+                if (team.teamScore >= 30)
+                {
+                    gameOver = true;
+                    matchWinner = team;
+                    break;
+                }
+            }
+
+            var playerLocal = FindAnyObjectByType<PlayerLocal>();
+            Team humanTeam = (playerLocal != null && playerLocal.player != null) ? playerLocal.player.team : null;
+
+            if (gameOver && matchWinner != null)
+            {
+                if (PlayerHUD.Instance != null)
+                {
+                    PlayerHUD.Instance.NotifyEvent($"¡{matchWinner.teamName.ToUpper()} GANA LA PARTIDA!", 5f);
+                }
+                
+                if (AudioManager.Instance != null)
+                {
+                    if (humanTeam != null && matchWinner == humanTeam)
+                    {
+                        AudioManager.Instance.PlaySFX("match_victory_melody");
+                    }
+                    else
+                    {
+                        AudioManager.Instance.PlaySFX("match_defeat_sadness");
+                    }
+                }
+                StartCoroutine(DelayedQuitToMainMenu());
+            }
+            else
+            {
+                // Play hand win fanfare if human team won this hand
+                if (AudioManager.Instance != null && humanTeam != null && winningTeam == humanTeam)
+                {
+                    AudioManager.Instance.PlaySFX("score_buenas_fanfare");
+                }
+                StartCoroutine(DelayedNewHand());
+            }
+        }
+
+        private System.Collections.IEnumerator DelayedQuitToMainMenu()
+        {
+            yield return new WaitForSeconds(6.0f);
+            
+            if (PlayerHUD.Instance != null)
+            {
+                Destroy(PlayerHUD.Instance.gameObject);
+            }
+            var playerLocal = FindAnyObjectByType<PlayerLocal>();
+            if (playerLocal != null)
+            {
+                Destroy(playerLocal.gameObject);
+            }
+            var debugCommands = FindAnyObjectByType<DebugCommands>();
+            if (debugCommands != null)
+            {
+                Destroy(debugCommands.gameObject);
+            }
+            
+            Destroy(gameObject); // Destroy GameManager
+            UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
         }
 
         private System.Collections.IEnumerator DelayedNewHand()
         {
             yield return new WaitForSeconds(2.8f);
+
+            bool animationFinished = false;
+            TableManager.Instance.AnimateCardsToDeck(() => { animationFinished = true; });
+            
+            yield return new WaitUntil(() => animationFinished);
+            yield return new WaitForSeconds(0.2f);
+
             StartNewHand();
         }
 
         private void StartNewHand()
         {
-            Debug.Log("[GameManager] --- INICIANDO NUEVA MANO ---");
+            isHandResolved = false;
             round = 0;
             currentHandValue = 1; 
             lastTrucoTeamIndex = 0;
             lastTrickWinnerSeatIndex = -1;
             trickWinners.Clear();
-            TableManager.Instance.ClearTable();
             ResetTeamsRoundsWon();
 
             // Limpiar estados de turno de todos los NPCs y jugadores
@@ -560,32 +743,21 @@ namespace Code.GameLogic
             var announceManager = FindAnyObjectByType<AnnouncementManager>();
             if (announceManager != null) announceManager.ResetState();
 
-            var deckCreator = FindAnyObjectByType<DeckCreator>();
-            if (deckCreator != null)
-            {
-                deckCreator.ShuffleAndSetVira();
-                
-                var myCards = deckCreator.DealCards(3);
-                var mainCardsHandler = FindAnyObjectByType<CardsHandler>();
-                if (mainCardsHandler != null) mainCardsHandler.TargetReceiveCards(myCards);
-                
-                foreach (var npc in npcs) npc.ReceiveCards(deckCreator.DealCards(3));
-                
-                UpdateDeckAndVira();
-            }
-            
             dealerIndex = (dealerIndex + 1) % SeatManager.Instance.allChairs.Count;
             int manoSeatIndex = (dealerIndex + 1) % SeatManager.Instance.allChairs.Count;
             _manoTeamIndex = (manoSeatIndex % 2) + 1; // Team 1 or 2
             currentTrickStartSeatIndex = manoSeatIndex;
             
-            Debug.Log($"[GameManager] Nueva mano. Repartidor: Silla {dealerIndex}. Mano: Silla {manoSeatIndex} (Equipo {_manoTeamIndex})");
             
             // Notificamos puntaje final y reseteo de bazas
             RpcUpdateScores(teams[0].teamScore, teams[1].teamScore, 0, 0);
             OnScoreChanged?.Invoke(teams[0].teamScore, teams[1].teamScore);
 
-            StartTurn(currentTrickStartSeatIndex);
+            var stateMachine = GetComponent<Code.GameLogic.States.GameStateMachine>();
+            if (stateMachine != null)
+            {
+                stateMachine.ChangeState(new Code.GameLogic.States.DealingState());
+            }
         }
 
         // [Server]
