@@ -51,7 +51,7 @@ namespace Code.Player
                 float spacing = chair.cardSpacing != 0 ? chair.cardSpacing : 0.2f;
                 Vector3 worldPos = chair.handAnchor.position + chair.handAnchor.right * ((i - 1) * spacing);
                 localPos = parent.InverseTransformPoint(worldPos);
-                Quaternion worldRot = chair.handAnchor.rotation * Quaternion.Euler(0, (i - 1) * chair.cardRotationOffset, 0);
+                Quaternion worldRot = chair.handAnchor.rotation * Quaternion.Euler((i - 1) * chair.cardRotationOffset.x, (i - 1) * chair.cardRotationOffset.y, (i - 1) * chair.cardRotationOffset.z);
                 localRot = Quaternion.Inverse(parent.rotation) * worldRot;
             }
             else

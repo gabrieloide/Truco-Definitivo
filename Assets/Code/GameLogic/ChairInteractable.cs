@@ -18,8 +18,8 @@ namespace Code.GameLogic
         [Tooltip("Distance spacing between cards in the hand.")]
         public float cardSpacing = 0.25f;
 
-        [Tooltip("Rotation offset (in degrees) to fan the cards out.")]
-        public float cardRotationOffset = 15f;
+        [Tooltip("Rotation offset (in degrees) on each axis to fan/tilt the cards out.")]
+        public Vector3 cardRotationOffset = new Vector3(0f, 15f, 0f);
 
         public bool isOccupied = false;
         public GameObject occupant;
