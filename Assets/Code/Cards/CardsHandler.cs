@@ -75,7 +75,8 @@ namespace Code.Cards
             {
                 Vector3 worldPos = chair.handAnchor.position + chair.handAnchor.right * ((i - 1) * chair.cardSpacing);
                 localPos = parent.InverseTransformPoint(worldPos);
-                localRot = Quaternion.Inverse(parent.rotation) * chair.handAnchor.rotation;
+                Quaternion worldRot = chair.handAnchor.rotation * Quaternion.Euler(0, (i - 1) * chair.cardRotationOffset, 0);
+                localRot = Quaternion.Inverse(parent.rotation) * worldRot;
             }
             else
             {
@@ -232,7 +233,8 @@ namespace Code.Cards
                 {
                     Vector3 anchorWorldPos = chair.handAnchor.position + chair.handAnchor.right * ((i - 1) * chair.cardSpacing);
                     localPos = parent.InverseTransformPoint(anchorWorldPos);
-                    localRot = Quaternion.Inverse(parent.rotation) * chair.handAnchor.rotation;
+                    Quaternion worldRotOffset = chair.handAnchor.rotation * Quaternion.Euler(0, (i - 1) * chair.cardRotationOffset, 0);
+                    localRot = Quaternion.Inverse(parent.rotation) * worldRotOffset;
                 }
                 else
                 {

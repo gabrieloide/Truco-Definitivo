@@ -375,7 +375,8 @@ namespace Code.DebugTools
                                 {
                                     Vector3 anchorWorldPos = chair.handAnchor.position + chair.handAnchor.right * ((cardIdx - 1) * chair.cardSpacing);
                                     localPos = camTransform.InverseTransformPoint(anchorWorldPos);
-                                    localRot = Quaternion.Inverse(camTransform.rotation) * chair.handAnchor.rotation;
+                                    Quaternion worldRotOffset = chair.handAnchor.rotation * Quaternion.Euler(0, (cardIdx - 1) * chair.cardRotationOffset, 0);
+                                    localRot = Quaternion.Inverse(camTransform.rotation) * worldRotOffset;
                                 }
                                 else
                                 {
