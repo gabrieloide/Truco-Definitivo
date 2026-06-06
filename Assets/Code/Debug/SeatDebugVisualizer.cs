@@ -21,6 +21,7 @@ namespace Code.DebugTools
         public bool showSeatLabels = true;
         public bool showCardTrajectory = true;
         public bool showDealerViraAndDeck = true;
+        public bool showHandCardGizmos = true;
         public float gizmoScale = 0.3f;
 
         private static readonly Color[] seatColors = new Color[]
@@ -259,97 +260,153 @@ namespace Code.DebugTools
             }
 
             // ===== 6. GIZMOS DE CARTAS EN LA MANO DE LOS JUGADORES =====
-            for (int i = 0; i < seatManager.allChairs.Count; i++)
+            if (showHandCardGizmos)
             {
-                var chair = seatManager.allChairs[i];
-                if (chair == null || !chair.isOccupied || chair.occupant == null) continue;
-
-                var occupant = chair.occupant;
-                var handCards = new List<PhysicalCard3D>();
-
-                var playerLocal = occupant.GetComponent<PlayerLocal>();
-                if (playerLocal != null && playerLocal.cardsHandler != null)
+                for (int i = 0; i < seatManager.allChairs.Count; i++)
                 {
-                    foreach (var cardObj in playerLocal.cardsHandler.Cards)
+                    var chair = seatManager.allChairs[i];
+                    if (chair == null) continue;
+
+                    Color seatColor = seatColors[i % seatColors.Length];
+
+                    // 6a. Buscar cartas físicas activas en la mano (solo en Play Mode si el asiento está ocupado)
+                    List<PhysicalCard3D> physicalHandCards = null;
+                    if (Application.isPlaying && chair.isOccupied && chair.occupant != null)
                     {
-                        if (cardObj != null)
+                        var occupant = chair.occupant;
+                        var playerLocal = occupant.GetComponent<PlayerLocal>();
+                        if (playerLocal != null && playerLocal.cardsHandler != null)
                         {
-                            var physicalCard = cardObj.GetComponent<PhysicalCard3D>();
-                            if (physicalCard != null)
+                            foreach (var cardObj in playerLocal.cardsHandler.Cards)
                             {
-                                handCards.Add(physicalCard);
+                                if (cardObj != null)
+                                {
+                                    var physicalCard = cardObj.GetComponent<PhysicalCard3D>();
+                                    if (physicalCard != null)
+                                    {
+                                        if (physicalHandCards == null) physicalHandCards = new List<PhysicalCard3D>();
+                                        physicalHandCards.Add(physicalCard);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var physicalCards = occupant.GetComponentsInChildren<PhysicalCard3D>(true);
+                            foreach (var physicalCard in physicalCards)
+                            {
+                                if (physicalCard != null)
+                                {
+                                    if (physicalHandCards == null) physicalHandCards = new List<PhysicalCard3D>();
+                                    physicalHandCards.Add(physicalCard);
+                                }
                             }
                         }
                     }
-                }
-                else
-                {
-                    var physicalCards = occupant.GetComponentsInChildren<PhysicalCard3D>(true);
-                    foreach (var physicalCard in physicalCards)
+
+                    // 6b. Si hay cartas físicas activas, dibujamos sus gizmos reales
+                    if (physicalHandCards != null && physicalHandCards.Count > 0)
                     {
-                        if (physicalCard != null)
+                        foreach (var card in physicalHandCards)
                         {
-                            handCards.Add(physicalCard);
+                            if (card == null) continue;
+
+                            Transform cardTransform = card.transform;
+                            Matrix4x4 oldMatrix = Gizmos.matrix;
+                            Gizmos.matrix = cardTransform.localToWorldMatrix;
+
+                            Vector3 cardSize = new Vector3(0.22666726f, 0.3260464f, 0.004706289f);
+                            Vector3 cardCenter = Vector3.zero;
+
+                            var boxCol = card.GetComponent<BoxCollider>();
+                            if (boxCol != null)
+                            {
+                                cardSize = boxCol.size;
+                                cardCenter = boxCol.center;
+                            }
+
+                            // Contorno amarillo para cartas físicas activas
+                            Gizmos.color = Color.yellow;
+                            Gizmos.DrawWireCube(cardCenter, cardSize);
+
+                            // Cruz interior
+                            Gizmos.color = new Color(1f, 0.92f, 0.016f, 0.4f);
+                            Gizmos.DrawLine(cardCenter + new Vector3(-cardSize.x * 0.5f, -cardSize.y * 0.5f, 0), cardCenter + new Vector3(cardSize.x * 0.5f, cardSize.y * 0.5f, 0));
+                            Gizmos.DrawLine(cardCenter + new Vector3(-cardSize.x * 0.5f, cardSize.y * 0.5f, 0), cardCenter + new Vector3(cardSize.x * 0.5f, -cardSize.y * 0.5f, 0));
+
+                            Gizmos.matrix = oldMatrix;
+
+                            // Ejes de dirección
+                            Vector3 centerWorld = cardTransform.TransformPoint(cardCenter);
+                            float arrowLength = 0.25f;
+
+                            Gizmos.color = Color.red;
+                            Gizmos.DrawRay(centerWorld, cardTransform.right * arrowLength);
+                            Gizmos.color = Color.green;
+                            Gizmos.DrawRay(centerWorld, cardTransform.up * arrowLength);
+                            Gizmos.color = Color.blue;
+                            Gizmos.DrawRay(centerWorld, cardTransform.forward * arrowLength);
+
+                            // Etiqueta indicando la carta real
+                            string cardLabel = $"{card.cardValue} de {card.cardSuit}";
+                            GUIStyle labelStyle = new GUIStyle();
+                            labelStyle.normal.textColor = Color.yellow;
+                            labelStyle.fontSize = 10;
+                            labelStyle.alignment = TextAnchor.MiddleCenter;
+                            UnityEditor.Handles.Label(centerWorld + cardTransform.up * (cardSize.y * 0.6f), cardLabel, labelStyle);
                         }
                     }
-                }
-
-                foreach (var card in handCards)
-                {
-                    if (card == null) continue;
-
-                    Transform cardTransform = card.transform;
-                    Matrix4x4 oldMatrix = Gizmos.matrix;
-
-                    // Usar la matriz del transform de la carta para dbuijar en su espacio local
-                    Gizmos.matrix = cardTransform.localToWorldMatrix;
-
-                    // Determinar el tamaño de la carta. Intentamos usar el BoxCollider o un tamaño por defecto
-                    Vector3 cardSize = new Vector3(0.151111543f, 0.217364341f, 0.00313752703f); // Tamaño real del prefab
-                    Vector3 cardCenter = Vector3.zero;
-
-                    var boxCol = card.GetComponent<BoxCollider>();
-                    if (boxCol != null)
+                    else
                     {
-                        cardSize = boxCol.size;
-                        cardCenter = boxCol.center;
+                        // 6c. Si NO hay cartas físicas activas (ej. Edit Mode, o antes de repartir),
+                        // dibujamos los placeholders de previsualización en frente de la cámara de la silla.
+                        if (chair.cameraPosition != null)
+                        {
+                            Transform camTransform = chair.cameraPosition;
+                            Color previewColor = new Color(seatColor.r, seatColor.g, seatColor.b, 0.6f);
+                            Vector3 cardSize = new Vector3(0.22666726f, 0.3260464f, 0.004706289f);
+
+                            for (int cardIdx = 0; cardIdx < 3; cardIdx++)
+                            {
+                                Vector3 localPos = new Vector3((cardIdx - 1) * 0.25f, -0.3f, 0.6f);
+                                Quaternion localRot = Quaternion.Euler(70, (cardIdx - 1) * 15f, 0) * Quaternion.Euler(0, 180, 0);
+
+                                Vector3 worldPos = camTransform.TransformPoint(localPos);
+                                Quaternion worldRot = camTransform.rotation * localRot;
+
+                                Matrix4x4 oldMatrix = Gizmos.matrix;
+                                Gizmos.matrix = Matrix4x4.TRS(worldPos, worldRot, cardSize);
+
+                                // Contorno del color de la silla
+                                Gizmos.color = previewColor;
+                                Gizmos.DrawWireCube(Vector3.zero, Vector3.one);
+
+                                // Cruz
+                                Gizmos.color = new Color(previewColor.r, previewColor.g, previewColor.b, 0.25f);
+                                Gizmos.DrawLine(new Vector3(-0.5f, -0.5f, 0), new Vector3(0.5f, 0.5f, 0));
+                                Gizmos.DrawLine(new Vector3(-0.5f, 0.5f, 0), new Vector3(0.5f, -0.5f, 0));
+
+                                Gizmos.matrix = oldMatrix;
+
+                                // Ejes en el centro del placeholder
+                                float arrowLength = 0.15f;
+                                Gizmos.color = Color.red;
+                                Gizmos.DrawRay(worldPos, worldRot * Vector3.right * arrowLength);
+                                Gizmos.color = Color.green;
+                                Gizmos.DrawRay(worldPos, worldRot * Vector3.up * arrowLength);
+                                Gizmos.color = Color.blue;
+                                Gizmos.DrawRay(worldPos, worldRot * Vector3.forward * arrowLength);
+
+                                // Etiqueta del placeholder
+                                string placeholderLabel = $"Carta {cardIdx + 1}";
+                                GUIStyle labelStyle = new GUIStyle();
+                                labelStyle.normal.textColor = previewColor;
+                                labelStyle.fontSize = 9;
+                                labelStyle.alignment = TextAnchor.MiddleCenter;
+                                UnityEditor.Handles.Label(worldPos + worldRot * Vector3.up * 0.2f, placeholderLabel, labelStyle);
+                            }
+                        }
                     }
-
-                    // 1. Dibujar el contorno amarillo de la carta
-                    Gizmos.color = Color.yellow;
-                    Gizmos.DrawWireCube(cardCenter, cardSize);
-
-                    // Dibujar una X en el plano de la carta para mayor claridad visual
-                    Gizmos.color = new Color(1f, 0.92f, 0.016f, 0.4f); // Amarillo semitransparente
-                    Gizmos.DrawLine(cardCenter + new Vector3(-cardSize.x * 0.5f, -cardSize.y * 0.5f, 0), cardCenter + new Vector3(cardSize.x * 0.5f, cardSize.y * 0.5f, 0));
-                    Gizmos.DrawLine(cardCenter + new Vector3(-cardSize.x * 0.5f, cardSize.y * 0.5f, 0), cardCenter + new Vector3(cardSize.x * 0.5f, -cardSize.y * 0.5f, 0));
-
-                    // Restaurar matriz para dibujar las flechas de dirección en coordenadas de mundo
-                    Gizmos.matrix = oldMatrix;
-
-                    // 2. Dibujar flechas de orientación/ejes en el centro de la carta
-                    Vector3 centerWorld = cardTransform.TransformPoint(cardCenter);
-                    float arrowLength = 0.25f; // Largo de los ejes visuales
-
-                    // Eje X (Derecha) - Rojo
-                    Gizmos.color = Color.red;
-                    Gizmos.DrawRay(centerWorld, cardTransform.right * arrowLength);
-
-                    // Eje Y (Arriba) - Verde
-                    Gizmos.color = Color.green;
-                    Gizmos.DrawRay(centerWorld, cardTransform.up * arrowLength);
-
-                    // Eje Z (Adelante/Dirección a la que mira) - Azul
-                    Gizmos.color = Color.blue;
-                    Gizmos.DrawRay(centerWorld, cardTransform.forward * arrowLength);
-
-                    // Etiqueta de texto sobre la carta indicando qué carta es
-                    string cardLabel = $"{card.cardValue} de {card.cardSuit}";
-                    GUIStyle labelStyle = new GUIStyle();
-                    labelStyle.normal.textColor = Color.yellow;
-                    labelStyle.fontSize = 10;
-                    labelStyle.alignment = TextAnchor.MiddleCenter;
-                    UnityEditor.Handles.Label(centerWorld + cardTransform.up * (cardSize.y * 0.6f), cardLabel, labelStyle);
                 }
             }
         }
