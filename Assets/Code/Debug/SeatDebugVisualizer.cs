@@ -1,5 +1,8 @@
 using UnityEngine;
+using System.Collections.Generic;
 using Code.GameLogic;
+using Code.Cards;
+using Code.Player;
 
 namespace Code.DebugTools
 {
@@ -253,6 +256,101 @@ namespace Code.DebugTools
                 viraStyle.fontStyle = FontStyle.Bold;
                 viraStyle.fontSize = 12;
                 UnityEditor.Handles.Label(tableManager.viraPosition.position + Vector3.up * 0.5f, "Vira / Centro", viraStyle);
+            }
+
+            // ===== 6. GIZMOS DE CARTAS EN LA MANO DE LOS JUGADORES =====
+            for (int i = 0; i < seatManager.allChairs.Count; i++)
+            {
+                var chair = seatManager.allChairs[i];
+                if (chair == null || !chair.isOccupied || chair.occupant == null) continue;
+
+                var occupant = chair.occupant;
+                var handCards = new List<PhysicalCard3D>();
+
+                var playerLocal = occupant.GetComponent<PlayerLocal>();
+                if (playerLocal != null && playerLocal.cardsHandler != null)
+                {
+                    foreach (var cardObj in playerLocal.cardsHandler.Cards)
+                    {
+                        if (cardObj != null)
+                        {
+                            var physicalCard = cardObj.GetComponent<PhysicalCard3D>();
+                            if (physicalCard != null)
+                            {
+                                handCards.Add(physicalCard);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    var physicalCards = occupant.GetComponentsInChildren<PhysicalCard3D>(true);
+                    foreach (var physicalCard in physicalCards)
+                    {
+                        if (physicalCard != null)
+                        {
+                            handCards.Add(physicalCard);
+                        }
+                    }
+                }
+
+                foreach (var card in handCards)
+                {
+                    if (card == null) continue;
+
+                    Transform cardTransform = card.transform;
+                    Matrix4x4 oldMatrix = Gizmos.matrix;
+
+                    // Usar la matriz del transform de la carta para dbuijar en su espacio local
+                    Gizmos.matrix = cardTransform.localToWorldMatrix;
+
+                    // Determinar el tamaño de la carta. Intentamos usar el BoxCollider o un tamaño por defecto
+                    Vector3 cardSize = new Vector3(0.151111543f, 0.217364341f, 0.00313752703f); // Tamaño real del prefab
+                    Vector3 cardCenter = Vector3.zero;
+
+                    var boxCol = card.GetComponent<BoxCollider>();
+                    if (boxCol != null)
+                    {
+                        cardSize = boxCol.size;
+                        cardCenter = boxCol.center;
+                    }
+
+                    // 1. Dibujar el contorno amarillo de la carta
+                    Gizmos.color = Color.yellow;
+                    Gizmos.DrawWireCube(cardCenter, cardSize);
+
+                    // Dibujar una X en el plano de la carta para mayor claridad visual
+                    Gizmos.color = new Color(1f, 0.92f, 0.016f, 0.4f); // Amarillo semitransparente
+                    Gizmos.DrawLine(cardCenter + new Vector3(-cardSize.x * 0.5f, -cardSize.y * 0.5f, 0), cardCenter + new Vector3(cardSize.x * 0.5f, cardSize.y * 0.5f, 0));
+                    Gizmos.DrawLine(cardCenter + new Vector3(-cardSize.x * 0.5f, cardSize.y * 0.5f, 0), cardCenter + new Vector3(cardSize.x * 0.5f, -cardSize.y * 0.5f, 0));
+
+                    // Restaurar matriz para dibujar las flechas de dirección en coordenadas de mundo
+                    Gizmos.matrix = oldMatrix;
+
+                    // 2. Dibujar flechas de orientación/ejes en el centro de la carta
+                    Vector3 centerWorld = cardTransform.TransformPoint(cardCenter);
+                    float arrowLength = 0.25f; // Largo de los ejes visuales
+
+                    // Eje X (Derecha) - Rojo
+                    Gizmos.color = Color.red;
+                    Gizmos.DrawRay(centerWorld, cardTransform.right * arrowLength);
+
+                    // Eje Y (Arriba) - Verde
+                    Gizmos.color = Color.green;
+                    Gizmos.DrawRay(centerWorld, cardTransform.up * arrowLength);
+
+                    // Eje Z (Adelante/Dirección a la que mira) - Azul
+                    Gizmos.color = Color.blue;
+                    Gizmos.DrawRay(centerWorld, cardTransform.forward * arrowLength);
+
+                    // Etiqueta de texto sobre la carta indicando qué carta es
+                    string cardLabel = $"{card.cardValue} de {card.cardSuit}";
+                    GUIStyle labelStyle = new GUIStyle();
+                    labelStyle.normal.textColor = Color.yellow;
+                    labelStyle.fontSize = 10;
+                    labelStyle.alignment = TextAnchor.MiddleCenter;
+                    UnityEditor.Handles.Label(centerWorld + cardTransform.up * (cardSize.y * 0.6f), cardLabel, labelStyle);
+                }
             }
         }
 
