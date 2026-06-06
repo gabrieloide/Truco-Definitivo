@@ -21,6 +21,10 @@ namespace Code.GameLogic
         [Tooltip("Rotation offset (in degrees) on each axis to fan/tilt the cards out.")]
         public Vector3 cardRotationOffset = new Vector3(0f, 15f, 0f);
 
+        [Header("Cinemachine Camera")]
+        [Tooltip("The virtual camera specific to this chair.")]
+        public Unity.Cinemachine.CinemachineCamera virtualCamera;
+
         public bool isOccupied = false;
         public GameObject occupant;
 

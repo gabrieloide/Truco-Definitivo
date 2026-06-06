@@ -271,7 +271,7 @@ namespace Code.GameLogic
 
                 if (camManager != null)
                 {
-                    camManager.SetSeatedCamera(chair.cameraPosition);
+                    camManager.SetSeatedCamera(chair);
                 }
                 else
                 {
