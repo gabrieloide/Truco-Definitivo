@@ -44,6 +44,10 @@ namespace Code.Player
                         if (TrucoRules.GetCardRealValue(card, vira) >= 16) return true;
                     }
                     return false;
+                case "Flor":
+                    return true;
+                case "ALey":
+                    return TrucoRules.IsFlor(hand, vira);
                 default:
                     return Random.value > 0.5f; // Random fallback
             }

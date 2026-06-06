@@ -341,6 +341,7 @@ namespace Code.Player
             string acceptText = "QUIERO";
             string declineText = "NO QUIERO";
             bool showMore = _announceState == AnnounceState.Envido || _announceState == AnnounceState.Truco;
+            bool showDecline = true;
 
             var allPlayers = FindObjectsByType<PlayerLocal>(FindObjectsSortMode.None);
             var playerLocal = allPlayers.FirstOrDefault(p => p.isLocalPlayer && p.gameObject.activeInHierarchy);
@@ -374,13 +375,28 @@ namespace Code.Player
                 declineText = "NO TENGO";
                 showMore = false;
             }
+            else if (_announceState == AnnounceState.Flor)
+            {
+                if (hasFlor)
+                {
+                    acceptText = "CON FLOR / QUIERO";
+                    declineText = "NO QUIERO";
+                    showMore = true;
+                }
+                else
+                {
+                    acceptText = "QUIERO";
+                    showDecline = false;
+                    showMore = false;
+                }
+            }
 
             if (PlayerHUD.Instance != null)
             {
                 bool showSlider = _announceState == AnnounceState.Envido && !disableAccept;
                 string announcerText = !string.IsNullOrEmpty(currentAnnouncerName) ? currentAnnouncerName : "TE";
                 string titleText = $"{announcerText.ToUpper()} CANTA {_announceState.ToString().ToUpper()}";
-                PlayerHUD.Instance.ShowResponseButtons(true, acceptText, declineText, showMore, showSlider, titleText, disableAccept);
+                PlayerHUD.Instance.ShowResponseButtons(true, acceptText, declineText, showMore, showSlider, titleText, disableAccept, showDecline);
             }
             else
             {
@@ -557,6 +573,11 @@ namespace Code.Player
 
             if (_announceState == AnnounceState.ALey)
             {
+                var flor = GetComponentsInChildren<Announce>().OfType<FlorAnnouncement>().FirstOrDefault();
+                if (flor != null)
+                {
+                    flor.UpdateTotalScore();
+                }
             }
             
             _announceState = AnnounceState.None;
@@ -619,6 +640,14 @@ namespace Code.Player
                         }
                     }
                     GameManager.Instance.AddAnnouncementPoints(announcerTeam.teamName, points);
+                }
+            }
+            else if (previousState == AnnounceState.ALey || previousState == AnnounceState.Flor)
+            {
+                var flor = GetComponentsInChildren<Announce>().OfType<FlorAnnouncement>().FirstOrDefault();
+                if (flor != null)
+                {
+                    flor.UpdateTotalScore();
                 }
             }
 

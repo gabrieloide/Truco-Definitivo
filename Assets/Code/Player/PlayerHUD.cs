@@ -423,7 +423,7 @@ namespace Code.Player
                 return announceManager.WasAnnouncementCalledThisHand(state);
             }
         }
-        public void ShowResponseButtons(bool visible, string acceptText = "QUIERO", string declineText = "NO QUIERO", bool showMore = false, bool showSlider = false, string title = "", bool disableAccept = false)
+        public void ShowResponseButtons(bool visible, string acceptText = "QUIERO", string declineText = "NO QUIERO", bool showMore = false, bool showSlider = false, string title = "", bool disableAccept = false, bool showDecline = true)
         {
             if (_responseBar != null)
                 _responseBar.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
@@ -435,7 +435,11 @@ namespace Code.Player
                     _acceptButton.Q<Label>().text = acceptText;
                     _acceptButton.SetEnabled(!disableAccept);
                 }
-                if (_declineButton != null) _declineButton.Q<Label>().text = declineText;
+                if (_declineButton != null)
+                {
+                    _declineButton.Q<Label>().text = declineText;
+                    _declineButton.style.display = showDecline ? DisplayStyle.Flex : DisplayStyle.None;
+                }
                 if (_moreButton != null) _moreButton.style.display = showMore ? DisplayStyle.Flex : DisplayStyle.None;
                 
                 if (_sliderContainer != null) _sliderContainer.style.display = showSlider ? DisplayStyle.Flex : DisplayStyle.None;
