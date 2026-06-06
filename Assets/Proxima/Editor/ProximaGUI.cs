@@ -261,6 +261,7 @@ namespace Proxima.Editor
         {
             var labelContent = new GUIContent(label);
             var rect = GUILayoutUtility.GetRect(labelContent, style, GUILayout.ExpandWidth(false));
+            rect.width += 1;
             return Link(labelContent, style, rect, lineThickness);
         }
 

@@ -107,11 +107,7 @@ namespace Code.GameLogic
                     }
                 }
                 
-                // If no combinations, just the highest card
-                if (maxScore == 0)
-                {
-                    foreach (var c in hand) maxScore = Mathf.Max(maxScore, GetEnvidoValue(c, false, false));
-                }
+
             }
 
             return maxScore;

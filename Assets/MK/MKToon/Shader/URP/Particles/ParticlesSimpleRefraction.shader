@@ -229,7 +229,7 @@ Shader "MK/Toon/URP/Particles/Simple + Refraction"
 			
 			#pragma shader_feature __ _MK_EMISSION_MAP
 			#pragma shader_feature_local __ _MK_ENVIRONMENT_REFLECTIONS_AMBIENT
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_SPECULAR_ISOTROPIC
 			#pragma shader_feature_local __ _MK_RIM_DEFAULT _MK_RIM_SPLIT
@@ -384,7 +384,7 @@ Shader "MK/Toon/URP/Particles/Simple + Refraction"
 			
 			#pragma shader_feature __ _MK_EMISSION_MAP
 			#pragma shader_feature_local __ _MK_ENVIRONMENT_REFLECTIONS_AMBIENT
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_SPECULAR_ISOTROPIC
 			#pragma shader_feature_local __ _MK_RIM_DEFAULT _MK_RIM_SPLIT
@@ -542,7 +542,7 @@ Shader "MK/Toon/URP/Particles/Simple + Refraction"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 
             #pragma multi_compile_instancing
@@ -595,7 +595,7 @@ Shader "MK/Toon/URP/Particles/Simple + Refraction"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			#pragma shader_feature_local __ _MK_NORMAL_MAP
 			#pragma shader_feature_local __ _MK_DETAIL_NORMAL_MAP
@@ -643,7 +643,7 @@ Shader "MK/Toon/URP/Particles/Simple + Refraction"
             #pragma fragment Universal2DFrag
 			
 			#pragma shader_feature_local __ _MK_SURFACE_TYPE_TRANSPARENT
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
 			#pragma shader_feature_local __ _MK_ALPHA_CLIPPING
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
@@ -720,7 +720,7 @@ Shader "MK/Toon/URP/Particles/Simple + Refraction"
 			
 			#pragma shader_feature __ _MK_EMISSION_MAP
 			#pragma shader_feature_local __ _MK_ENVIRONMENT_REFLECTIONS_AMBIENT
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_SPECULAR_ISOTROPIC
 			#pragma shader_feature_local __ _MK_RIM_DEFAULT _MK_RIM_SPLIT
@@ -875,7 +875,7 @@ Shader "MK/Toon/URP/Particles/Simple + Refraction"
 			
 			#pragma shader_feature __ _MK_EMISSION_MAP
 			#pragma shader_feature_local __ _MK_ENVIRONMENT_REFLECTIONS_AMBIENT
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_SPECULAR_ISOTROPIC
 			#pragma shader_feature_local __ _MK_RIM_DEFAULT _MK_RIM_SPLIT
@@ -1033,7 +1033,7 @@ Shader "MK/Toon/URP/Particles/Simple + Refraction"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 
             #pragma multi_compile_instancing
@@ -1086,7 +1086,7 @@ Shader "MK/Toon/URP/Particles/Simple + Refraction"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			#pragma shader_feature_local __ _MK_NORMAL_MAP
 			#pragma shader_feature_local __ _MK_DETAIL_NORMAL_MAP
@@ -1134,7 +1134,7 @@ Shader "MK/Toon/URP/Particles/Simple + Refraction"
             #pragma fragment Universal2DFrag
 			
 			#pragma shader_feature_local __ _MK_SURFACE_TYPE_TRANSPARENT
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
 			#pragma shader_feature_local __ _MK_ALPHA_CLIPPING
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
@@ -1208,7 +1208,7 @@ Shader "MK/Toon/URP/Particles/Simple + Refraction"
 			
 			#pragma shader_feature __ _MK_EMISSION_MAP
 			#pragma shader_feature_local __ _MK_ENVIRONMENT_REFLECTIONS_AMBIENT
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_SPECULAR_ISOTROPIC
 			#pragma shader_feature_local __ _MK_RIM_DEFAULT _MK_RIM_SPLIT
@@ -1347,7 +1347,7 @@ Shader "MK/Toon/URP/Particles/Simple + Refraction"
 			
 			#pragma shader_feature __ _MK_EMISSION_MAP
 			#pragma shader_feature_local __ _MK_ENVIRONMENT_REFLECTIONS_AMBIENT
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_SPECULAR_ISOTROPIC
 			#pragma shader_feature_local __ _MK_RIM_DEFAULT _MK_RIM_SPLIT
@@ -1492,7 +1492,7 @@ Shader "MK/Toon/URP/Particles/Simple + Refraction"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 
             #pragma multi_compile_instancing
@@ -1545,7 +1545,7 @@ Shader "MK/Toon/URP/Particles/Simple + Refraction"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			#pragma shader_feature_local __ _MK_NORMAL_MAP
 			#pragma shader_feature_local __ _MK_DETAIL_NORMAL_MAP
@@ -1585,7 +1585,7 @@ Shader "MK/Toon/URP/Particles/Simple + Refraction"
             #pragma fragment Universal2DFrag
 			
 			#pragma shader_feature_local __ _MK_SURFACE_TYPE_TRANSPARENT
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
 			#pragma shader_feature_local __ _MK_ALPHA_CLIPPING
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER

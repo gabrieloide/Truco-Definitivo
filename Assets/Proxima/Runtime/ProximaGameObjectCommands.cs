@@ -117,6 +117,11 @@ namespace Proxima
         [ProximaCommand("Internal")]
         public static void SetActive(int id, bool active)
         {
+            if (_gameObjectToInfo.TryGetValue(id, out var goi))
+            {
+                goi.ActiveSelf = active;
+            }
+
             if (_idToGameObject.TryGetValue(id, out var go))
             {
                 go.SetActive(active);
@@ -130,6 +135,11 @@ namespace Proxima
         [ProximaCommand("Internal")]
         public static void SetName(int id, string name)
         {
+            if (_gameObjectToInfo.TryGetValue(id, out var goi))
+            {
+                goi.Name = name;
+            }
+
             if (_idToGameObject.TryGetValue(id, out var go))
             {
                 go.name = name;
@@ -143,6 +153,11 @@ namespace Proxima
         [ProximaCommand("Internal")]
         public static void SetLayer(int id, int layer)
         {
+            if (_gameObjectToInfo.TryGetValue(id, out var goi))
+            {
+                goi.Layer = layer;
+            }
+
             if (_idToGameObject.TryGetValue(id, out var go))
             {
                 go.layer = layer;
@@ -156,6 +171,11 @@ namespace Proxima
         [ProximaCommand("Internal")]
         public static void SetTag(int id, string tag)
         {
+            if (_gameObjectToInfo.TryGetValue(id, out var goi))
+            {
+                goi.Tag = tag;
+            }
+
             if (_idToGameObject.TryGetValue(id, out var go))
             {
                 go.tag = tag;

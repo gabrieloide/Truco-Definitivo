@@ -13,7 +13,7 @@ namespace Code.GameLogic.Announcement
     {
         public override GameObject AnnounceButton() => GameObject.Find("EnvidoButton");
         protected override AnnounceState AnnounceState() => global::AnnounceState.Envido;
-        protected override int[] IncreasingAmount() => new[] { 1, 2, 4, 5, 7, 12 };
+        public override int[] IncreasingAmount() => new[] { 1, 2, 4, 5, 7, 12 };
 
         // UI handling is now managed by PlayerHUD and AnnouncementManager
         
@@ -44,26 +44,7 @@ namespace Code.GameLogic.Announcement
                 
                 if (cardsHandler != null)
                 {
-                    // Convert GameObjects to Card data
-                    List<Card> hand = new List<Card>();
-                    foreach(var cardObj in cardsHandler.Cards) {
-                        if (cardObj == null) continue;
-                        
-                        var physical = cardObj.GetComponent<Code.Cards.PhysicalCard3D>();
-                        if (physical == null) physical = cardObj.GetComponentInParent<Code.Cards.PhysicalCard3D>();
-                        
-                        if (physical != null)
-                        {
-                            hand.Add(new Card(physical.cardValue, physical.cardSuit));
-                        }
-                        else
-                        {
-                            var interaction = cardObj.GetComponent<Code.Cards.CardInteraction>();
-                            if (interaction == null) interaction = cardObj.GetComponentInParent<Code.Cards.CardInteraction>();
-                            if (interaction != null) hand.Add(interaction.Card);
-                        }
-                    }
-                    score = TrucoRules.CalculateEnvidoScore(hand, vira);
+                    score = TrucoRules.CalculateEnvidoScore(cardsHandler.InitialHand, vira);
                 }
 
                 // Si alguien tiene Flor, el Envido se anula automáticamente
@@ -78,7 +59,7 @@ namespace Code.GameLogic.Announcement
 
             foreach (var npc in allNpcs)
             {
-                int score = TrucoRules.CalculateEnvidoScore(npc.hand, vira);
+                int score = TrucoRules.CalculateEnvidoScore(npc.initialHand, vira);
                 
                 // Si alguien tiene Flor, el Envido se anula automáticamente
                 if (score == -1) 
@@ -101,13 +82,18 @@ namespace Code.GameLogic.Announcement
                 winnerTeam = "Team " + manoTeamIndex;
             }
 
-            // Notificar los puntajes comparados en la pantalla
+            // GUARDAR EL RESULTADO PENDIENTE EN EL GAMEMANAGER EN LUGAR DE RESOLVERLO AHORA
+            GameManager.Instance.pendingEnvidoResolution = true;
+            GameManager.Instance.pendingEnvidoWinnerTeam = winnerTeam;
+            GameManager.Instance.pendingEnvidoPoints = pointsToAward;
+            GameManager.Instance.pendingEnvidoScoreTeam1 = bestScoreTeam1;
+            GameManager.Instance.pendingEnvidoScoreTeam2 = bestScoreTeam2;
+            
+            // Opcional: Podríamos mostrar un mensaje muy sutil de "Envido Aceptado" sin revelar los puntos aún
             if (PlayerHUD.Instance != null)
             {
-                PlayerHUD.Instance.NotifyEvent($"ENVIDO: TEAM 1 ({bestScoreTeam1}) VS TEAM 2 ({bestScoreTeam2})", 4.0f);
+                PlayerHUD.Instance.NotifyEvent("ENVIDO ACEPTADO (Se resuelve al final de la mano)", 2.0f);
             }
-
-            GameManager.Instance.AddAnnouncementPoints(winnerTeam, pointsToAward);
         }
 
         Card[] TestingEnvido(PlayerLocal[] local)

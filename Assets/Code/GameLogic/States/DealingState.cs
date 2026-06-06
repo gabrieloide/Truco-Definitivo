@@ -52,11 +52,13 @@ namespace Code.GameLogic.States
                 foreach (var player in allPlayers)
                 {
                     int seat = SeatManager.Instance.GetPlayerSeatIndex(player.gameObject);
+                    Debug.Log($"[DealingState] Jugador {player.name} mapeado al asiento {seat}");
                     if (seat != -1) seatOccupants[seat] = player;
                 }
                 foreach (var npc in allNPCs)
                 {
                     int seat = SeatManager.Instance.GetPlayerSeatIndex(npc.gameObject);
+                    Debug.Log($"[DealingState] NPC {npc.name} mapeado al asiento {seat}");
                     if (seat != -1) seatOccupants[seat] = npc;
                 }
 
@@ -74,6 +76,7 @@ namespace Code.GameLogic.States
                             var cards = deckCreator.DealCards(1);
                             if (cards.Count > 0)
                             {
+                                Debug.Log($"[DealingState] Repartiendo carta {cards[0].suit} #{cards[0].value} al asiento {currentSeat}");
                                 if (occupant is Code.Player.Player p)
                                 {
                                     var ch = p.GetComponent<Code.Cards.CardsHandler>();

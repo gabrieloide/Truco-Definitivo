@@ -93,7 +93,9 @@ namespace Code.Cards
             if (isSelected || isUp)
             {
                 var player = GetComponent<PhysicalCard3D>()?.owner;
-                if (player != null && player.player != null && player.player.canPlayCard)
+                if (player == null || !player.isLocalPlayer) return;
+
+                if (player.player != null && player.player.canPlayCard)
                 {
                     // Bloquear interacciones adicionales inmediatamente
                     player.player.canPlayCard = false;
@@ -109,6 +111,8 @@ namespace Code.Cards
         public void HandleClick()
         {
             var player = GetComponent<PhysicalCard3D>()?.owner;
+            if (player == null || !player.isLocalPlayer) return;
+
             var movement = player.GetComponent<PlayerMovement3D>();
 
             if (movement != null && !movement.isSeated)
@@ -116,7 +120,7 @@ namespace Code.Cards
                 return;
             }
 
-            if (player.player.canPlayCard)
+            if (player.player != null && player.player.canPlayCard)
             {
                 if (!Application.isMobilePlatform)
                 {
@@ -178,10 +182,16 @@ namespace Code.Cards
         {
             if (!_isOnHand || isSelected) return;
             var player = GetComponent<PhysicalCard3D>()?.owner;
+            if (player == null || !player.isLocalPlayer) return;
 
             isUp = true;
-            _animator.AnimateHover(true, _startPosition, _startRotation, player.cardsHandler.upDuration);
-            Cursor.SetCursor(player.cardsHandler.mouseOverTexture, Vector2.zero, CursorMode.Auto);
+            float duration = (player.cardsHandler != null) ? player.cardsHandler.upDuration : 0.2f;
+            if (_animator != null) _animator.AnimateHover(true, _startPosition, _startRotation, duration);
+            
+            if (player.cardsHandler != null && player.cardsHandler.mouseOverTexture != null)
+            {
+                Cursor.SetCursor(player.cardsHandler.mouseOverTexture, Vector2.zero, CursorMode.Auto);
+            }
 
             if (AudioManager.Instance != null)
             {
@@ -193,10 +203,16 @@ namespace Code.Cards
         {
             if (!_isOnHand || isSelected) return;
             var player = GetComponent<PhysicalCard3D>()?.owner;
+            if (player == null || !player.isLocalPlayer) return;
 
             isUp = false;
-            _animator.AnimateHover(false, _startPosition, _startRotation, player.cardsHandler.upDuration);
-            Cursor.SetCursor(player.cardsHandler.mouseOutTexture, Vector2.zero, CursorMode.Auto);
+            float duration = (player.cardsHandler != null) ? player.cardsHandler.upDuration : 0.2f;
+            if (_animator != null) _animator.AnimateHover(false, _startPosition, _startRotation, duration);
+            
+            if (player.cardsHandler != null && player.cardsHandler.mouseOutTexture != null)
+            {
+                Cursor.SetCursor(player.cardsHandler.mouseOutTexture, Vector2.zero, CursorMode.Auto);
+            }
 
             if (AudioManager.Instance != null)
             {

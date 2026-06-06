@@ -24,6 +24,8 @@ namespace Code.Cards
 
         [SerializeField] public List<GameObject> Cards = new List<GameObject>();
 
+        public List<Card> InitialHand = new List<Card>();
+
 
         private void Awake()
         {
@@ -112,6 +114,7 @@ namespace Code.Cards
                 }
             });
 
+            InitialHand.Add(card);
             Cards.Add(c);
         }
 
@@ -122,6 +125,7 @@ namespace Code.Cards
                 if (oldCard != null) Destroy(oldCard);
             }
             Cards.Clear();
+            InitialHand.Clear();
         }
 
         public void ToggleCardsVisibility(bool visible)

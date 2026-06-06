@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
@@ -8,6 +9,7 @@ namespace Proxima.Editor
     {
         private SerializedProperty _connectionType;
         private SerializedProperty _serverUrl;
+        private SerializedProperty _debugUrl;
         private SerializedProperty _appId;
         private SerializedProperty _uniqueName;
         private SerializedProperty _port;
@@ -24,10 +26,11 @@ namespace Proxima.Editor
         private SerializedProperty _setRunInBackground;
         private SerializedProperty _uploadLogs;
 
-        void OnEnable()
+        private void OnEnable()
         {
             _connectionType = serializedObject.FindProperty("_connectionType");
             _serverUrl = serializedObject.FindProperty("_serverUrl");
+            _debugUrl = serializedObject.FindProperty("_debugUrl");
             _appId = serializedObject.FindProperty("_appId");
             _uniqueName = serializedObject.FindProperty("_uniqueName");
             _port = serializedObject.FindProperty("_port");
@@ -51,9 +54,40 @@ namespace Proxima.Editor
 
             EditorGUILayout.PropertyField(_displayName);
 
-            if (ProximaInspector.ProxyAvailable)
+            if (ProximaInspector.ProxyAvailable || ProximaInspector.DebugAvailable)
             {
-                EditorGUILayout.PropertyField(_connectionType);
+                var availableTypes = new List<ProximaInspector.ConnectionTypes>();
+                var displayNames = new List<string>();
+
+                availableTypes.Add(ProximaInspector.ConnectionTypes.LocalNetwork);
+                displayNames.Add(ObjectNames.NicifyVariableName(ProximaInspector.ConnectionTypes.LocalNetwork.ToString()));
+
+                if (ProximaInspector.ProxyAvailable)
+                {
+                    availableTypes.Add(ProximaInspector.ConnectionTypes.Internet);
+                    displayNames.Add(ObjectNames.NicifyVariableName(ProximaInspector.ConnectionTypes.Internet.ToString()));
+                }
+
+#if PROXIMA_DEBUG
+                if (ProximaInspector.DebugAvailable)
+                {
+                    availableTypes.Add(ProximaInspector.ConnectionTypes.Debug);
+                    displayNames.Add(ObjectNames.NicifyVariableName(ProximaInspector.ConnectionTypes.Debug.ToString()));
+                }
+#endif
+
+                var currentValue = (ProximaInspector.ConnectionTypes)_connectionType.intValue;
+                var currentIndex = availableTypes.IndexOf(currentValue);
+                if (currentIndex == -1)
+                {
+                    currentIndex = 0;
+                }
+
+                var newIndex = EditorGUILayout.Popup("Connection Type", currentIndex, displayNames.ToArray());
+                if (newIndex != currentIndex)
+                {
+                    _connectionType.intValue = (int)availableTypes[newIndex];
+                }
             }
 
             if (_connectionType.intValue == (int)ProximaInspector.ConnectionTypes.Internet)
@@ -63,17 +97,13 @@ namespace Proxima.Editor
 #endif
                 EditorGUILayout.PropertyField(_appId);
                 EditorGUILayout.PropertyField(_uniqueName);
-#if PROXIMA_ALPHA
                 EditorGUILayout.PropertyField(_uploadLogs);
-#endif
             }
 
-#if PROXIMA_DEBUG
             if (_connectionType.intValue == (int)ProximaInspector.ConnectionTypes.Debug)
             {
-                EditorGUILayout.PropertyField(_serverUrl);
+                EditorGUILayout.PropertyField(_debugUrl);
             }
-#endif
 
             if (_connectionType.intValue == (int)ProximaInspector.ConnectionTypes.LocalNetwork)
             {

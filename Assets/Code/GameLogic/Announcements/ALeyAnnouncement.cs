@@ -10,7 +10,7 @@ namespace Code.GameLogic.Announcement
         public override GameObject AnnounceButton() => null; // Handled by PlayerHUD and UI Toolkit
         protected override AnnounceState AnnounceState() => global::AnnounceState.ALey;
 
-        protected override int[] IncreasingAmount() => new[] { 0, 0 }; // A Ley doesn't add or subtract points
+        public override int[] IncreasingAmount() => new[] { 0, 0 }; // A Ley doesn't add or subtract points
 
         public override void UpdateTotalScore()
         {

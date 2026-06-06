@@ -11,7 +11,9 @@ Material:
   m_Shader: {fileID: 4800000, guid: 317e3d3b84bf0a741a3e867e27dfa7bb, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
+  m_ShaderKeywords: _MK_ALBEDO_MAP _MK_OUTLINE_HULL_ORIGIN
   m_ValidKeywords:
+  - _MK_ALBEDO_MAP
   - _MK_OUTLINE_HULL_ORIGIN
   m_InvalidKeywords:
   - _MK_ARTISTIC_ANIMATION_STUTTER
@@ -35,11 +37,11 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _AlbedoMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 6091c2164cf847540abc896335cefac8, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BaseMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 6091c2164cf847540abc896335cefac8, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
@@ -95,7 +97,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 6091c2164cf847540abc896335cefac8, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:

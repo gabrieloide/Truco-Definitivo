@@ -273,7 +273,7 @@ namespace Proxima
 
             private void UpdateComponentInfo(Component component, int order)
             {
-                if (ShouldHide(component))
+                if (!component || ShouldHide(component))
                 {
                     return;
                 }

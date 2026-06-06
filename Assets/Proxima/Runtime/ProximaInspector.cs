@@ -110,11 +110,8 @@ namespace Proxima
         public enum ConnectionTypes
         {
             LocalNetwork = 1,
-            Internet = 3,
-#if PROXIMA_DEBUG
-            Demo = 2,
+            Internet = 3,            
             Debug = 0
-#endif
         }
 
         [SerializeField, Tooltip("Is the Proxima server running on the local network or proxied through the internet?")]
@@ -125,13 +122,22 @@ namespace Proxima
             set => _connectionType = value;
         }
 
-        /// URL of the remote Proxima Server.
+        /// URL of the remote Proxima Proxy Server.
         [SerializeField, Tooltip("URL of the Proxima Proxy Server.")]
         private string _serverUrl = "";
         public string ServerUrl
         {
             get => _serverUrl;
             set => _serverUrl = value;
+        }
+
+        /// URL of the remote Proxima Debug Server.
+        [SerializeField, Tooltip("URL of the Proxima Debug Server.")]
+        private string _debugUrl = "http://127.0.0.1:5173";
+        public string DebugUrl
+        {
+            get => _debugUrl;
+            set => _debugUrl = value;
         }
 
         /// AppId used for remote access. Create an app at unityproxima.com
@@ -196,10 +202,15 @@ namespace Proxima
         private ProximaConnectUI _connectUI;
         private bool _wasRunInBackgroundSet;
 
-        internal static Type ProxyClass = typeof(ProximaInspector).Assembly.GetType("Proxima.ProximaProxyServer");
+        private static Type _proxyClass;
+        internal static Type ProxyClass => _proxyClass ??= typeof(ProximaInspector).Assembly.GetType("Proxima.ProximaProxyServer");
         internal static bool ProxyAvailable => ProxyClass != null;
 
-        void Awake()
+        private static Type _debugClass;
+        internal static Type DebugClass => _debugClass ??= typeof(ProximaInspector).Assembly.GetType("Proxima.ProximaDebugServer");
+        internal static bool DebugAvailable => DebugClass != null;
+
+        private void Awake()
         {
             if (!_staticInitialized)
             {
@@ -216,7 +227,7 @@ namespace Proxima
             }
         }
 
-        void OnEnable()
+        private void OnEnable()
         {
             if (_dontDestroyOnLoad)
             {
@@ -252,17 +263,17 @@ namespace Proxima
             }
         }
 
-        void OnApplicationQuit()
+        private void OnApplicationQuit()
         {
             Stop();
         }
 
-        void OnDestroy()
+        private void OnDestroy()
         {
             Stop();
         }
 
-        void OnDisable()
+        private void OnDisable()
         {
             Stop();
 
@@ -322,14 +333,13 @@ namespace Proxima
                 {
                     case ConnectionTypes.Internet:
                     {
-                        var proxyClass = ProxyClass;
-                        if (proxyClass == null)
+                        if (!ProxyAvailable)
                         {
                             throw new Exception("Internet connection type is only available in Proxima Pro.");
                         }
                         else
                         {
-                            _server = Activator.CreateInstance(proxyClass, _dispatcher, Status,
+                            _server = Activator.CreateInstance(ProxyClass, _dispatcher, Status,
                                 _serverUrl, _appId, _uniqueName, _uploadLogs) as ProximaServer;
                         }
                         break;
@@ -341,16 +351,16 @@ namespace Proxima
                         _server = new ProximaEmbeddedServer(_dispatcher, Status, _port, _useHttps, _certificate, _certificatePassword);
 #endif
                         break;
-#if PROXIMA_DEBUG
-#if UNITY_WEBGL
-                    case ConnectionTypes.Demo:
-                        _server = new ProximaDemoServer(_dispatcher, Status);
-                        break;
-#endif
                     case ConnectionTypes.Debug:
-                        _server = new ProximaRemoteServer(_dispatcher, Status, _serverUrl);
+                        if (!DebugAvailable)
+                        {
+                            throw new Exception("Debug connection type is only available in Proxima Pro.");
+                        }
+                        else
+                        {
+                            _server = Activator.CreateInstance(DebugClass, _dispatcher, Status, _debugUrl) as ProximaServer;
+                        }
                         break;
-#endif
                     default:
                         throw new Exception("Unknown proxima server type: " + _connectionType);
                 }
@@ -399,7 +409,7 @@ namespace Proxima
             _openStreams = null;
         }
 
-        void Update()
+        private void Update()
         {
             _dispatcher?.InvokeAll();
 
@@ -576,7 +586,7 @@ namespace Proxima
         {
             foreach (var method in type.GetRuntimeMethods())
             {
-                if (!method.IsStatic) continue;
+                if (!method.IsStatic) { continue; }
 
                 var initAttribute = method.GetCustomAttribute<ProximaInitializeAttribute>();
                 if (initAttribute != null)
@@ -707,7 +717,7 @@ namespace Proxima
         {
             result = null;
             error = string.Empty;
-            if (method == null) return true;
+            if (method == null) { return true; }
 
             var parameters = method.GetParameters();
             var values = new object[parameters.Length];

@@ -28,10 +28,8 @@ namespace Code.GameLogic
                 if (_instance == null)
                 {
                     _instance = FindAnyObjectByType<GameManager>();
-                    if (_instance == null)
-                    {
-                        Debug.LogError("GameManager is missing from the scene! Make sure it is added via the Editor for Mirror to work properly.");
-                    }
+                    // Ocultamos el log de error porque es normal que no exista GameManager 
+                    // cuando estamos en el Main Menu o durante las transiciones de escena.
                 }
                 return _instance;
             }
@@ -43,6 +41,7 @@ namespace Code.GameLogic
 
         [Header("Prefabs")]
         public GameObject deckPrefab;
+        public GameObject playerPrefab;
 
         public List<PlayerLocal> serverPlayers = new List<PlayerLocal>();
         public List<Code.Player.Player> allPlayers = new List<Code.Player.Player>();
@@ -60,6 +59,14 @@ namespace Code.GameLogic
         [SerializeField] private bool _gameSceneStarted = false;
         public List<Team> teams = new List<Team>();
         public bool isAnnouncementPending = false; // Bloquea el flujo del juego para esperar respuesta
+        
+        [Header("Pending Envido State")]
+        public bool pendingEnvidoResolution = false;
+        public string pendingEnvidoWinnerTeam = "";
+        public int pendingEnvidoPoints = 0;
+        public int pendingEnvidoScoreTeam1 = 0;
+        public int pendingEnvidoScoreTeam2 = 0;
+        
         public Code.GameLogic.States.GameStateMachine stateMachine { get; private set; }
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void SetupAudioManager()
@@ -144,14 +151,15 @@ namespace Code.GameLogic
 
         private void Awake()
         {
+            Debug.Log($"[GameManager] Awake ejecutado. Escena activa: {UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}. Escena de este objeto: {gameObject.scene.name}");
             if (_instance != null && _instance != this)
             {
+                Debug.Log("[GameManager] Awake: Se detecto otra instancia. Destruyendo duplicado.");
                 Destroy(gameObject);
                 return;
             }
             
             _instance = this;
-            DontDestroyOnLoad(gameObject);
             UnityEngine.Random.InitState((int)System.DateTime.Now.Ticks);
 
             stateMachine = gameObject.AddComponent<Code.GameLogic.States.GameStateMachine>();
@@ -219,13 +227,6 @@ namespace Code.GameLogic
         {
             if (_instance != null && _instance != this) return; // Prevent ghost instances from running
 
-            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != "GameScene")
-            {
-                isGameScene = false;
-                _gameSceneStarted = false;
-                return;
-            }
-
             isGameScene = true;
 
             // Debug for PlayerHUD presence
@@ -244,6 +245,8 @@ namespace Code.GameLogic
 
         private void RunOnlyOnce()
         {
+            Debug.Log("[GameManager] RunOnlyOnce: Iniciando configuracion de la escena de juego.");
+
             if (Camera.main != null && Camera.main.GetComponent<UnityEngine.EventSystems.PhysicsRaycaster>() == null)
             {
                 Camera.main.gameObject.AddComponent<UnityEngine.EventSystems.PhysicsRaycaster>();
@@ -253,6 +256,7 @@ namespace Code.GameLogic
             
             // Ensure only one DeckCreator exists in the scene to prevent Vira or shuffle desyncs
             DeckCreator deckCreator = DeckCreator.Instance;
+            Debug.Log($"[GameManager] DeckCreator.Instance = {(deckCreator != null ? deckCreator.name : "NULL")}");
             
             if (deckCreator == null)
             {
@@ -268,9 +272,11 @@ namespace Code.GameLogic
                     GameObject go = new GameObject("DeckCreator_Generated");
                     deckCreator = go.AddComponent<DeckCreator>();
                 }
+                Debug.Log($"[GameManager] Creado nuevo DeckCreator: {deckCreator.name}");
             }
 
             var localPlayer = FindAnyObjectByType<PlayerLocal>();
+            Debug.Log($"[GameManager] localPlayer inicial buscado en escena = {(localPlayer != null ? localPlayer.name : "NULL")}");
             
             if (localPlayer == null)
             {
@@ -278,20 +284,33 @@ namespace Code.GameLogic
                 if (p != null) localPlayer = p.GetComponent<PlayerLocal>();
             }
 
-#if UNITY_EDITOR
-            if (localPlayer == null)
+            if (localPlayer == null && playerPrefab == null)
             {
-                var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Player.prefab");
-                if (prefab != null)
+                playerPrefab = Resources.Load<GameObject>("Player");
+                if (playerPrefab == null)
                 {
-                    var playerObj = Instantiate(prefab);
-                    localPlayer = playerObj.GetComponent<PlayerLocal>();
+                    Debug.LogError("[GameManager] CRITICAL ERROR: No se encontró 'Player' en la carpeta Resources ni en el Inspector. ¡Asegúrate de mover el prefab a una carpeta Resources!");
+                }
+                else
+                {
+                    Debug.Log("[GameManager] Cargado playerPrefab desde Resources.");
                 }
             }
-#endif
+
+            if (localPlayer == null && playerPrefab != null)
+            {
+                var playerObj = Instantiate(playerPrefab);
+                localPlayer = playerObj.GetComponent<PlayerLocal>();
+                Debug.Log($"[GameManager] Instanciado playerPrefab: {playerObj.name}. Componente PlayerLocal = {(localPlayer != null ? "SI" : "NO")}");
+            }
+            else if (localPlayer == null)
+            {
+                Debug.LogError("[GameManager] CRITICAL ERROR: playerPrefab is not assigned in the Inspector! The game will not start in the browser build.");
+            }
 
             npcs = FindObjectsByType<NPCPlayer>(FindObjectsSortMode.None).ToList();
             allPlayers = FindObjectsByType<Code.Player.Player>(FindObjectsSortMode.None).ToList();
+            Debug.Log($"[GameManager] NPCs encontrados = {npcs.Count}, Players encontrados = {allPlayers.Count}");
 
             if (deckCreator != null && (localPlayer != null || FindAnyObjectByType<Code.Player.Player>() != null))
             {
@@ -299,20 +318,26 @@ namespace Code.GameLogic
                 var mainCardsHandler = localPlayer != null ? localPlayer.cardsHandler : FindAnyObjectByType<CardsHandler>();
                 var playerGameObject = localPlayer != null ? localPlayer.gameObject : mainPlayerComponent.gameObject;
 
+                Debug.Log($"[GameManager] Jugador a sentar: {playerGameObject.name}. CardsHandler = {(mainCardsHandler != null ? "SI" : "NO")}");
+
                 if (SeatManager.Instance != null)
                 {
+                    Debug.Log($"[GameManager] SeatManager.Instance is active. allChairs.Count = {SeatManager.Instance.allChairs.Count}");
                     if (SeatManager.Instance.allChairs.Count > defaultLocalSeatIndex)
                     {
-                        SeatManager.Instance.RequestSeat(playerGameObject, SeatManager.Instance.allChairs[defaultLocalSeatIndex]);
+                        var chair = SeatManager.Instance.allChairs[defaultLocalSeatIndex];
+                        Debug.Log($"[GameManager] Requesting seat {defaultLocalSeatIndex} for {playerGameObject.name}. Is chair occupied? {chair.isOccupied}");
+                        SeatManager.Instance.RequestSeat(playerGameObject, chair);
                     }
                     else
                     {
+                        Debug.Log($"[GameManager] Falling back to AutoSeatLocalPlayer for {playerGameObject.name}");
                         SeatManager.Instance.AutoSeatLocalPlayer(playerGameObject);
                     }
                 }
                 else
                 {
-                    Debug.LogError("[GameManager] SeatManager.Instance es NULL!");
+                    Debug.LogError("[GameManager] SeatManager.Instance es NULL al intentar sentar al jugador!");
                 }
                 
                 foreach (var npc in npcs)
@@ -665,6 +690,40 @@ namespace Code.GameLogic
             var players = UnityEngine.Object.FindObjectsByType<Code.Player.Player>(UnityEngine.FindObjectsSortMode.None);
             foreach (var p in players) p.canPlayCard = false;
 
+            StartCoroutine(ResolveHandWinnerCoroutine(teamName, points));
+        }
+
+        private System.Collections.IEnumerator ResolveHandWinnerCoroutine(string teamName, int points)
+        {
+            // 1. Resolver Envido pendiente primero
+            if (pendingEnvidoResolution)
+            {
+                pendingEnvidoResolution = false;
+                
+                if (PlayerHUD.Instance != null)
+                {
+                    PlayerHUD.Instance.NotifyEvent($"ENVIDO: TEAM 1 ({pendingEnvidoScoreTeam1}) VS TEAM 2 ({pendingEnvidoScoreTeam2})", 3.0f);
+                }
+                
+                foreach (var team in teams)
+                {
+                    if (team.teamName == pendingEnvidoWinnerTeam)
+                    {
+                        team.teamScore += pendingEnvidoPoints;
+                        break;
+                    }
+                }
+                
+                if (AudioManager.Instance != null) AudioManager.Instance.PlaySFX("score_add_chalk");
+                RpcUpdateScores(teams[0].teamScore, teams[1].teamScore, teams[0].roundsWon, teams[1].roundsWon);
+                
+                yield return new WaitForSeconds(3.0f); // Esperar a que se lea el resultado del envido
+                
+                // Chequear si el Envido terminó la partida antes de dar los puntos del Truco
+                if (CheckForMatchWinner()) yield break;
+            }
+
+            // 2. Resolver los puntos de la mano (Truco)
             Team winningTeam = null;
             foreach (var team in teams)
             {
@@ -672,7 +731,7 @@ namespace Code.GameLogic
                 {
                     team.teamScore += points;
                     winningTeam = team;
-                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{teamName.ToUpper()} GANA LA MANO (+{points})!");
+                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{teamName.ToUpper()} GANA LA MANO (+{points})!", 3.0f);
                     break;
                 }
             }
@@ -681,8 +740,26 @@ namespace Code.GameLogic
             {
                 AudioManager.Instance.PlaySFX("score_add_chalk");
             }
+            RpcUpdateScores(teams[0].teamScore, teams[1].teamScore, teams[0].roundsWon, teams[1].roundsWon);
 
+            yield return new WaitForSeconds(2.0f); // Esperar para que se lea la victoria de la mano
+            
             // Check if game is over (score >= 30)
+            if (CheckForMatchWinner()) yield break;
+
+            var playerLocal = FindAnyObjectByType<PlayerLocal>();
+            Team humanTeam = (playerLocal != null && playerLocal.player != null) ? playerLocal.player.team : null;
+
+            // Play hand win fanfare if human team won this hand
+            if (AudioManager.Instance != null && humanTeam != null && winningTeam == humanTeam)
+            {
+                AudioManager.Instance.PlaySFX("score_buenas_fanfare");
+            }
+            StartCoroutine(DelayedNewHand());
+        }
+
+        private bool CheckForMatchWinner()
+        {
             bool gameOver = false;
             Team matchWinner = null;
             foreach (var team in teams)
@@ -695,11 +772,11 @@ namespace Code.GameLogic
                 }
             }
 
-            var playerLocal = FindAnyObjectByType<PlayerLocal>();
-            Team humanTeam = (playerLocal != null && playerLocal.player != null) ? playerLocal.player.team : null;
-
             if (gameOver && matchWinner != null)
             {
+                var playerLocal = FindAnyObjectByType<PlayerLocal>();
+                Team humanTeam = (playerLocal != null && playerLocal.player != null) ? playerLocal.player.team : null;
+
                 if (PlayerHUD.Instance != null)
                 {
                     PlayerHUD.Instance.NotifyEvent($"¡{matchWinner.teamName.ToUpper()} GANA LA PARTIDA!", 5f);
@@ -717,16 +794,9 @@ namespace Code.GameLogic
                     }
                 }
                 StartCoroutine(DelayedQuitToMainMenu());
+                return true;
             }
-            else
-            {
-                // Play hand win fanfare if human team won this hand
-                if (AudioManager.Instance != null && humanTeam != null && winningTeam == humanTeam)
-                {
-                    AudioManager.Instance.PlaySFX("score_buenas_fanfare");
-                }
-                StartCoroutine(DelayedNewHand());
-            }
+            return false;
         }
 
         private System.Collections.IEnumerator DelayedQuitToMainMenu()

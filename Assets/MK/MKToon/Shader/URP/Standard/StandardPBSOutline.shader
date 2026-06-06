@@ -264,7 +264,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
 			
 			#pragma shader_feature __ _MK_EMISSION_MAP
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_DIFFUSE_OREN_NAYAR _MK_DIFFUSE_MINNAERT
 			#pragma shader_feature_local __ _MK_SPECULAR_ISOTROPIC _MK_SPECULAR_ANISOTROPIC
@@ -431,7 +431,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
 			
 			#pragma shader_feature __ _MK_EMISSION_MAP
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_DIFFUSE_OREN_NAYAR _MK_DIFFUSE_MINNAERT
 			#pragma shader_feature_local __ _MK_SPECULAR_ISOTROPIC _MK_SPECULAR_ANISOTROPIC
@@ -588,7 +588,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			#pragma target 4.5
 			#pragma exclude_renderers gles d3d9 d3d11_9x psp2 n3ds wiiu
 			
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
 			#pragma shader_feature_local __ _MK_HEIGHT_MAP
 			#pragma shader_feature_local __ _MK_PARALLAX
 			#pragma shader_feature_local __ _MK_SURFACE_TYPE_TRANSPARENT
@@ -642,7 +642,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			#pragma shader_feature_local __ _MK_WORKFLOW_SPECULAR _MK_WORKFLOW_ROUGHNESS
 			
 			#pragma shader_feature __ _MK_EMISSION_MAP
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
 			#pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
 			#pragma shader_feature_local __ _MK_COLOR_GRADING_ALBEDO _MK_COLOR_GRADING_FINAL_OUTPUT
@@ -687,7 +687,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 
 			#pragma shader_feature_local __ _MK_HEIGHT_MAP
 			#pragma shader_feature_local __ _MK_PARALLAX
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_OUTLINE_HULL_ORIGIN _MK_OUTLINE_HULL_CLIP
 			#pragma shader_feature_local __ _MK_OUTLINE_DATA_UV7
@@ -765,7 +765,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
 			#pragma shader_feature_local __ _MK_HEIGHT_MAP
 			#pragma shader_feature_local __ _MK_PARALLAX
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 
 			#if UNITY_VERSION >= 202220
@@ -820,7 +820,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			#pragma shader_feature_local __ _MK_NORMAL_MAP
 			#pragma shader_feature_local __ _MK_DETAIL_NORMAL_MAP
@@ -880,7 +880,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			#pragma shader_feature_local __ _MK_NORMAL_MAP
 			#pragma shader_feature_local __ _MK_DETAIL_NORMAL_MAP
@@ -947,7 +947,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 
             #pragma multi_compile_instancing
@@ -1014,7 +1014,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			
 			#define APPLICATION_SPACE_WARP_MOTION 1
@@ -1055,7 +1055,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
             #pragma fragment Universal2DFrag
 			
 			#pragma shader_feature_local __ _MK_SURFACE_TYPE_TRANSPARENT
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
 			#pragma shader_feature_local __ _MK_ALPHA_CLIPPING
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
@@ -1132,7 +1132,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
 			
 			#pragma shader_feature __ _MK_EMISSION_MAP
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_DIFFUSE_OREN_NAYAR _MK_DIFFUSE_MINNAERT
 			#pragma shader_feature_local __ _MK_SPECULAR_ISOTROPIC _MK_SPECULAR_ANISOTROPIC
@@ -1299,7 +1299,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
 			
 			#pragma shader_feature __ _MK_EMISSION_MAP
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_DIFFUSE_OREN_NAYAR _MK_DIFFUSE_MINNAERT
 			#pragma shader_feature_local __ _MK_SPECULAR_ISOTROPIC _MK_SPECULAR_ANISOTROPIC
@@ -1456,7 +1456,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			#pragma target 3.5
 			#pragma only_renderers glcore gles3
 			
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
 			#pragma shader_feature_local __ _MK_HEIGHT_MAP
 			#pragma shader_feature_local __ _MK_PARALLAX
 			#pragma shader_feature_local __ _MK_SURFACE_TYPE_TRANSPARENT
@@ -1510,7 +1510,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			#pragma shader_feature_local __ _MK_WORKFLOW_SPECULAR _MK_WORKFLOW_ROUGHNESS
 			
 			#pragma shader_feature __ _MK_EMISSION_MAP
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
 			#pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
 			#pragma shader_feature_local __ _MK_COLOR_GRADING_ALBEDO _MK_COLOR_GRADING_FINAL_OUTPUT
@@ -1555,7 +1555,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 
 			#pragma shader_feature_local __ _MK_HEIGHT_MAP
 			#pragma shader_feature_local __ _MK_PARALLAX
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_OUTLINE_HULL_ORIGIN _MK_OUTLINE_HULL_CLIP
 			#pragma shader_feature_local __ _MK_OUTLINE_DATA_UV7
@@ -1633,7 +1633,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
 			#pragma shader_feature_local __ _MK_HEIGHT_MAP
 			#pragma shader_feature_local __ _MK_PARALLAX
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 
 			#if UNITY_VERSION >= 202220
@@ -1688,7 +1688,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			#pragma shader_feature_local __ _MK_NORMAL_MAP
 			#pragma shader_feature_local __ _MK_DETAIL_NORMAL_MAP
@@ -1748,7 +1748,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			#pragma shader_feature_local __ _MK_NORMAL_MAP
 			#pragma shader_feature_local __ _MK_DETAIL_NORMAL_MAP
@@ -1815,7 +1815,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 
             #pragma multi_compile_instancing
@@ -1882,7 +1882,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			
 			#define APPLICATION_SPACE_WARP_MOTION 1
@@ -1923,7 +1923,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
             #pragma fragment Universal2DFrag
 			
 			#pragma shader_feature_local __ _MK_SURFACE_TYPE_TRANSPARENT
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
 			#pragma shader_feature_local __ _MK_ALPHA_CLIPPING
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
@@ -1997,7 +1997,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
 			
 			#pragma shader_feature __ _MK_EMISSION_MAP
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_DIFFUSE_OREN_NAYAR _MK_DIFFUSE_MINNAERT
 			#pragma shader_feature_local __ _MK_SPECULAR_ISOTROPIC
@@ -2148,7 +2148,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
 			
 			#pragma shader_feature __ _MK_EMISSION_MAP
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_DIFFUSE_OREN_NAYAR _MK_DIFFUSE_MINNAERT
 			#pragma shader_feature_local __ _MK_SPECULAR_ISOTROPIC
@@ -2293,7 +2293,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			#pragma target 2.5
 			#pragma only_renderers gles d3d9 d3d11_9x psp2 n3ds wiiu
 			
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
 			#pragma shader_feature_local __ _MK_SURFACE_TYPE_TRANSPARENT
 			#pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
@@ -2343,7 +2343,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			#pragma shader_feature_local __ _MK_WORKFLOW_SPECULAR _MK_WORKFLOW_ROUGHNESS
 			
 			#pragma shader_feature __ _MK_EMISSION_MAP
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
 			#pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
 			#pragma shader_feature_local __ _MK_COLOR_GRADING_ALBEDO _MK_COLOR_GRADING_FINAL_OUTPUT
@@ -2387,7 +2387,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			#pragma fragment OutlineFrag
 			#pragma fragmentoption ARB_precision_hint_fastest
 
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_OUTLINE_HULL_ORIGIN _MK_OUTLINE_HULL_CLIP
 			#pragma shader_feature_local __ _MK_OUTLINE_DATA_UV7
@@ -2458,7 +2458,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 
 			#if UNITY_VERSION >= 202220
@@ -2513,7 +2513,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			#pragma shader_feature_local __ _MK_NORMAL_MAP
 			#pragma shader_feature_local __ _MK_DETAIL_NORMAL_MAP
@@ -2569,7 +2569,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			#pragma shader_feature_local __ _MK_NORMAL_MAP
 			#pragma shader_feature_local __ _MK_DETAIL_NORMAL_MAP
@@ -2622,7 +2622,7 @@ Shader "MK/Toon/URP/Standard/Physically Based + Outline"
             #pragma fragment Universal2DFrag
 			
 			#pragma shader_feature_local __ _MK_SURFACE_TYPE_TRANSPARENT
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
 			#pragma shader_feature_local __ _MK_ALPHA_CLIPPING
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER

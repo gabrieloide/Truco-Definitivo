@@ -28,15 +28,17 @@ namespace Code.GameLogic
             {
                 if (allChairs[i].occupant == player) return i;
             }
+            Debug.Log($"[SeatManager] GetPlayerSeatIndex: Jugador {player.name} NO encontrado en ninguna silla. allChairs.Count = {allChairs.Count}");
             return -1;
         }
 
         // [Server]
         public void RequestSeat(GameObject player, ChairInteractable chair)
         {
-
+            Debug.Log($"[SeatManager] RequestSeat llamado para {player.name} en silla {chair.name}");
             if (chair.isOccupied) 
             {
+                Debug.LogWarning($"[SeatManager] ¡La silla {chair.name} ya está ocupada por {(chair.occupant != null ? chair.occupant.name : "NULL")}! Cancelando sentada.");
                 return;
             }
 

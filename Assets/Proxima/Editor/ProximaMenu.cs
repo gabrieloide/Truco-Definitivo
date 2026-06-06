@@ -16,6 +16,7 @@ namespace Proxima.Editor
         private static readonly string _docs = "https://www.unityproxima.com/docs?utm_source=pxmenu";
         private static readonly string _buildalon = "https://www.buildalon.com?utm_source=pxmenu";
         private static readonly string _flexalon = "https://www.flexalon.com?utm_source=pxmenu";
+        private static readonly string _bindables = "https://www.bindables.dev?utm_source=pxmenu";
 
         private static readonly string _showOnStartKey = "ProximaMenu_ShowOnStart";
         private static readonly string _versionKey = "ProximaMenu_Version";
@@ -33,8 +34,9 @@ namespace Proxima.Editor
         private GUIStyle _boldStyleNoWrap;
         private GUIStyle _semiboldStyle;
         private GUIStyle _proStyle;
-        private GUIStyle _buildalonStyle;
+        private GUIStyle _bindablesStyle;
         private GUIStyle _discordButtonStyle;
+        private GUIStyle _featureBox;
 
         private static ShowOnStart _showOnStart;
         private static readonly string[] _showOnStartOptions = {
@@ -131,7 +133,7 @@ namespace Proxima.Editor
 
         private void InitStyles()
         {
-            if (_bodyStyle != null) return;
+            if (_bodyStyle != null) { return; }
 
             ProximaGUI.StyleTag = ProximaStartScreenTag;
             ProximaGUI.StyleFontSize = 14;
@@ -168,8 +170,8 @@ namespace Proxima.Editor
             ProximaGUI.SetBackgroundColor(_proStyle, new Color(.94f, .42f, .13f));
             _proStyle.wordWrap = false;
 
-            _buildalonStyle = ProximaGUI.CreateStyle(Color.white, ProximaGUI.HexColor("#FF1E6F"));
-            _buildalonStyle.fontStyle = FontStyle.Bold;
+            _bindablesStyle = ProximaGUI.CreateStyle(ProximaGUI.HexColor("#03FF74"));
+            _bindablesStyle.fontStyle = FontStyle.Bold;
 
             _discordButtonStyle = new GUIStyle(_buttonStyle);
             ProximaGUI.SetBackgroundColor(_discordButtonStyle, ProximaGUI.HexColor("#5865f2"));
@@ -179,6 +181,12 @@ namespace Proxima.Editor
             ReadChangeLog();
 
             _isProInstalled = ProximaFeatures.IsProInstalled();
+
+            _featureBox = ProximaGUI.CreateStyle(Color.white, Color.black);
+            _featureBox.padding.top = 10;
+            _featureBox.padding.left = 10;
+            _featureBox.padding.right = 10;
+            _featureBox.padding.bottom = 10;
         }
 
         private void ReadChangeLog()
@@ -288,6 +296,18 @@ namespace Proxima.Editor
                         GUILayout.Space(20);
                         ProximaGUI.HorizontalCentered(() =>
                         {
+                            if (ProximaGUI.ImageButton("7f8c277d6d815f144bfc32fd8a5023d8", GUIStyle.none, 140, (int)(140 * 0.667f)))
+                            {
+                                Application.OpenURL(_bindables);
+                            }
+                        });
+
+                        EditorGUILayout.Space();
+                        EditorGUILayout.Space();
+                        EditorGUILayout.Space();
+
+                        ProximaGUI.HorizontalCentered(() =>
+                        {
                             if (ProximaGUI.ImageButton("3a8828df6dcaca540b6fee70da9c4697", GUIStyle.none, 100, (int)(165 * 0.3483f)))
                             {
                                 Application.OpenURL(_buildalon);
@@ -313,29 +333,41 @@ namespace Proxima.Editor
                     {
                         _scrollPosition = ProximaGUI.Scroll(_scrollPosition, () =>
                         {
-                            GUILayout.Space(24);
+                            EditorGUILayout.Space();
+                            EditorGUILayout.Space();
 
-                            GUILayout.Label("Introducing Proxima Remote Access Beta!", _boldStyle);
+                            GUILayout.Label("Thank you for using Proxima Inspector!", _boldStyle);
 
-                            GUILayout.Space(24);
+                            EditorGUILayout.Space();
 
-                            GUILayout.Label("Hello Proxima users! We're excited to announce an upcoming feature called Proxima Remote Access. Get ready to debug your game from anywhere in the world!", _bodyStyle);
+                            GUILayout.Label("You're invited to join the Discord community for support and feedback. Let us know how to make Proxima better for you!", _bodyStyle);
 
-                            GUILayout.Space(24);
+                            EditorGUILayout.Space();
+                            EditorGUILayout.Space();
 
-                            ProximaGUI.HorizontalCentered(() => ProximaGUI.Image("020f2dd7432168a4eb4d830a209e54e5", 630));
+                            ProximaGUI.Vertical(_featureBox, () =>
+                            {
+                                GUILayout.Label("Unveiling our new tool for Unity developers:", _boldStyle);
 
-                            GUILayout.Space(24);
+                                EditorGUILayout.Space();
+                            
+                                if (ProximaGUI.Link("Bindables: Reactive Unity Programming!", _bindablesStyle))
+                                {
+                                    Application.OpenURL(_bindables);
+                                }
+                            
+                                EditorGUILayout.Space();
+                           
+                                GUILayout.Label("Bindables is a reactive framework for managing your game state and syncing it to UI and gameplay. Easily bind to lists, dictionaries, derived state, animations, intervals, events, and even URIs.", _bodyStyle);
 
-                            GUILayout.Label("Today, to connect to a device running Proxima Inspector, you need to be on the same local network. With Proxima Remote Access, you can connect to users anywhere over the internet through a Proxima server.", _bodyStyle);
+                            });
 
-                            GUILayout.Space(24);
+                            EditorGUILayout.Space();
+                            EditorGUILayout.Space();
 
-                            ProximaGUI.LinkButton("Join the Beta", "https://www.unityproxima.com/beta?utm_source=pxmenu", _proStyle);
+                            GUILayout.Label("If you're enjoying Proxima, please consider writing a review. It helps a ton!", _bodyStyle);
 
-                            GUILayout.Space(24);
-
-                            GUILayout.Label("By the way, if you're enjoying Proxima, please consider writing a review. It helps a ton!", _semiboldStyle);
+                            EditorGUILayout.Space();
 
                             GUILayout.Space(24);
 

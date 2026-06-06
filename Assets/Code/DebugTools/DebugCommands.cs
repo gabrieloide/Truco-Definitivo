@@ -32,9 +32,36 @@ public class DebugCommands : MonoBehaviour
         _debugPanel.SetActive(false);
     }
 
+    private void OnEnable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        if (scene.name == "GameScene")
+        {
+            RegisterDebugInput();
+        }
+    }
+
     private void Start()
     {
-        GameManager.Instance.playerInput.Player.DebugCommand.performed += OpenDebugPanel;
+        RegisterDebugInput();
+    }
+
+    private void RegisterDebugInput()
+    {
+        if (GameManager.Instance != null && GameManager.Instance.playerInput != null)
+        {
+            GameManager.Instance.playerInput.Player.DebugCommand.performed -= OpenDebugPanel;
+            GameManager.Instance.playerInput.Player.DebugCommand.performed += OpenDebugPanel;
+        }
     }
 
     public void OpenDebugPanel(InputAction.CallbackContext context)

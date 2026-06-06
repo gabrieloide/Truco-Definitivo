@@ -14,12 +14,14 @@ namespace Code.Player
         public Transform handTransform;
         
         public List<Card> hand = new List<Card>();
+        public List<Card> initialHand = new List<Card>();
         private List<GameObject> _visualCards = new List<GameObject>();
         public bool isMyTurn = false;
 
         public void ClearCards()
         {
             hand.Clear();
+            initialHand.Clear();
             foreach (var v in _visualCards) if (v != null) Destroy(v);
             _visualCards.Clear();
         }
@@ -27,6 +29,7 @@ namespace Code.Player
         public void ReceiveSingleCard(Card card)
         {
             hand.Add(card);
+            initialHand.Add(card);
 
             int i = _visualCards.Count;
             Transform parent = handTransform != null ? handTransform : transform;

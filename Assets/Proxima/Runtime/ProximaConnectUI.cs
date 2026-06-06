@@ -1,5 +1,7 @@
 #if UNITY_TMPRO
 
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -110,7 +112,7 @@ namespace Proxima
             set => _showHideButton = value;
         }
 
-        void OnEnable()
+        private void OnEnable()
         {
             if (EventSystem.current == null)
             {
@@ -121,12 +123,27 @@ namespace Proxima
             _proximaInspector.Status.Changed += OnStatusChanged;
             _displayNameInputField.text = _proximaInspector.DisplayName;
 
-            if (!ProximaInspector.ProxyAvailable)
+            _connectionTypeDropdown.gameObject.SetActive(ProximaInspector.ProxyAvailable || ProximaInspector.DebugAvailable);
+
+            var connType = typeof(ProximaInspector.ConnectionTypes);
+
+            var connectionTypes = new List<string>
             {
-                _connectionTypeDropdown.gameObject.SetActive(false);
+                Enum.GetName(connType, ProximaInspector.ConnectionTypes.LocalNetwork)
+            };
+            
+            if (ProximaInspector.ProxyAvailable)
+            {
+                connectionTypes.Add(Enum.GetName(connType, ProximaInspector.ConnectionTypes.Internet));
             }
 
-            var connectionTypes = ProximaInspector.ConnectionType.GetType().GetEnumNames();
+#if PROXIMA_DEBUG
+            if (ProximaInspector.DebugAvailable)
+            {
+                connectionTypes.Add(Enum.GetName(connType, ProximaInspector.ConnectionTypes.Debug));
+            }
+#endif
+
             _connectionTypeDropdown.ClearOptions();
             var options = connectionTypes.Select(x => new TMP_Dropdown.OptionData(x)).ToList();
             _connectionTypeDropdown.AddOptions(options);
@@ -191,7 +208,7 @@ namespace Proxima
 
         private void OnConnectionTypeChanged()
         {
-            if (System.Enum.TryParse<ProximaInspector.ConnectionTypes>(
+            if (Enum.TryParse<ProximaInspector.ConnectionTypes>(
                 _connectionTypeDropdown.options[_connectionTypeDropdown.value].text,
                 true,
                 out var connectionType))

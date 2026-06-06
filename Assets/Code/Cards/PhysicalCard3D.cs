@@ -69,80 +69,149 @@ namespace Code.Cards
 
         private void UpdateVisuals()
         {
-            if (string.IsNullOrEmpty(cardSuit) || cardValue == 0) return;
-
             var db = Resources.Load<Code.Cards.CardDatabase>("CardDatabase");
             if (db != null)
             {
                 db.Initialize();
-                // Buscar por valor y palo para que sea 100% robusto y no dependa de IDs
-                var data = db.GetAllCards().FirstOrDefault(c => c.suit.ToString() == cardSuit && c.value == cardValue);
-                if (data != null && data.cardSprite != null)
+                var allCards = db.GetAllCards();
+
+                if (string.IsNullOrEmpty(cardSuit) || cardValue == 0)
                 {
-                    // Opción A: Si usa SpriteRenderer
-                    if (cardImageRenderer != null)
+                    Debug.Log($"[PhysicalCard3D] Mostrando reverso de la carta (suit='{cardSuit}', value={cardValue})");
+                    ShowCardBack(allCards);
+                    return;
+                }
+
+                Debug.Log($"[PhysicalCard3D] Iniciando UpdateVisuals para {cardValue} de {cardSuit}");
+
+                // Buscar por valor y palo para que sea 100% robusto y no dependa de IDs
+                var data = allCards.FirstOrDefault(c => c.suit.ToString() == cardSuit && c.value == cardValue);
+                if (data != null)
+                {
+                    Debug.Log($"[PhysicalCard3D] Encontrado CardData para {cardValue} de {cardSuit}. cardSprite: {(data.cardSprite != null ? data.cardSprite.name : "NULL")}");
+                    
+                    if (data.cardSprite != null)
                     {
-                        cardImageRenderer.sprite = data.cardSprite;
+                        // Opción A: Si usa SpriteRenderer
+                        if (cardImageRenderer != null)
+                        {
+                            cardImageRenderer.sprite = data.cardSprite;
+                            Debug.Log("[PhysicalCard3D] Asignado sprite a cardImageRenderer");
+                        }
+
+                        // Opción B: Si prefiere usar un Material (MeshRenderer)
+                        if (cardMeshRenderer != null)
+                        {
+                            Material mat = cardMeshRenderer.material; // Esto crea una instancia del material
+                            Debug.Log($"[PhysicalCard3D] Obtenido material de cardMeshRenderer: {mat.name}, shader: {mat.shader.name}");
+
+                            Rect spriteRect = data.cardSprite.rect;
+                            float texWidth = data.cardSprite.texture.width;
+                            float texHeight = data.cardSprite.texture.height;
+
+                            Vector2 scale = new Vector2(spriteRect.width / texWidth, spriteRect.height / texHeight);
+                            Vector2 offset = new Vector2(spriteRect.x / texWidth, spriteRect.y / texHeight);
+                            Debug.Log($"[PhysicalCard3D] SpriteRect: {spriteRect}, Texture: {texWidth}x{texHeight}, Scale: {scale}, Offset: {offset}");
+
+                            // Intentamos asignar a todas las propiedades de textura comunes (incluido MK Toon)
+                            string[] targetProperties = { "_BaseMap", "_MainTex", "_AlbedoMap", "_AlbedoTex", "_BaseColorMap", "_Albedo" };
+                            bool textureAssigned = false;
+                            foreach (string prop in targetProperties)
+                            {
+                                if (mat.HasProperty(prop))
+                                {
+                                    mat.SetTexture(prop, data.cardSprite.texture);
+                                    mat.SetTextureScale(prop, scale);
+                                    mat.SetTextureOffset(prop, offset);
+                                    textureAssigned = true;
+                                    Debug.Log($"[PhysicalCard3D] Asignada textura a propiedad {prop} (Escala: {scale}, Offset: {offset})");
+                                }
+                            }
+
+                            if (textureAssigned)
+                            {
+                                // Para MK Toon, es necesario habilitar explícitamente el keyword de albedo map
+                                mat.EnableKeyword("_MK_ALBEDO_MAP");
+                                bool keywordEnabled = mat.IsKeywordEnabled("_MK_ALBEDO_MAP");
+                                Debug.Log($"[PhysicalCard3D] Habilitado keyword _MK_ALBEDO_MAP. Estado activo: {keywordEnabled}");
+                            }
+                            else
+                            {
+                                Debug.LogWarning("[PhysicalCard3D] No se encontró ninguna propiedad de textura conocida en el material.");
+                            }
+
+                            // Limpiamos los tintes de color en las propiedades de color comunes
+                            string[] colorProperties = { "_BaseColor", "_Color", "_AlbedoColor", "_ColorTint" };
+                            foreach (string prop in colorProperties)
+                            {
+                                if (mat.HasProperty(prop))
+                                {
+                                    mat.SetColor(prop, Color.white);
+                                    Debug.Log($"[PhysicalCard3D] Limpiado tinte de color en {prop} a blanco");
+                                }
+                            }
+                        }
                     }
-
-                    // Opción B: Si prefiere usar un Material (MeshRenderer)
-                    if (cardMeshRenderer != null)
+                    else
                     {
-                        Material mat = cardMeshRenderer.material; // Esto crea una instancia del material
-
-                        Rect spriteRect = data.cardSprite.textureRect;
-                        float texWidth = data.cardSprite.texture.width;
-                        float texHeight = data.cardSprite.texture.height;
-
-                        Vector2 scale = new Vector2(spriteRect.width / texWidth, spriteRect.height / texHeight);
-                        Vector2 offset = new Vector2(spriteRect.x / texWidth, spriteRect.y / texHeight);
-
-                        // Diagnóstico de propiedades de textura en el editor
-                        #if UNITY_EDITOR
-                        string[] texProps = mat.GetTexturePropertyNames();
-                        #endif
-
-                        // Intentamos asignar a todas las propiedades de textura comunes (incluido MK Toon)
-                        string[] targetProperties = { "_BaseMap", "_MainTex", "_AlbedoMap", "_AlbedoTex", "_BaseColorMap", "_Albedo" };
-                        bool textureAssigned = false;
-                        foreach (string prop in targetProperties)
-                        {
-                            if (mat.HasProperty(prop))
-                            {
-                                mat.SetTexture(prop, data.cardSprite.texture);
-                                mat.SetTextureScale(prop, scale);
-                                mat.SetTextureOffset(prop, offset);
-                                textureAssigned = true;
-                            }
-                        }
-
-                        if (textureAssigned)
-                        {
-                            // Para MK Toon, es necesario habilitar explícitamente el keyword de albedo map
-                            mat.EnableKeyword("_MK_ALBEDO_MAP");
-                        }
-                        else
-                        {
-                        }
-
-                        // Limpiamos los tintes de color en las propiedades de color comunes
-                        string[] colorProperties = { "_BaseColor", "_Color", "_AlbedoColor", "_ColorTint" };
-                        foreach (string prop in colorProperties)
-                        {
-                            if (mat.HasProperty(prop))
-                            {
-                                mat.SetColor(prop, Color.white);
-                            }
-                        }
+                        Debug.LogWarning($"[PhysicalCard3D] El CardData para {cardValue} de {cardSuit} tiene cardSprite = NULL");
                     }
                 }
                 else
                 {
+                    Debug.LogWarning($"[PhysicalCard3D] No se encontró CardData para {cardValue} de {cardSuit} en la base de datos.");
                 }
             }
             else
             {
                 Debug.LogError("[PhysicalCard3D] No se pudo cargar CardDatabase desde Resources.");
+            }
+        }
+
+        private void ShowCardBack(System.Collections.Generic.List<CardData> allCards)
+        {
+            if (allCards != null && allCards.Count > 0 && allCards[0].cardSprite != null)
+            {
+                if (cardMeshRenderer != null)
+                {
+                    Material mat = cardMeshRenderer.material;
+                    Texture2D tex = allCards[0].cardSprite.texture;
+
+                    // El reverso con diseño (Back_1) está en la posición x: 80, y: 0, w: 80, h: 122 en un sheet de 960x610
+                    Vector2 scale = new Vector2(80f / 960f, 122f / 610f);
+                    Vector2 offset = new Vector2(80f / 960f, 0f);
+
+                    string[] targetProperties = { "_BaseMap", "_MainTex", "_AlbedoMap", "_AlbedoTex", "_BaseColorMap", "_Albedo" };
+                    bool textureAssigned = false;
+                    foreach (string prop in targetProperties)
+                    {
+                        if (mat.HasProperty(prop))
+                        {
+                            mat.SetTexture(prop, tex);
+                            mat.SetTextureScale(prop, scale);
+                            mat.SetTextureOffset(prop, offset);
+                            textureAssigned = true;
+                        }
+                    }
+
+                    if (textureAssigned)
+                    {
+                        mat.EnableKeyword("_MK_ALBEDO_MAP");
+                    }
+
+                    string[] colorProperties = { "_BaseColor", "_Color", "_AlbedoColor", "_ColorTint" };
+                    foreach (string prop in colorProperties)
+                    {
+                        if (mat.HasProperty(prop))
+                        {
+                            mat.SetColor(prop, Color.white);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[PhysicalCard3D] No se pudo cargar la textura para el reverso porque la base de datos está vacía.");
             }
         }
 

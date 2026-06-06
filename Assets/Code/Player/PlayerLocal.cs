@@ -117,7 +117,8 @@ namespace Code.Player
                 }
 
 
-                RpcServerPlayerToClient(localPlayer, localPlayer.player.playerName, localPlayer.player.team.teamName);
+                string teamName = (localPlayer.player.team != null) ? localPlayer.player.team.teamName : "";
+                RpcServerPlayerToClient(localPlayer, localPlayer.player.playerName, teamName);
             }
         }
 
@@ -133,7 +134,15 @@ namespace Code.Player
 
             GameManager.Instance.serverPlayers.Add(localPlayer);
             player.playerName = playerName;
-            player.team.teamName = teamName;
+            
+            if (player.team == null)
+            {
+                player.team = new Team(teamName);
+            }
+            else
+            {
+                player.team.teamName = teamName;
+            }
         }
 
         private void InitializedHand()

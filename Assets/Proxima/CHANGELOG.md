@@ -1,5 +1,24 @@
 # Proxima Changelog
 
+## Version 1.6.0
+
+- The minimum supported Unity version is now 2021.3. As always, back up your project before updating.
+
+### Features
+
+- The **Proxima Web App** source is now included in the **PRO** version of Proxima. You can find it under Proxima/Web/web-source.zip. See README.md in the zip file for editing instructions.
+- Web App: Updated to Svelte 5.
+- Update WebSocketSharp plugin.
+- Logs page now shows the date and time.
+
+### Fixes
+
+- Inspector: Fix rotations changing while you edit them.
+- Hierarchy: Fix gameObjects appearing to duplicate when selecting them in the search results.
+- Logs Page: Fix collapse log count rendering on long logs
+- Logs Page: Add uploaded log size limit
+- Fix proxima throwing errors on missing scripts
+
 ## Version 1.5.0
 
 ### [BETA] Proxima Remote Access (Pro Only)

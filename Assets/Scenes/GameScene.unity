@@ -1595,7 +1595,6 @@ GameObject:
   m_Component:
   - component: {fileID: 659296601}
   - component: {fileID: 659296600}
-  - component: {fileID: 659296599}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1603,23 +1602,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &659296599
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 659296598}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sceneId: 1470015061
-  _assetId: 0
-  serverOnly: 0
-  visibility: 0
-  hasSpawned: 0
 --- !u!114 &659296600
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1636,6 +1618,7 @@ MonoBehaviour:
   localPlayer: {fileID: 0}
   defaultLocalSeatIndex: 0
   deckPrefab: {fileID: 7213529965880974654, guid: 7296f3f3acbf4c945a0b48ce362e2242, type: 3}
+  playerPrefab: {fileID: 6288279965579544772, guid: b7c9316c1e21f4443a3a74faccc80e62, type: 3}
   serverPlayers: []
   allPlayers: []
   currentPlayerTurn: 0
@@ -1649,6 +1632,11 @@ MonoBehaviour:
   _gameSceneStarted: 0
   teams: []
   isAnnouncementPending: 0
+  pendingEnvidoResolution: 0
+  pendingEnvidoWinnerTeam: 
+  pendingEnvidoPoints: 0
+  pendingEnvidoScoreTeam1: 0
+  pendingEnvidoScoreTeam2: 0
   npcs: []
   trickWinners: 
   currentHandValue: 1

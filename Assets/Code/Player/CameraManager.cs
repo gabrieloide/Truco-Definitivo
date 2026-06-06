@@ -44,6 +44,14 @@ namespace Code.Player
                 return;
             }
 
+            var movement = GetComponent<PlayerMovement3D>();
+            if (movement != null && movement.isSeated)
+            {
+                // Ya fuimos sentados por el GameManager antes de que Start() se ejecutara, 
+                // así que no sobreescribimos la cámara.
+                return;
+            }
+
             // Start in walking mode
             SetWalkingCamera();
         }
@@ -61,6 +69,7 @@ namespace Code.Player
 
         private void HandleEdgePanning()
         {
+            if (Application.isMobilePlatform) return;
             if (Mouse.current == null) return;
 
             Vector2 mousePos = Mouse.current.position.ReadValue();
@@ -137,7 +146,9 @@ namespace Code.Player
                 else
                 {
                     var localPlayerObj = FindAnyObjectByType<PlayerLocal>()?.gameObject;
-                    var chair = SeatManager.Instance.allChairs.Find(c => c.occupant != null && (c.occupant == localPlayerObj || c.occupant.GetComponentInChildren<CameraManager>(true) == this));
+                    var chair = (SeatManager.Instance != null && SeatManager.Instance.allChairs != null)
+                        ? SeatManager.Instance.allChairs.Find(c => c.occupant != null && (c.occupant == localPlayerObj || c.occupant.GetComponentInChildren<CameraManager>(true) == this))
+                        : null;
                     if (chair != null && chair.sitTransform != null)
                     {
                         objectToMove.SetParent(chair.sitTransform);

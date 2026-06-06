@@ -175,6 +175,21 @@ namespace Code.Player
                 _ => AnnounceState.None
             };
 
+            if (targetState == AnnounceState.Envido)
+            {
+                bool hasFlor = playerLocal != null && playerLocal.player != null && playerLocal.player.haveFlower;
+                int score = 0;
+                if (playerLocal != null && playerLocal.cardsHandler != null && DeckCreator.Instance != null)
+                {
+                    score = TrucoRules.CalculateEnvidoScore(playerLocal.cardsHandler.InitialHand, DeckCreator.Instance.cardVira);
+                }
+                if (!hasFlor && score <= 0)
+                {
+                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("NO TIENES ENVIDO", 1.5f);
+                    return;
+                }
+            }
+
             if (targetState == AnnounceState.Truco)
             {
                 int myTeamIndex = (playerLocal != null && playerLocal.player != null && playerLocal.player.team != null) 
@@ -263,6 +278,7 @@ namespace Code.Player
             PlayAnnounceSFX(state, 1);
 
             _announceState = state;
+            if (state != AnnounceState.None) _announcementsCalledThisHand[state] = true;
             GameManager.Instance.isAnnouncementPending = true;
 
             // 2.5s para que desaparezca el texto + 2s extra = 4.5s
@@ -330,6 +346,22 @@ namespace Code.Player
             var playerLocal = allPlayers.FirstOrDefault(p => p.isLocalPlayer && p.gameObject.activeInHierarchy);
             bool hasFlor = playerLocal != null && playerLocal.player != null && playerLocal.player.haveFlower;
 
+            bool disableAccept = false;
+            if (_announceState == AnnounceState.Envido && !hasFlor)
+            {
+                int localEnvidoScore = 0;
+                if (playerLocal != null && playerLocal.cardsHandler != null && DeckCreator.Instance != null)
+                {
+                    localEnvidoScore = TrucoRules.CalculateEnvidoScore(playerLocal.cardsHandler.InitialHand, DeckCreator.Instance.cardVira);
+                }
+                
+                if (localEnvidoScore == 0)
+                {
+                    disableAccept = true;
+                    showMore = false;
+                }
+            }
+
             if (_announceState == AnnounceState.Envido && hasFlor)
             {
                 acceptText = "A LEY (FLOR)";
@@ -345,15 +377,17 @@ namespace Code.Player
 
             if (PlayerHUD.Instance != null)
             {
-                bool showSlider = _announceState == AnnounceState.Envido;
+                bool showSlider = _announceState == AnnounceState.Envido && !disableAccept;
                 string announcerText = !string.IsNullOrEmpty(currentAnnouncerName) ? currentAnnouncerName : "TE";
                 string titleText = $"{announcerText.ToUpper()} CANTA {_announceState.ToString().ToUpper()}";
-                PlayerHUD.Instance.ShowResponseButtons(true, acceptText, declineText, showMore, showSlider, titleText);
+                PlayerHUD.Instance.ShowResponseButtons(true, acceptText, declineText, showMore, showSlider, titleText, disableAccept);
             }
             else
             {
                 // Fallback a legacy si no hay PlayerHUD
-                foreach (var t in respondButtons) if (t != null) t.SetActive(true);
+                if (respondButtons[0] != null) respondButtons[0].SetActive(!disableAccept);
+                if (respondButtons[1] != null) respondButtons[1].SetActive(true);
+                if (respondButtons[2] != null) respondButtons[2].SetActive(showMore);
             }
         }
 
@@ -377,6 +411,20 @@ namespace Code.Player
                 playerName = playerLocal.player.playerName;
             }
             
+            if ((buttonName == "AcceptButton" || buttonName == "MoreAnnounceButton") && _announceState == AnnounceState.Envido && !hasFlor)
+            {
+                int score = 0;
+                if (playerLocal != null && playerLocal.cardsHandler != null && DeckCreator.Instance != null)
+                {
+                    score = TrucoRules.CalculateEnvidoScore(playerLocal.cardsHandler.InitialHand, DeckCreator.Instance.cardVira);
+                }
+                if (score <= 0)
+                {
+                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("NO TIENES ENVIDO", 1.5f);
+                    return;
+                }
+            }
+
             ButtonInteract(buttonName, null, playerName, hasFlor);
 
             if (PlayerHUD.Instance != null) PlayerHUD.Instance.ShowResponseButtons(false);
@@ -560,7 +608,17 @@ namespace Code.Player
             {
                 if (announcerTeam != null)
                 {
-                    GameManager.Instance.AddAnnouncementPoints(announcerTeam.teamName, 1);
+                    int points = 1;
+                    var envido = GetComponentsInChildren<Announce>().OfType<EnvidoAnnouncement>().FirstOrDefault();
+                    if (envido != null)
+                    {
+                        int idx = envido.acceptAmount;
+                        if (idx >= 0 && idx < envido.IncreasingAmount().Length)
+                        {
+                            points = envido.IncreasingAmount()[idx];
+                        }
+                    }
+                    GameManager.Instance.AddAnnouncementPoints(announcerTeam.teamName, points);
                 }
             }
 

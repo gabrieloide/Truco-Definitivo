@@ -392,15 +392,29 @@ namespace Code.Player
             bool isFirstRound = GameManager.Instance != null && GameManager.Instance.round == 0;
             var announceManager = FindAnyObjectByType<AnnouncementManager>();
 
-            // Lógica para visibilidad de botones durante tu turno
-            SetButtonVisible(_aleyButton, isFirstRound && !WasCalled(AnnounceState.ALey));
-            SetButtonVisible(_envidoButton, isFirstRound && !WasCalled(AnnounceState.Envido));
-            SetButtonVisible(_trucoButton, isFirstRound && !WasCalled(AnnounceState.Truco));
-
             // Flor solo si el jugador realmente la tiene Y es la primera ronda Y no se cantó
             var allPlayers = FindObjectsByType<PlayerLocal>(FindObjectsSortMode.None);
             var playerLocal = allPlayers.FirstOrDefault(p => p.isLocalPlayer && p.gameObject.activeInHierarchy);
             bool hasFlor = playerLocal != null && playerLocal.player != null && playerLocal.player.haveFlower;
+
+            bool hasEnvido = false;
+            if (playerLocal != null && playerLocal.cardsHandler != null && DeckCreator.Instance != null)
+            {
+                int score = TrucoRules.CalculateEnvidoScore(playerLocal.cardsHandler.InitialHand, DeckCreator.Instance.cardVira);
+                hasEnvido = score > 0;
+            }
+
+            // Lógica para visibilidad de botones durante tu turno
+            SetButtonVisible(_aleyButton, isFirstRound && !WasCalled(AnnounceState.ALey));
+            
+            bool showEnvido = isFirstRound && !WasCalled(AnnounceState.Envido);
+            SetButtonVisible(_envidoButton, showEnvido);
+            if (showEnvido && _envidoButton != null)
+            {
+                _envidoButton.SetEnabled(hasEnvido);
+            }
+
+            SetButtonVisible(_trucoButton, isFirstRound && !WasCalled(AnnounceState.Truco));
             SetButtonVisible(_florButton, hasFlor && isFirstRound && !WasCalled(AnnounceState.Flor));
 
             bool WasCalled(AnnounceState state)
@@ -409,14 +423,18 @@ namespace Code.Player
                 return announceManager.WasAnnouncementCalledThisHand(state);
             }
         }
-        public void ShowResponseButtons(bool visible, string acceptText = "QUIERO", string declineText = "NO QUIERO", bool showMore = false, bool showSlider = false, string title = "")
+        public void ShowResponseButtons(bool visible, string acceptText = "QUIERO", string declineText = "NO QUIERO", bool showMore = false, bool showSlider = false, string title = "", bool disableAccept = false)
         {
             if (_responseBar != null)
                 _responseBar.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
 
             if (visible)
             {
-                if (_acceptButton != null) _acceptButton.Q<Label>().text = acceptText;
+                if (_acceptButton != null)
+                {
+                    _acceptButton.Q<Label>().text = acceptText;
+                    _acceptButton.SetEnabled(!disableAccept);
+                }
                 if (_declineButton != null) _declineButton.Q<Label>().text = declineText;
                 if (_moreButton != null) _moreButton.style.display = showMore ? DisplayStyle.Flex : DisplayStyle.None;
                 

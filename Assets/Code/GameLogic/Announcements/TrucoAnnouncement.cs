@@ -13,7 +13,7 @@ namespace Code.GameLogic.Announcement
 
 
         // 1 (No cantado) - 3 (Truco) - 6 (Retruco) - 9 (Vale 9) - 30 (Vale Partida)
-        protected override int[] IncreasingAmount() => new[] { 1, 3, 6, 9, 30 };
+        public override int[] IncreasingAmount() => new[] { 1, 3, 6, 9, 30 };
         
         // UI handling is now managed by PlayerHUD and AnnouncementManager
 

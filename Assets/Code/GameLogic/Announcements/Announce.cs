@@ -7,7 +7,7 @@ namespace Code.GameLogic.Announcement
     {
         public abstract GameObject AnnounceButton();
         protected abstract AnnounceState AnnounceState();
-        protected abstract int[] IncreasingAmount(); 
+        public abstract int[] IncreasingAmount(); 
 
         /*[SyncVar]*/public int acceptAmount;
 

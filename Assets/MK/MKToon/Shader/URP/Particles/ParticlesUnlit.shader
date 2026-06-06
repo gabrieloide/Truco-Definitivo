@@ -149,7 +149,7 @@ Shader "MK/Toon/URP/Particles/Unlit"
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_COLOR_GRADING_ALBEDO _MK_COLOR_GRADING_FINAL_OUTPUT
 
@@ -230,7 +230,7 @@ Shader "MK/Toon/URP/Particles/Unlit"
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_COLOR_GRADING_ALBEDO _MK_COLOR_GRADING_FINAL_OUTPUT
 			#if UNITY_VERSION >= 202010
@@ -319,7 +319,7 @@ Shader "MK/Toon/URP/Particles/Unlit"
             #pragma fragment DepthOnlyFrag
 
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
@@ -375,7 +375,7 @@ Shader "MK/Toon/URP/Particles/Unlit"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			#pragma shader_feature_local __ _MK_NORMAL_MAP
 			#pragma shader_feature_local __ _MK_DETAIL_NORMAL_MAP
@@ -423,7 +423,7 @@ Shader "MK/Toon/URP/Particles/Unlit"
             #pragma fragment Universal2DFrag
 			
 			#pragma shader_feature_local __ _MK_SURFACE_TYPE_TRANSPARENT
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
 			#pragma shader_feature_local __ _MK_ALPHA_CLIPPING
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
@@ -490,7 +490,7 @@ Shader "MK/Toon/URP/Particles/Unlit"
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_COLOR_GRADING_ALBEDO _MK_COLOR_GRADING_FINAL_OUTPUT
 			#if UNITY_VERSION >= 202010
@@ -569,7 +569,7 @@ Shader "MK/Toon/URP/Particles/Unlit"
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_COLOR_GRADING_ALBEDO _MK_COLOR_GRADING_FINAL_OUTPUT
 			#if UNITY_VERSION >= 202010
@@ -658,7 +658,7 @@ Shader "MK/Toon/URP/Particles/Unlit"
             #pragma fragment DepthOnlyFrag
 
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
@@ -714,7 +714,7 @@ Shader "MK/Toon/URP/Particles/Unlit"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			#pragma shader_feature_local __ _MK_NORMAL_MAP
 			#pragma shader_feature_local __ _MK_DETAIL_NORMAL_MAP
@@ -762,7 +762,7 @@ Shader "MK/Toon/URP/Particles/Unlit"
             #pragma fragment Universal2DFrag
 			
 			#pragma shader_feature_local __ _MK_SURFACE_TYPE_TRANSPARENT
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
 			#pragma shader_feature_local __ _MK_ALPHA_CLIPPING
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
@@ -828,7 +828,7 @@ Shader "MK/Toon/URP/Particles/Unlit"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_COLOR_GRADING_ALBEDO _MK_COLOR_GRADING_FINAL_OUTPUT
 
@@ -899,7 +899,7 @@ Shader "MK/Toon/URP/Particles/Unlit"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
-			#pragma shader_feature_local __ _MK_ALBEDO_MAP
+			#pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			#pragma shader_feature_local __ _MK_COLOR_GRADING_ALBEDO _MK_COLOR_GRADING_FINAL_OUTPUT
 
@@ -981,7 +981,7 @@ Shader "MK/Toon/URP/Particles/Unlit"
             #pragma fragment DepthOnlyFrag
 
 			#pragma shader_feature_local __ _MK_DISSOLVE_DEFAULT _MK_DISSOLVE_BORDER_COLOR _MK_DISSOLVE_BORDER_RAMP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
@@ -1037,7 +1037,7 @@ Shader "MK/Toon/URP/Particles/Unlit"
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_SINE _MK_VERTEX_ANIMATION_PULSE _MK_VERTEX_ANIMATION_NOISE
 			#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_MAP
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
             #pragma shader_feature_local __ _MK_ALPHA_CLIPPING
 			#pragma shader_feature_local __ _MK_NORMAL_MAP
 			#pragma shader_feature_local __ _MK_DETAIL_NORMAL_MAP
@@ -1077,7 +1077,7 @@ Shader "MK/Toon/URP/Particles/Unlit"
             #pragma fragment Universal2DFrag
 			
 			#pragma shader_feature_local __ _MK_SURFACE_TYPE_TRANSPARENT
-            #pragma shader_feature_local __ _MK_ALBEDO_MAP
+            #pragma multi_compile_local __ _MK_ALBEDO_MAP
 			#pragma shader_feature_local __ _MK_ALPHA_CLIPPING
             #pragma shader_feature_local __ _MK_BLEND_PREMULTIPLY _MK_BLEND_ADDITIVE _MK_BLEND_MULTIPLY
 			//#pragma shader_feature_local __ _MK_VERTEX_ANIMATION_STUTTER
