@@ -10,7 +10,21 @@ namespace Code.GameLogic
         public static SeatManager Instance { get; private set; }
 
         [Header("Seat Configuration (Counter-Clockwise)")]
-        public List<ChairInteractable> allChairs;
+        public List<ChairInteractable> allChairs = new List<ChairInteractable>();
+
+        [Header("Dynamic Spawning Options")]
+        [Tooltip("If true, chairs will be spawned at runtime around the table center.")]
+        public bool spawnChairsAtRuntime = false;
+        [Tooltip("Prefab to instantiate for chairs. Must have ChairInteractable on it.")]
+        public GameObject chairPrefab;
+        [Tooltip("Number of chairs to spawn.")]
+        public int chairCount = 4;
+        [Tooltip("Distance from the table center to spawn chairs.")]
+        public float spawnRadius = 2.5f;
+        [Tooltip("Height offset relative to the table center.")]
+        public float spawnHeight = 0f;
+        [Tooltip("Starting angle in degrees. -90 degrees is the bottom of the screen (South).")]
+        public float startAngleDegrees = -90f;
 
         private void Awake()
         {
@@ -20,6 +34,129 @@ namespace Code.GameLogic
                 return;
             }
             Instance = this;
+
+            if (spawnChairsAtRuntime && chairPrefab != null)
+            {
+                SpawnChairs();
+            }
+        }
+
+        public void SpawnChairs()
+        {
+            // Clear existing chairs
+            foreach (var existingChair in allChairs)
+            {
+                if (existingChair != null)
+                {
+                    Destroy(existingChair.gameObject);
+                }
+            }
+            allChairs.Clear();
+
+            Vector3 center = Vector3.zero;
+            var table = FindAnyObjectByType<TableManager>();
+            if (table != null && table.viraPosition != null)
+            {
+                center = table.viraPosition.position;
+            }
+            else if (table != null)
+            {
+                center = table.transform.position;
+            }
+
+            for (int i = 0; i < chairCount; i++)
+            {
+                float angleDegrees = startAngleDegrees + i * (360f / chairCount);
+                float angleRad = angleDegrees * Mathf.Deg2Rad;
+                Vector3 spawnPos = center + new Vector3(Mathf.Cos(angleRad) * spawnRadius, spawnHeight, Mathf.Sin(angleRad) * spawnRadius);
+
+                GameObject chairObj = Instantiate(chairPrefab, spawnPos, Quaternion.identity, transform);
+                chairObj.name = $"Chair{i + 1}";
+
+                // Orient to face the center of the table on the XZ plane
+                Vector3 lookDir = (center - spawnPos).normalized;
+                lookDir.y = 0;
+                if (lookDir != Vector3.zero)
+                {
+                    chairObj.transform.rotation = Quaternion.LookRotation(lookDir);
+                }
+
+                var chair = chairObj.GetComponent<ChairInteractable>();
+                if (chair != null)
+                {
+                    allChairs.Add(chair);
+                }
+            }
+        }
+
+        [ContextMenu("Spawn Chairs in Editor")]
+        public void SpawnChairsInEditor()
+        {
+#if UNITY_EDITOR
+            if (chairPrefab == null)
+            {
+                Debug.LogError("[SeatManager] No se ha asignado el Prefab de la silla (chairPrefab) en el inspector.");
+                return;
+            }
+
+            // Clear existing chairs in hierarchy that are children of SeatManager
+            var chairsToDestroy = new List<GameObject>();
+            foreach (Transform child in transform)
+            {
+                if (child.GetComponent<ChairInteractable>() != null)
+                {
+                    chairsToDestroy.Add(child.gameObject);
+                }
+            }
+            foreach (var go in chairsToDestroy)
+            {
+                UnityEditor.Undo.DestroyObjectImmediate(go);
+            }
+            allChairs.Clear();
+
+            Vector3 center = Vector3.zero;
+            var table = FindAnyObjectByType<TableManager>();
+            if (table != null && table.viraPosition != null)
+            {
+                center = table.viraPosition.position;
+            }
+            else if (table != null)
+            {
+                center = table.transform.position;
+            }
+
+            for (int i = 0; i < chairCount; i++)
+            {
+                float angleDegrees = startAngleDegrees + i * (360f / chairCount);
+                float angleRad = angleDegrees * Mathf.Deg2Rad;
+                Vector3 spawnPos = center + new Vector3(Mathf.Cos(angleRad) * spawnRadius, spawnHeight, Mathf.Sin(angleRad) * spawnRadius);
+
+                GameObject chairObj = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(chairPrefab, transform);
+                chairObj.transform.position = spawnPos;
+                chairObj.transform.rotation = Quaternion.identity;
+                chairObj.name = $"Chair{i + 1}";
+
+                // Orient to face the center of the table on the XZ plane
+                Vector3 lookDir = (center - spawnPos).normalized;
+                lookDir.y = 0;
+                if (lookDir != Vector3.zero)
+                {
+                    chairObj.transform.rotation = Quaternion.LookRotation(lookDir);
+                }
+
+                var chair = chairObj.GetComponent<ChairInteractable>();
+                if (chair != null)
+                {
+                    allChairs.Add(chair);
+                }
+
+                UnityEditor.Undo.RegisterCreatedObjectUndo(chairObj, "Spawn Chair");
+            }
+
+            UnityEditor.EditorUtility.SetDirty(gameObject);
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+            Debug.Log($"[SeatManager] Se instanciaron {chairCount} sillas correctamente alrededor de la mesa.");
+#endif
         }
 
         public int GetPlayerSeatIndex(GameObject player)
