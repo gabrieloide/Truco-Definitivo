@@ -46,11 +46,12 @@ namespace Code.Player
                 }
             }
 
-            if (chair != null && chair.cardAnchors != null && i < chair.cardAnchors.Count && chair.cardAnchors[i] != null)
+            if (chair != null && chair.handAnchor != null)
             {
-                Transform anchor = chair.cardAnchors[i];
-                localPos = parent.InverseTransformPoint(anchor.position);
-                localRot = Quaternion.Inverse(parent.rotation) * anchor.rotation;
+                float spacing = chair.cardSpacing != 0 ? chair.cardSpacing : 0.2f;
+                Vector3 worldPos = chair.handAnchor.position + chair.handAnchor.right * ((i - 1) * spacing);
+                localPos = parent.InverseTransformPoint(worldPos);
+                localRot = Quaternion.Inverse(parent.rotation) * chair.handAnchor.rotation;
             }
             else
             {

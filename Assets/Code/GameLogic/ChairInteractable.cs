@@ -12,8 +12,11 @@ namespace Code.GameLogic
         public Transform cardDestination; // Posición en la mesa donde aterrizan las cartas de esta silla
         public Transform cameraPosition; // Posición adonde se moverá la cámara principal al sentarse
         
-        [Tooltip("Anchors for the player's 3 hand cards. Position/rotation are configured in the Scene view.")]
-        public List<Transform> cardAnchors = new List<Transform>();
+        [Tooltip("Anchor for the player's hand cards (center card).")]
+        public Transform handAnchor;
+
+        [Tooltip("Distance spacing between cards in the hand.")]
+        public float cardSpacing = 0.25f;
 
         public bool isOccupied = false;
         public GameObject occupant;

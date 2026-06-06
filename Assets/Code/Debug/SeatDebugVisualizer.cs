@@ -371,11 +371,11 @@ namespace Code.DebugTools
                                 Vector3 localPos;
                                 Quaternion localRot;
 
-                                if (chair.cardAnchors != null && cardIdx < chair.cardAnchors.Count && chair.cardAnchors[cardIdx] != null)
+                                if (chair.handAnchor != null)
                                 {
-                                    Transform anchor = chair.cardAnchors[cardIdx];
-                                    localPos = camTransform.InverseTransformPoint(anchor.position);
-                                    localRot = Quaternion.Inverse(camTransform.rotation) * anchor.rotation;
+                                    Vector3 anchorWorldPos = chair.handAnchor.position + chair.handAnchor.right * ((cardIdx - 1) * chair.cardSpacing);
+                                    localPos = camTransform.InverseTransformPoint(anchorWorldPos);
+                                    localRot = Quaternion.Inverse(camTransform.rotation) * chair.handAnchor.rotation;
                                 }
                                 else
                                 {

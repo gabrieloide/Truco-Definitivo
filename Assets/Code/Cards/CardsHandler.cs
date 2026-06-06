@@ -71,11 +71,11 @@ namespace Code.Cards
                 }
             }
 
-            if (chair != null && chair.cardAnchors != null && i < chair.cardAnchors.Count && chair.cardAnchors[i] != null)
+            if (chair != null && chair.handAnchor != null)
             {
-                Transform anchor = chair.cardAnchors[i];
-                localPos = parent.InverseTransformPoint(anchor.position);
-                localRot = Quaternion.Inverse(parent.rotation) * anchor.rotation;
+                Vector3 worldPos = chair.handAnchor.position + chair.handAnchor.right * ((i - 1) * chair.cardSpacing);
+                localPos = parent.InverseTransformPoint(worldPos);
+                localRot = Quaternion.Inverse(parent.rotation) * chair.handAnchor.rotation;
             }
             else
             {
@@ -228,11 +228,11 @@ namespace Code.Cards
                     }
                 }
 
-                if (chair != null && chair.cardAnchors != null && i < chair.cardAnchors.Count && chair.cardAnchors[i] != null)
+                if (chair != null && chair.handAnchor != null)
                 {
-                    Transform anchor = chair.cardAnchors[i];
-                    localPos = parent.InverseTransformPoint(anchor.position);
-                    localRot = Quaternion.Inverse(parent.rotation) * anchor.rotation;
+                    Vector3 anchorWorldPos = chair.handAnchor.position + chair.handAnchor.right * ((i - 1) * chair.cardSpacing);
+                    localPos = parent.InverseTransformPoint(anchorWorldPos);
+                    localRot = Quaternion.Inverse(parent.rotation) * chair.handAnchor.rotation;
                 }
                 else
                 {
