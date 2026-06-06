@@ -53,9 +53,36 @@ namespace Code.Cards
             Transform parent = handTransform != null ? handTransform : Camera.main.transform;
             if (parent == null) return;
 
-            // Positioning cards in an arc in front of the camera
-            Vector3 localPos = new Vector3((i - 1) * 0.25f, -0.3f, 0.6f);
-            Quaternion localRot = Quaternion.Euler(70, (i - 1) * 15f, 0) * Quaternion.Euler(0, 180, 0);
+            // Determine local position and rotation based on seat anchors if available
+            Vector3 localPos;
+            Quaternion localRot;
+
+            ChairInteractable chair = null;
+            if (SeatManager.Instance != null)
+            {
+                var playerLocal = GetComponent<PlayerLocal>();
+                if (playerLocal != null)
+                {
+                    int seatIndex = SeatManager.Instance.GetPlayerSeatIndex(playerLocal.gameObject);
+                    if (seatIndex != -1 && SeatManager.Instance.allChairs.Count > seatIndex)
+                    {
+                        chair = SeatManager.Instance.allChairs[seatIndex];
+                    }
+                }
+            }
+
+            if (chair != null && chair.cardAnchors != null && i < chair.cardAnchors.Count && chair.cardAnchors[i] != null)
+            {
+                Transform anchor = chair.cardAnchors[i];
+                localPos = parent.InverseTransformPoint(anchor.position);
+                localRot = Quaternion.Inverse(parent.rotation) * anchor.rotation;
+            }
+            else
+            {
+                // Fallback to standard arc layout
+                localPos = new Vector3((i - 1) * 0.25f, -0.3f, 0.6f);
+                localRot = Quaternion.Euler(70, (i - 1) * 15f, 0) * Quaternion.Euler(0, 180, 0);
+            }
 
             GameObject c = Instantiate(card3DPrefab, parent);
             
@@ -182,8 +209,36 @@ namespace Code.Cards
 
             for (int i = 0; i < 3; i++)
             {
-                Vector3 localPos = new Vector3((i - 1) * 0.25f, -0.3f, 0.6f);
-                Quaternion localRot = Quaternion.Euler(70, (i - 1) * 15f, 0) * Quaternion.Euler(0, 180, 0);
+                Vector3 localPos;
+                Quaternion localRot;
+
+                ChairInteractable chair = null;
+                if (SeatManager.Instance != null)
+                {
+                    var playerLocal = GetComponent<PlayerLocal>();
+                    GameObject searchTarget = playerLocal != null ? playerLocal.gameObject : gameObject;
+                    int seatIndex = SeatManager.Instance.GetPlayerSeatIndex(searchTarget);
+                    if (seatIndex != -1 && SeatManager.Instance.allChairs.Count > seatIndex)
+                    {
+                        chair = SeatManager.Instance.allChairs[seatIndex];
+                    }
+                    else if (SeatManager.Instance.allChairs.Count > 0)
+                    {
+                        chair = SeatManager.Instance.allChairs[0];
+                    }
+                }
+
+                if (chair != null && chair.cardAnchors != null && i < chair.cardAnchors.Count && chair.cardAnchors[i] != null)
+                {
+                    Transform anchor = chair.cardAnchors[i];
+                    localPos = parent.InverseTransformPoint(anchor.position);
+                    localRot = Quaternion.Inverse(parent.rotation) * anchor.rotation;
+                }
+                else
+                {
+                    localPos = new Vector3((i - 1) * 0.25f, -0.3f, 0.6f);
+                    localRot = Quaternion.Euler(70, (i - 1) * 15f, 0) * Quaternion.Euler(0, 180, 0);
+                }
 
                 Vector3 worldPos = parent.TransformPoint(localPos);
                 Quaternion worldRot = parent.rotation * localRot;

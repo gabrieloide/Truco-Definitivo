@@ -368,8 +368,20 @@ namespace Code.DebugTools
 
                             for (int cardIdx = 0; cardIdx < 3; cardIdx++)
                             {
-                                Vector3 localPos = new Vector3((cardIdx - 1) * 0.25f, -0.3f, 0.6f);
-                                Quaternion localRot = Quaternion.Euler(70, (cardIdx - 1) * 15f, 0) * Quaternion.Euler(0, 180, 0);
+                                Vector3 localPos;
+                                Quaternion localRot;
+
+                                if (chair.cardAnchors != null && cardIdx < chair.cardAnchors.Count && chair.cardAnchors[cardIdx] != null)
+                                {
+                                    Transform anchor = chair.cardAnchors[cardIdx];
+                                    localPos = camTransform.InverseTransformPoint(anchor.position);
+                                    localRot = Quaternion.Inverse(camTransform.rotation) * anchor.rotation;
+                                }
+                                else
+                                {
+                                    localPos = new Vector3((cardIdx - 1) * 0.25f, -0.3f, 0.6f);
+                                    localRot = Quaternion.Euler(70, (cardIdx - 1) * 15f, 0) * Quaternion.Euler(0, 180, 0);
+                                }
 
                                 Vector3 worldPos = camTransform.TransformPoint(localPos);
                                 Quaternion worldRot = camTransform.rotation * localRot;

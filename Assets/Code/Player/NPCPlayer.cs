@@ -33,8 +33,30 @@ namespace Code.Player
 
             int i = _visualCards.Count;
             Transform parent = handTransform != null ? handTransform : transform;
-            Vector3 localPos = new Vector3((i - 1) * 0.2f, 0, 0);
-            Quaternion localRot = Quaternion.Euler(0, 0, 180); // Boca abajo para nosotros
+            Vector3 localPos;
+            Quaternion localRot;
+
+            ChairInteractable chair = null;
+            if (SeatManager.Instance != null)
+            {
+                int seatIndex = SeatManager.Instance.GetPlayerSeatIndex(gameObject);
+                if (seatIndex != -1 && SeatManager.Instance.allChairs.Count > seatIndex)
+                {
+                    chair = SeatManager.Instance.allChairs[seatIndex];
+                }
+            }
+
+            if (chair != null && chair.cardAnchors != null && i < chair.cardAnchors.Count && chair.cardAnchors[i] != null)
+            {
+                Transform anchor = chair.cardAnchors[i];
+                localPos = parent.InverseTransformPoint(anchor.position);
+                localRot = Quaternion.Inverse(parent.rotation) * anchor.rotation;
+            }
+            else
+            {
+                localPos = new Vector3((i - 1) * 0.2f, 0, 0);
+                localRot = Quaternion.Euler(0, 0, 180); // Boca abajo para nosotros
+            }
 
             GameObject c = Instantiate(card3DPrefab, parent);
             _visualCards.Add(c);

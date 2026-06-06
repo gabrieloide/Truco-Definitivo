@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 using Code.Player;
 
 namespace Code.GameLogic
@@ -10,6 +11,9 @@ namespace Code.GameLogic
         public Transform deckAnchor; // Position to the right of the player for the deck/vira
         public Transform cardDestination; // Posición en la mesa donde aterrizan las cartas de esta silla
         public Transform cameraPosition; // Posición adonde se moverá la cámara principal al sentarse
+        
+        [Tooltip("Anchors for the player's 3 hand cards. Position/rotation are configured in the Scene view.")]
+        public List<Transform> cardAnchors = new List<Transform>();
 
         public bool isOccupied = false;
         public GameObject occupant;
