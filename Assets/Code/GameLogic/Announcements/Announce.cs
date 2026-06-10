@@ -12,6 +12,12 @@ namespace Code.GameLogic.Announcement
         /*[SyncVar]*/public int acceptAmount;
 
         public abstract void UpdateTotalScore();
+
+        public virtual void ResetAnnounceState()
+        {
+            acceptAmount = 0;
+        }
+
         public void IncreaseAcceptAmount()
         {
             acceptAmount++;

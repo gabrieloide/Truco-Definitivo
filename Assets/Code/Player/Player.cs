@@ -9,6 +9,8 @@ namespace Code.Player
         public bool canPlayCard = false;
         public Team team;
         public bool haveFlower;
+        // Cantó envido teniendo flor: la flor queda "quemada" y no puntúa esta mano.
+        public bool florBurned;
     }
     [Serializable]
     public class Team

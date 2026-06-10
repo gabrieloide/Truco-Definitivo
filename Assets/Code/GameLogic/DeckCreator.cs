@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Code.Player;
-// using Mirror;
+using Mirror;
 using UnityEngine;
 using Code.Scripts.Audio;
 using Random = UnityEngine.Random;
@@ -76,6 +76,8 @@ namespace Code.GameLogic
         // [Server]
         public void ShuffleAndSetVira()
         {
+            // Clients don't shuffle — server is authoritative
+            if (NetworkClient.active && !NetworkServer.active) return;
             if (AudioManager.Instance != null)
             {
                 AudioManager.Instance.PlaySFX("card_shuffle_rattle");

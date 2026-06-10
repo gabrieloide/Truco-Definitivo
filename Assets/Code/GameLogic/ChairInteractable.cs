@@ -35,39 +35,13 @@ namespace Code.GameLogic
 
         public void Interact(GameObject interactor)
         {
-            if (isOccupied)
-            {
-                // If the interactor is already sitting here, maybe stand up?
-                if (occupant == interactor)
-                {
-                    CmdStandUp(interactor);
-                }
-                return;
-            }
+            // Players are always seated — once in a chair there is no standing up
+            // or moving to another one.
+            if (isOccupied) return;
+            if (SeatManager.Instance == null) return;
+            if (SeatManager.Instance.GetPlayerSeatIndex(interactor) >= 0) return;
 
-            CmdSitDown(interactor);
-        }
-
-        // [Command(requiresAuthority = false)]
-        private void CmdSitDown(GameObject player)
-        {
-            // Security check removed for local
-
-
-            if (SeatManager.Instance != null)
-            {
-                SeatManager.Instance.RequestSeat(player, this);
-            }
-        }
-
-        // [Command(requiresAuthority = false)]
-        private void CmdStandUp(GameObject player)
-        {
-
-            if (SeatManager.Instance != null)
-            {
-                SeatManager.Instance.StandUp(player, this);
-            }
+            SeatManager.Instance.RequestSeat(interactor, this);
         }
 
         // [ClientRpc]

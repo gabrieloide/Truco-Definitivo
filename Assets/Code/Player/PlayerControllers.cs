@@ -9,8 +9,13 @@ namespace Code.Player
     {
         private bool _isPaused = false;
 
-        private void Start()
+        // Coroutine Start: in the multiplayer lobby GameManager doesn't exist until
+        // GameScene loads, so the pause binding waits for it instead of throwing.
+        private System.Collections.IEnumerator Start()
         {
+            while (GameManager.Instance == null || GameManager.Instance.playerInput == null)
+                yield return null;
+
             GameManager.Instance.playerInput.Player.Pause.performed += PauseMenu;
         }
 

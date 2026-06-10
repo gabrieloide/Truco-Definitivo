@@ -26,6 +26,7 @@ namespace Code.Player
         private Label _scoreLabel;
         private Label _teamLabel;
         private Label _turnLabel;
+        private Label _envidoStakeLabel;
         private VisualElement _t1DotsContainer;
         private VisualElement _t2DotsContainer;
         private Button _envidoButton;
@@ -58,6 +59,8 @@ namespace Code.Player
         private Button _confirmNoButton;
         private Button _infoButton;
         private Button _cameraButton;
+
+        public int CurrentSliderValue => _stonesSlider != null ? _stonesSlider.value : 0;
 
         [Header("Card Action Menu")]
         private VisualElement _cardActionMenu;
@@ -110,7 +113,21 @@ namespace Code.Player
 
         public void NotifyEvent(string message, float duration = 3f)
         {
-            if (_notificationLabel == null) 
+            NotifyEventLocal(message, duration);
+
+            // Host-side game events are mirrored to every client so they see
+            // announcements, trick results and hand resolutions too.
+            if (Mirror.NetworkServer.active)
+            {
+                var netMgr = Mirror.NetworkManager.singleton as MyNetworkingManager;
+                netMgr?.BroadcastHudEvent(message, duration);
+            }
+        }
+
+        /// <summary>Display-only variant; used by the network mirror to avoid re-broadcast loops.</summary>
+        public void NotifyEventLocal(string message, float duration = 3f)
+        {
+            if (_notificationLabel == null)
             {
                 _notificationLabel = _root?.Q<Label>("notification-label");
                 if (_notificationLabel == null)
@@ -188,6 +205,44 @@ namespace Code.Player
             _scoreLabel = _root.Q<Label>("score-label");
             _teamLabel = _root.Q<Label>("team-label");
             _turnLabel = _root.Q<Label>("turn-label");
+            // Oculto hasta que sea tu turno (el texto por defecto del UXML quedaba fijo)
+            if (_turnLabel != null) _turnLabel.style.display = DisplayStyle.None;
+
+            // Indicador de puntos de envido en juego: arriba al centro, lejos de las
+            // cartas (centro/abajo). PickingMode.Ignore para no robar clicks.
+            // Contenedor de fila que centra al chip sin importar su ancho.
+            var envidoStakeRow = new VisualElement();
+            envidoStakeRow.pickingMode = PickingMode.Ignore;
+            envidoStakeRow.style.position = Position.Absolute;
+            envidoStakeRow.style.top = Length.Percent(10);
+            envidoStakeRow.style.left = 0;
+            envidoStakeRow.style.right = 0;
+            envidoStakeRow.style.flexDirection = FlexDirection.Row;
+            envidoStakeRow.style.justifyContent = Justify.Center;
+
+            _envidoStakeLabel = new Label();
+            _envidoStakeLabel.name = "envido-stake-label";
+            _envidoStakeLabel.pickingMode = PickingMode.Ignore;
+            _envidoStakeLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            _envidoStakeLabel.style.fontSize = 22;
+            _envidoStakeLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _envidoStakeLabel.style.color = new StyleColor(new Color(1f, 0.85f, 0.2f));
+            // Fondo + outline para que se lea sobre cualquier escena
+            _envidoStakeLabel.style.backgroundColor = new StyleColor(new Color(0f, 0f, 0f, 0.65f));
+            _envidoStakeLabel.style.unityTextOutlineWidth = 1.5f;
+            _envidoStakeLabel.style.unityTextOutlineColor = new StyleColor(Color.black);
+            _envidoStakeLabel.style.paddingTop = 6;
+            _envidoStakeLabel.style.paddingBottom = 6;
+            _envidoStakeLabel.style.paddingLeft = 18;
+            _envidoStakeLabel.style.paddingRight = 18;
+            _envidoStakeLabel.style.borderTopLeftRadius = 10;
+            _envidoStakeLabel.style.borderTopRightRadius = 10;
+            _envidoStakeLabel.style.borderBottomLeftRadius = 10;
+            _envidoStakeLabel.style.borderBottomRightRadius = 10;
+            _envidoStakeLabel.style.display = DisplayStyle.None;
+
+            envidoStakeRow.Add(_envidoStakeLabel);
+            _root.Add(envidoStakeRow);
             
             // Tricks dots
             _t1DotsContainer = _root.Q<VisualElement>("t1-dots");
@@ -318,15 +373,19 @@ namespace Code.Player
             UpdateLocalPlayerTeam();
             var localPlayer = occupant.GetComponent<PlayerLocal>();
             string playerName = "Unknown";
-            
+
             if (localPlayer != null && localPlayer.player != null) playerName = localPlayer.player.playerName;
             else if (occupant.GetComponent<NPCPlayer>() != null) playerName = occupant.GetComponent<NPCPlayer>().playerName;
             else playerName = occupant.name;
 
-            UpdateTurnState(localPlayer != null, playerName);
+            // En multiplayer todos los jugadores llevan PlayerLocal: hay que chequear
+            // isLocalPlayer, no la mera presencia del componente.
+            bool isMyTurn = localPlayer != null && localPlayer.isLocalPlayer;
+
+            UpdateTurnState(isMyTurn, playerName);
 
             // Mostrar aviso visual del turno
-            if (localPlayer != null)
+            if (isMyTurn)
             {
                 NotifyEvent("¡TU TURNO!", 1.5f);
             }
@@ -363,15 +422,26 @@ namespace Code.Player
             }
         }
 
+        /// <summary>Shows/hides the "envido points at stake" indicator (top center).</summary>
+        public void ShowEnvidoStake(bool visible, int points = 0)
+        {
+            if (_envidoStakeLabel == null) return;
+            _envidoStakeLabel.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            if (visible)
+                _envidoStakeLabel.text = $"ENVIDO EN JUEGO: {points} {(points == 1 ? "PIEDRA" : "PIEDRAS")}";
+        }
+
         public void UpdateTurnState(bool isYourTurn, string playerName = "")
         {
-            string turnText = isYourTurn ? "IT'S YOUR TURN" : $"TURN OF: {playerName.ToUpper()}";
-            Color turnColor = isYourTurn ? Color.green : Color.white;
-
+            // El cartel solo existe cuando es tu turno; si no, se oculta por completo.
             if (_turnLabel != null)
             {
-                _turnLabel.text = turnText;
-                _turnLabel.style.color = new StyleColor(turnColor);
+                _turnLabel.style.display = isYourTurn ? DisplayStyle.Flex : DisplayStyle.None;
+                if (isYourTurn)
+                {
+                    _turnLabel.text = "¡TU TURNO!";
+                    _turnLabel.style.color = new StyleColor(Color.green);
+                }
             }
 
             RefreshActionButtons(isYourTurn);
@@ -397,25 +467,67 @@ namespace Code.Player
             var playerLocal = allPlayers.FirstOrDefault(p => p.isLocalPlayer && p.gameObject.activeInHierarchy);
             bool hasFlor = playerLocal != null && playerLocal.player != null && playerLocal.player.haveFlower;
 
-            bool hasEnvido = false;
-            if (playerLocal != null && playerLocal.cardsHandler != null && DeckCreator.Instance != null)
-            {
-                int score = TrucoRules.CalculateEnvidoScore(playerLocal.cardsHandler.InitialHand, DeckCreator.Instance.cardVira);
-                hasEnvido = score > 0;
-            }
-
             // Lógica para visibilidad de botones durante tu turno
-            SetButtonVisible(_aleyButton, isFirstRound && !WasCalled(AnnounceState.ALey));
-            
-            bool showEnvido = isFirstRound && !WasCalled(AnnounceState.Envido);
+            bool isALeyPending = announceManager != null && announceManager._announceState == AnnounceState.ALey;
+            SetButtonVisible(_aleyButton, isFirstRound && (!WasCalled(AnnounceState.ALey) || isALeyPending));
+
+            // El botón queda siempre habilitado: al pulsarlo, AnnouncementManager notifica
+            // por qué no se puede cantar ("NO TIENES ENVIDO"). Con flor propia el envido
+            // sigue disponible pero QUEMA la flor (deja de valer). Con una flor YA
+            // CANTADA (info pública) el envido directamente no existe.
+            bool showEnvido = isFirstRound && !WasCalled(AnnounceState.Envido) && !WasCalled(AnnounceState.Flor);
             SetButtonVisible(_envidoButton, showEnvido);
             if (showEnvido && _envidoButton != null)
             {
-                _envidoButton.SetEnabled(hasEnvido);
+                _envidoButton.SetEnabled(true);
+                var envidoLabel = _envidoButton.Q<Label>();
+                if (envidoLabel != null)
+                    envidoLabel.text = hasFlor ? "ENVIDO\n(QUEMAR FLOR)" : "ENVIDO";
             }
 
-            SetButtonVisible(_trucoButton, isFirstRound && !WasCalled(AnnounceState.Truco));
-            SetButtonVisible(_florButton, hasFlor && isFirstRound && !WasCalled(AnnounceState.Flor));
+            // Lógica para visibilidad de Truco (puede llamarse en cualquier ronda si tienes el 'quiro')
+            int myTeamIndex = (playerLocal != null && playerLocal.player != null && playerLocal.player.team != null) 
+                ? (GameManager.Instance.teams.IndexOf(playerLocal.player.team) + 1) : 0;
+            
+            bool wasTrucoCalled = WasCalled(AnnounceState.Truco);
+            bool hasQuiro = wasTrucoCalled && GameManager.Instance.lastTrucoTeamIndex != 0 && GameManager.Instance.lastTrucoTeamIndex != myTeamIndex;
+            
+            // Si el Truco ya llegó al límite (Vale Partida / Nivel 4), no se puede subir más
+            var trucoAnnounce = announceManager != null ? announceManager.GetComponentInChildren<Code.GameLogic.Announcement.TrucoAnnouncement>() : null;
+            bool isMaxTruco = trucoAnnounce != null && trucoAnnounce.acceptAmount >= 3;
+
+            bool canCallTruco = !wasTrucoCalled || (hasQuiro && !isMaxTruco);
+            SetButtonVisible(_trucoButton, canCallTruco);
+
+            if (canCallTruco && _trucoButton != null)
+            {
+                // Actualizar texto del botón según el nivel actual
+                int currentLevel = (trucoAnnounce != null) ? trucoAnnounce.acceptAmount : 0;
+                string trucoText = currentLevel switch
+                {
+                    1 => "RETRUCO",
+                    2 => "VALE 9",
+                    3 => "VALE PARTIDA",
+                    _ => "TRUCO"
+                };
+                if (!wasTrucoCalled) trucoText = "TRUCO";
+                
+                _trucoButton.Q<Label>().text = trucoText;
+            }
+
+            // FLOR: visible mientras tengas flor sin cantar. Si un rival ya cantó la suya,
+            // el botón pasa a "FLOR (ENVIDO)" — contestás su flor con la tuya y la
+            // contraflor se resuelve sola al cerrar la mano.
+            bool localSangFlor = announceManager != null && announceManager.LocalFlorSung;
+            bool florSungByRival = WasCalled(AnnounceState.Flor) && !localSangFlor;
+            bool showFlor = hasFlor && isFirstRound && !localSangFlor;
+            SetButtonVisible(_florButton, showFlor);
+            if (showFlor && _florButton != null)
+            {
+                var florLabel = _florButton.Q<Label>();
+                if (florLabel != null)
+                    florLabel.text = florSungByRival ? "FLOR\n(ENVIDO)" : "FLOR";
+            }
 
             bool WasCalled(AnnounceState state)
             {
@@ -423,7 +535,7 @@ namespace Code.Player
                 return announceManager.WasAnnouncementCalledThisHand(state);
             }
         }
-        public void ShowResponseButtons(bool visible, string acceptText = "QUIERO", string declineText = "NO QUIERO", bool showMore = false, bool showSlider = false, string title = "", bool disableAccept = false, bool showDecline = true)
+        public void ShowResponseButtons(bool visible, string acceptText = "QUIERO", string declineText = "NO QUIERO", bool showMore = false, bool showSlider = false, string title = "", bool disableAccept = false, bool showDecline = true, string moreText = "RE-ENVIDAR")
         {
             if (_responseBar != null)
                 _responseBar.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
@@ -440,7 +552,11 @@ namespace Code.Player
                     _declineButton.Q<Label>().text = declineText;
                     _declineButton.style.display = showDecline ? DisplayStyle.Flex : DisplayStyle.None;
                 }
-                if (_moreButton != null) _moreButton.style.display = showMore ? DisplayStyle.Flex : DisplayStyle.None;
+                if (_moreButton != null)
+                {
+                    _moreButton.style.display = showMore ? DisplayStyle.Flex : DisplayStyle.None;
+                    _moreButton.Q<Label>().text = moreText;
+                }
                 
                 if (_sliderContainer != null) _sliderContainer.style.display = showSlider ? DisplayStyle.Flex : DisplayStyle.None;
 
@@ -457,8 +573,27 @@ namespace Code.Player
                     }
                 }
 
-                // Hide normal action buttons when responding
-                SetActionsVisible(false);
+                // Hide normal action buttons when responding (EXCEPT for A Ley which allows both)
+                var announceManager = FindAnyObjectByType<AnnouncementManager>();
+                if (announceManager != null && announceManager._announceState != AnnounceState.ALey)
+                {
+                    SetActionsVisible(false);
+
+                    // Flor anula envido: si tenés flor, el botón FLOR sigue disponible
+                    // como respuesta al envido del rival.
+                    if (announceManager._announceState == AnnounceState.Envido)
+                    {
+                        var allP = FindObjectsByType<PlayerLocal>(FindObjectsSortMode.None);
+                        var pl = allP.FirstOrDefault(p => p.isLocalPlayer && p.gameObject.activeInHierarchy);
+                        if (pl != null && pl.player != null && pl.player.haveFlower)
+                            SetButtonVisible(_florButton, true);
+                    }
+                }
+                else
+                {
+                    // For A Ley, ensure Envido is visible if it hasn't been called
+                    RefreshActionButtons(true);
+                }
             }
         }
 
@@ -655,8 +790,8 @@ namespace Code.Player
 
             Destroy(gameObject);
 
-            SceneChanger.Instance.ChangeScene("LobbyScene");
-            SceneManager.LoadScene("LobbyScene");
+            SceneChanger.Instance?.ChangeScene("MainMenu");
+            SceneManager.LoadScene("MainMenu");
         }
 
         private void UpdateLocalPlayerTeam()

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Code.GameLogic;
 using Code.Cards;
@@ -17,6 +18,7 @@ namespace Code.Player
         public List<Card> initialHand = new List<Card>();
         private List<GameObject> _visualCards = new List<GameObject>();
         public bool isMyTurn = false;
+        public bool haveFlower = false;
 
         public void ClearCards()
         {
@@ -130,9 +132,16 @@ namespace Code.Player
                 }
                 else if (NPCDecisionMaker.ShouldAnnounceEnvido(hand, vira))
                 {
-                    Announce(AnnounceState.Envido);
-                    announcementOccurred = true;
-                    while (GameManager.Instance.isAnnouncementPending) yield return new WaitForSeconds(0.5f);
+                    var humanPlayer = FindAnyObjectByType<PlayerLocal>();
+                    bool humanHasFlor = humanPlayer != null && humanPlayer.player != null && humanPlayer.player.haveFlower;
+                    bool anyNpcHasFlor = FindObjectsByType<NPCPlayer>(FindObjectsSortMode.None)
+                        .Any(n => n.haveFlower);
+                    if (!humanHasFlor && !anyNpcHasFlor)
+                    {
+                        Announce(AnnounceState.Envido);
+                        announcementOccurred = true;
+                        while (GameManager.Instance.isAnnouncementPending) yield return new WaitForSeconds(0.5f);
+                    }
                 }
             }
 
@@ -174,6 +183,12 @@ namespace Code.Player
 
         private IEnumerator RespondToAnnounce(AnnounceState state)
         {
+            // Si es un canto informativo (Flor o A Ley), no hay "Quiero/No Quiero"
+            if (state == AnnounceState.ALey || state == AnnounceState.Flor)
+            {
+                yield break;
+            }
+
             yield return new WaitForSeconds(Random.Range(1f, 2.5f));
 
             var vira = DeckCreator.Instance.cardVira;

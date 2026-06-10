@@ -86,12 +86,6 @@ namespace Code.Player
             else
                 mousePos = UnityEngine.Input.mousePosition;
 
-            // If mouse is perfectly at 0,0 and we are locked, we might be using crosshair. But since you are seated, use actual mouse.
-            if (mousePos == Vector2.zero && Cursor.lockState == CursorLockMode.Locked)
-            {
-                mousePos = new Vector2(Screen.width / 2f, Screen.height / 2f);
-            }
-
             Ray ray = _mainCamera.ScreenPointToRay(mousePos);
 
             // Use RaycastNonAlloc to prevent GC allocation. Usamos ~0 para detectar todas las capas y no depender de la configuración del Editor.

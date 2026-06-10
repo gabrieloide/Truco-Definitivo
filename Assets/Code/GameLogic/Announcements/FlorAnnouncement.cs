@@ -20,30 +20,42 @@ namespace Code.GameLogic.Announcement
 
         public void CanDeclareFlower()
         {
-            var allPlayers = FindObjectsByType<PlayerLocal>(FindObjectsSortMode.None);
-            var playerLocal = allPlayers.FirstOrDefault(p => p.isLocalPlayer && p.gameObject.activeInHierarchy);
-            if (playerLocal == null) return;
-
-            var cardsHandler = playerLocal.cardsHandler;
-
-            if (cardsHandler.InitialHand == null || cardsHandler.InitialHand.Count < 3)
-            {
-                playerLocal.player.haveFlower = false;
-                if (PlayerHUD.Instance != null) PlayerHUD.Instance.RefreshActionButtons(playerLocal.player.canPlayCard);
-                return;
-            }
-
             var deckCreator = DeckCreator.Instance;
             if (deckCreator == null) return;
+            var vira = deckCreator.cardVira;
 
-            bool isFlor = TrucoRules.IsFlor(cardsHandler.InitialHand, deckCreator.cardVira);
-            playerLocal.player.haveFlower = isFlor;
-
-            if (isFlor) Debug.Log($"[Flor] El jugador tiene FLOR.");
-
-            if (PlayerHUD.Instance != null)
+            var allPlayers = FindObjectsByType<PlayerLocal>(FindObjectsSortMode.None);
+            var playerLocal = allPlayers.FirstOrDefault(p => p.isLocalPlayer && p.gameObject.activeInHierarchy);
+            if (playerLocal != null)
             {
-                PlayerHUD.Instance.RefreshActionButtons(playerLocal.player.canPlayCard);
+                var cardsHandler = playerLocal.cardsHandler;
+                if (cardsHandler != null && cardsHandler.InitialHand != null && cardsHandler.InitialHand.Count >= 3)
+                {
+                    // Una flor quemada (cantó envido teniéndola) no vuelve a la vida.
+                    bool isFlor = TrucoRules.IsFlor(cardsHandler.InitialHand, vira) && !playerLocal.player.florBurned;
+                    playerLocal.player.haveFlower = isFlor;
+                    if (isFlor) Debug.Log($"[Flor] El jugador tiene FLOR.");
+                }
+                else
+                {
+                    playerLocal.player.haveFlower = false;
+                }
+                if (PlayerHUD.Instance != null) PlayerHUD.Instance.RefreshActionButtons(playerLocal.player.canPlayCard);
+            }
+
+            // Evaluar Flor para todos los NPCs para que los chequeos de Envido funcionen correctamente
+            var allNpcs = FindObjectsByType<NPCPlayer>(FindObjectsSortMode.None);
+            foreach (var npc in allNpcs)
+            {
+                if (npc.initialHand != null && npc.initialHand.Count >= 3)
+                {
+                    npc.haveFlower = TrucoRules.IsFlor(npc.initialHand, vira);
+                    if (npc.haveFlower) Debug.Log($"[Flor] El NPC {npc.playerName} tiene FLOR.");
+                }
+                else
+                {
+                    npc.haveFlower = false;
+                }
             }
         }
 
@@ -54,6 +66,14 @@ namespace Code.GameLogic.Announcement
             public int Points;
             public int ComparisonScore;
             public string PlayerName;
+        }
+
+        private bool _pointsAwardedThisHand = false;
+
+        public override void ResetAnnounceState()
+        {
+            base.ResetAnnounceState();
+            _pointsAwardedThisHand = false;
         }
 
         public override void UpdateTotalScore()
@@ -69,9 +89,12 @@ namespace Code.GameLogic.Announcement
 
             foreach (var p in allPlayers)
             {
+                // La flor quemada (envido cantado con flor en mano) no vale nada.
+                if (p.florBurned) continue;
+
                 var cardsHandler = p.GetComponent<CardsHandler>();
                 if (cardsHandler == null) cardsHandler = p.GetComponentInChildren<CardsHandler>();
-                
+
                 if (cardsHandler != null && cardsHandler.InitialHand.Count >= 3)
                 {
                     if (TrucoRules.IsFlor(cardsHandler.InitialHand, vira))
@@ -101,10 +124,12 @@ namespace Code.GameLogic.Announcement
                 }
             }
 
-            if (allFlores.Count == 0)
+            if (allFlores.Count == 0 || _pointsAwardedThisHand)
             {
                 return;
             }
+
+            _pointsAwardedThisHand = true;
 
             var team1Flores = allFlores.FindAll(f => f.TeamName == "Team 1");
             var team2Flores = allFlores.FindAll(f => f.TeamName == "Team 2");
@@ -116,6 +141,8 @@ namespace Code.GameLogic.Announcement
                 int totalPoints = 0;
                 foreach (var f in team1Flores) totalPoints += f.Points;
                 GameManager.Instance.AddAnnouncementPoints("Team 1", totalPoints);
+                if (PlayerHUD.Instance != null)
+                    PlayerHUD.Instance.NotifyEvent($"¡FLOR! TEAM 1 GANA +{totalPoints} PIEDRAS", 3.5f);
             }
             else if (team2Flores.Count > 0 && team1Flores.Count == 0)
             {
@@ -123,6 +150,8 @@ namespace Code.GameLogic.Announcement
                 int totalPoints = 0;
                 foreach (var f in team2Flores) totalPoints += f.Points;
                 GameManager.Instance.AddAnnouncementPoints("Team 2", totalPoints);
+                if (PlayerHUD.Instance != null)
+                    PlayerHUD.Instance.NotifyEvent($"¡FLOR! TEAM 2 GANA +{totalPoints} PIEDRAS", 3.5f);
             }
             else if (team1Flores.Count > 0 && team2Flores.Count > 0)
             {
@@ -159,13 +188,18 @@ namespace Code.GameLogic.Announcement
                 int totalPoints = 0;
                 foreach (var f in allFlores) totalPoints += f.Points;
 
-                // Notificar los puntajes comparados de Contraflor en la pantalla
+                // Primero agregar los puntos (muestra notificación genérica brevemente)
+                GameManager.Instance.AddAnnouncementPoints(winnerTeam, totalPoints);
+
+                // Luego sobreescribir con la notificación detallada de Contraflor para que
+                // el jugador entienda por qué ganó/perdió (de lo contrario la notificación
+                // genérica de AddAnnouncementPoints tapaba esta info)
                 if (PlayerHUD.Instance != null)
                 {
-                    PlayerHUD.Instance.NotifyEvent($"CONTRAFLOR: TEAM 1 ({bestTeam1.ComparisonScore}) VS TEAM 2 ({bestTeam2.ComparisonScore})", 4.0f);
+                    PlayerHUD.Instance.NotifyEvent(
+                        $"¡CONTRAFLOR! {winnerTeam.ToUpper()} GANA +{totalPoints} PIEDRAS  " +
+                        $"(T1:{bestTeam1.ComparisonScore} vs T2:{bestTeam2.ComparisonScore})", 4.0f);
                 }
-
-                GameManager.Instance.AddAnnouncementPoints(winnerTeam, totalPoints);
             }
         }
     }

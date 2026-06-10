@@ -22,6 +22,7 @@ namespace Code.DebugTools
         public bool showCardTrajectory = true;
         public bool showDealerViraAndDeck = true;
         public bool showHandCardGizmos = true;
+        public bool showManualPositions = true;
         public float gizmoScale = 0.3f;
 
         private static readonly Color[] seatColors = new Color[]
@@ -43,6 +44,40 @@ namespace Code.DebugTools
 
             var tableManager = TableManager.Instance;
             if (tableManager == null) tableManager = FindAnyObjectByType<TableManager>();
+
+            // ===== 0. POSICIONES MANUALES (Pre-instanciación) =====
+            if (seatManager.useManualPositions && seatManager.manualPositions != null)
+            {
+                for (int i = 0; i < seatManager.manualPositions.Count; i++)
+                {
+                    if (seatManager.manualPositions[i] == null) continue;
+
+                    Color manualColor = seatColors[i % seatColors.Length];
+                    Vector3 pos = seatManager.manualPositions[i].position;
+                    Quaternion rot = seatManager.manualPositions[i].rotation;
+
+                    Gizmos.color = manualColor;
+                    
+                    // Dibujar un cubo de alambre para representar la silla manual
+                    Matrix4x4 oldMat = Gizmos.matrix;
+                    Gizmos.matrix = Matrix4x4.TRS(pos, rot, Vector3.one);
+                    Gizmos.DrawWireCube(Vector3.up * 0.5f, new Vector3(0.8f, 1f, 0.8f));
+                    
+                    // Dibujar rayo forward
+                    Gizmos.color = Color.blue;
+                    Gizmos.DrawRay(Vector3.up * 0.5f, Vector3.forward * 1.5f);
+                    Gizmos.matrix = oldMat;
+
+                    if (showSeatLabels)
+                    {
+                        GUIStyle manualStyle = new GUIStyle();
+                        manualStyle.normal.textColor = manualColor;
+                        manualStyle.fontStyle = FontStyle.Bold;
+                        manualStyle.fontSize = 12;
+                        UnityEditor.Handles.Label(pos + Vector3.up * 1.2f, $"Manual Seat {i + 1}", manualStyle);
+                    }
+                }
+            }
 
             for (int i = 0; i < seatManager.allChairs.Count; i++)
             {
@@ -186,10 +221,16 @@ namespace Code.DebugTools
 
                     float deckHeight = tableManager != null ? tableManager.deckHeightOffset : 0.01f;
                     float viraHeight = tableManager != null ? tableManager.viraHeightOffset : 0.02f;
+                    Vector2 dOff = tableManager != null ? tableManager.deckOffset : new Vector2(0.25f, -0.1f);
+                    Vector2 vOff = tableManager != null ? tableManager.viraOffset : new Vector2(0f, 0.15f);
 
-                    // Offset para el Mazo: A la derecha y un poco atrás de donde el jugador pone su carta
-                    Vector3 deckOffset = (anchor.right * 0.25f) + (anchor.forward * -0.1f);
-                    Vector3 deckPos = basePos + deckOffset + (anchor.up * deckHeight);
+                    // Offset para el Mazo usando los valores del TableManager
+                    Vector3 worldDeckOffset = (anchor.right * dOff.x) + (anchor.forward * dOff.y);
+                    Vector3 deckPos = basePos + worldDeckOffset + (anchor.up * deckHeight);
+                    
+                    // La vira se posiciona relativa al mazo usando viraOffset
+                    Vector3 worldViraOffset = (anchor.right * vOff.x) + (anchor.forward * vOff.y);
+                    Vector3 viraWorldPos = deckPos + worldViraOffset + (anchor.up * (viraHeight - deckHeight));
 
                     // Mazo/Deck visual outline
                     Color deckColor = new Color(seatColor.r, seatColor.g, seatColor.b, 0.7f);
@@ -207,8 +248,7 @@ namespace Code.DebugTools
                     // Draw a small line to indicate the deck top/bottom
                     Gizmos.DrawLine(new Vector3(-deckW, deckThickness / 2f, -deckH), new Vector3(deckW, deckThickness / 2f, deckH));
                     
-                    // Vira position: next to the deck (un poco más al centro, which is forward by 0.15f)
-                    Vector3 viraWorldPos = basePos + deckOffset + (anchor.forward * 0.15f) + (anchor.up * viraHeight);
+                    // Vira position: next to the deck
                     Gizmos.matrix = Matrix4x4.TRS(viraWorldPos, baseRot, Vector3.one);
 
                     Color viraColor = new Color(seatColor.r, seatColor.g, seatColor.b, 0.9f);

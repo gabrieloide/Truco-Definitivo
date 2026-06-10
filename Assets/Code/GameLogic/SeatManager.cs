@@ -12,12 +12,18 @@ namespace Code.GameLogic
         [Header("Seat Configuration (Counter-Clockwise)")]
         public List<ChairInteractable> allChairs = new List<ChairInteractable>();
 
+        [Header("Manual Spawning Options")]
+        [Tooltip("If true, chairs will be spawned at the positions defined in 'manualPositions'.")]
+        public bool useManualPositions = false;
+        [Tooltip("List of transforms defining the positions and rotations for manual chair spawning.")]
+        public List<Transform> manualPositions = new List<Transform>();
+
         [Header("Dynamic Spawning Options")]
         [Tooltip("If true, chairs will be spawned at runtime around the table center.")]
         public bool spawnChairsAtRuntime = false;
         [Tooltip("Prefab to instantiate for chairs. Must have ChairInteractable on it.")]
         public GameObject chairPrefab;
-        [Tooltip("Number of chairs to spawn.")]
+        [Tooltip("Number of chairs to spawn (used if useManualPositions is false).")]
         public int chairCount = 4;
         [Tooltip("Distance from the table center to spawn chairs.")]
         public float spawnRadius = 2.5f;
@@ -25,6 +31,49 @@ namespace Code.GameLogic
         public float spawnHeight = 0f;
         [Tooltip("Starting angle in degrees. -90 degrees is the bottom of the screen (South).")]
         public float startAngleDegrees = -90f;
+
+        /// <summary>
+        /// Método principal de inicialización controlado por el GameManager.
+        /// Detecta sillas existentes o las crea según la configuración.
+        /// </summary>
+        public int InitializeLayout()
+        {
+            Debug.Log($"[SeatManager] InitializeLayout: Iniciando. useManualPositions={useManualPositions}, spawnChairsAtRuntime={spawnChairsAtRuntime}");
+
+            // 1. Limpiar lista actual
+            allChairs.Clear();
+
+            // 2. Buscar si ya hay sillas puestas como hijos en la jerarquía
+            foreach (Transform child in transform)
+            {
+                var chair = child.GetComponent<ChairInteractable>();
+                if (chair != null)
+                {
+                    allChairs.Add(chair);
+                }
+            }
+
+            // 3. Si no hay sillas hijas, procedemos a crearlas si el usuario lo solicita (Manual o Radial)
+            if (allChairs.Count == 0)
+            {
+                if (useManualPositions || spawnChairsAtRuntime)
+                {
+                    if (chairPrefab == null)
+                    {
+                        Debug.LogError("[SeatManager] CRITICAL: No se puede inicializar el layout porque chairPrefab es NULL.");
+                        return 0;
+                    }
+                    SpawnChairs();
+                }
+                else
+                {
+                    Debug.LogWarning("[SeatManager] No hay sillas como hijos y 'useManualPositions'/'spawnChairsAtRuntime' están desactivados.");
+                }
+            }
+
+            Debug.Log($"[SeatManager] InitializeLayout finalizado. Total sillas en allChairs: {allChairs.Count}");
+            return allChairs.Count;
+        }
 
         private void Awake()
         {
@@ -34,57 +83,55 @@ namespace Code.GameLogic
                 return;
             }
             Instance = this;
-
-            if (spawnChairsAtRuntime && chairPrefab != null)
-            {
-                SpawnChairs();
-            }
+            // Ya NO llamamos a nada aquí. El GameManager tiene el control.
         }
 
         public void SpawnChairs()
         {
-            // Clear existing chairs
-            foreach (var existingChair in allChairs)
+            Debug.Log($"[SeatManager] SpawnChairs ejecutado. useManualPositions={useManualPositions}");
+            
+            if (useManualPositions)
             {
-                if (existingChair != null)
+                if (manualPositions == null || manualPositions.Count == 0)
                 {
-                    Destroy(existingChair.gameObject);
-                }
-            }
-            allChairs.Clear();
-
-            Vector3 center = Vector3.zero;
-            var table = FindAnyObjectByType<TableManager>();
-            if (table != null && table.viraPosition != null)
-            {
-                center = table.viraPosition.position;
-            }
-            else if (table != null)
-            {
-                center = table.transform.position;
-            }
-
-            for (int i = 0; i < chairCount; i++)
-            {
-                float angleDegrees = startAngleDegrees + i * (360f / chairCount);
-                float angleRad = angleDegrees * Mathf.Deg2Rad;
-                Vector3 spawnPos = center + new Vector3(Mathf.Cos(angleRad) * spawnRadius, spawnHeight, Mathf.Sin(angleRad) * spawnRadius);
-
-                GameObject chairObj = Instantiate(chairPrefab, spawnPos, Quaternion.identity, transform);
-                chairObj.name = $"Chair{i + 1}";
-
-                // Orient to face the center of the table on the XZ plane
-                Vector3 lookDir = (center - spawnPos).normalized;
-                lookDir.y = 0;
-                if (lookDir != Vector3.zero)
-                {
-                    chairObj.transform.rotation = Quaternion.LookRotation(lookDir);
+                    Debug.LogWarning("[SeatManager] useManualPositions es true pero no hay posiciones asignadas!");
+                    return;
                 }
 
-                var chair = chairObj.GetComponent<ChairInteractable>();
-                if (chair != null)
+                for (int i = 0; i < manualPositions.Count; i++)
                 {
-                    allChairs.Add(chair);
+                    if (manualPositions[i] == null) continue;
+
+                    GameObject chairObj = Instantiate(chairPrefab, manualPositions[i].position, manualPositions[i].rotation, transform);
+                    chairObj.name = $"Chair{i + 1}";
+
+                    var chair = chairObj.GetComponent<ChairInteractable>();
+                    if (chair != null) allChairs.Add(chair);
+                }
+            }
+            else
+            {
+                // Lógica de spawn radial original
+                Vector3 center = Vector3.zero;
+                var table = FindAnyObjectByType<TableManager>();
+                if (table != null && table.viraPosition != null) center = table.viraPosition.position;
+                else if (table != null) center = table.transform.position;
+
+                for (int i = 0; i < chairCount; i++)
+                {
+                    float angleDegrees = startAngleDegrees + i * (360f / chairCount);
+                    float angleRad = angleDegrees * Mathf.Deg2Rad;
+                    Vector3 spawnPos = center + new Vector3(Mathf.Cos(angleRad) * spawnRadius, spawnHeight, Mathf.Sin(angleRad) * spawnRadius);
+
+                    GameObject chairObj = Instantiate(chairPrefab, spawnPos, Quaternion.identity, transform);
+                    chairObj.name = $"Chair{i + 1}";
+
+                    Vector3 lookDir = (center - spawnPos).normalized;
+                    lookDir.y = 0;
+                    if (lookDir != Vector3.zero) chairObj.transform.rotation = Quaternion.LookRotation(lookDir);
+
+                    var chair = chairObj.GetComponent<ChairInteractable>();
+                    if (chair != null) allChairs.Add(chair);
                 }
             }
         }
@@ -114,48 +161,71 @@ namespace Code.GameLogic
             }
             allChairs.Clear();
 
-            Vector3 center = Vector3.zero;
-            var table = FindAnyObjectByType<TableManager>();
-            if (table != null && table.viraPosition != null)
+            if (useManualPositions)
             {
-                center = table.viraPosition.position;
-            }
-            else if (table != null)
-            {
-                center = table.transform.position;
-            }
-
-            for (int i = 0; i < chairCount; i++)
-            {
-                float angleDegrees = startAngleDegrees + i * (360f / chairCount);
-                float angleRad = angleDegrees * Mathf.Deg2Rad;
-                Vector3 spawnPos = center + new Vector3(Mathf.Cos(angleRad) * spawnRadius, spawnHeight, Mathf.Sin(angleRad) * spawnRadius);
-
-                GameObject chairObj = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(chairPrefab, transform);
-                chairObj.transform.position = spawnPos;
-                chairObj.transform.rotation = Quaternion.identity;
-                chairObj.name = $"Chair{i + 1}";
-
-                // Orient to face the center of the table on the XZ plane
-                Vector3 lookDir = (center - spawnPos).normalized;
-                lookDir.y = 0;
-                if (lookDir != Vector3.zero)
+                for (int i = 0; i < manualPositions.Count; i++)
                 {
-                    chairObj.transform.rotation = Quaternion.LookRotation(lookDir);
+                    if (manualPositions[i] == null) continue;
+
+                    GameObject chairObj = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(chairPrefab, transform);
+                    chairObj.transform.position = manualPositions[i].position;
+                    chairObj.transform.rotation = manualPositions[i].rotation;
+                    chairObj.name = $"Chair{i + 1}";
+
+                    var chair = chairObj.GetComponent<ChairInteractable>();
+                    if (chair != null)
+                    {
+                        allChairs.Add(chair);
+                    }
+
+                    UnityEditor.Undo.RegisterCreatedObjectUndo(chairObj, "Spawn Chair");
+                }
+            }
+            else
+            {
+                Vector3 center = Vector3.zero;
+                var table = FindAnyObjectByType<TableManager>();
+                if (table != null && table.viraPosition != null)
+                {
+                    center = table.viraPosition.position;
+                }
+                else if (table != null)
+                {
+                    center = table.transform.position;
                 }
 
-                var chair = chairObj.GetComponent<ChairInteractable>();
-                if (chair != null)
+                for (int i = 0; i < chairCount; i++)
                 {
-                    allChairs.Add(chair);
-                }
+                    float angleDegrees = startAngleDegrees + i * (360f / chairCount);
+                    float angleRad = angleDegrees * Mathf.Deg2Rad;
+                    Vector3 spawnPos = center + new Vector3(Mathf.Cos(angleRad) * spawnRadius, spawnHeight, Mathf.Sin(angleRad) * spawnRadius);
 
-                UnityEditor.Undo.RegisterCreatedObjectUndo(chairObj, "Spawn Chair");
+                    GameObject chairObj = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(chairPrefab, transform);
+                    chairObj.transform.position = spawnPos;
+                    chairObj.transform.rotation = Quaternion.identity;
+                    chairObj.name = $"Chair{i + 1}";
+
+                    // Orient to face the center of the table on the XZ plane
+                    Vector3 lookDir = (center - spawnPos).normalized;
+                    lookDir.y = 0;
+                    if (lookDir != Vector3.zero)
+                    {
+                        chairObj.transform.rotation = Quaternion.LookRotation(lookDir);
+                    }
+
+                    var chair = chairObj.GetComponent<ChairInteractable>();
+                    if (chair != null)
+                    {
+                        allChairs.Add(chair);
+                    }
+
+                    UnityEditor.Undo.RegisterCreatedObjectUndo(chairObj, "Spawn Chair");
+                }
             }
 
             UnityEditor.EditorUtility.SetDirty(gameObject);
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
-            Debug.Log($"[SeatManager] Se instanciaron {chairCount} sillas correctamente alrededor de la mesa.");
+            Debug.Log($"[SeatManager] Se instanciaron {allChairs.Count} sillas correctamente.");
 #endif
         }
 
@@ -207,40 +277,13 @@ namespace Code.GameLogic
             }
         }
 
-        // [Server]
-        public void StandUp(GameObject player, ChairInteractable chair)
-        {
-            chair.isOccupied = false;
-            chair.occupant = null;
-            chair.RpcSetOccupied(false);
-
-            // RpcStandPlayer(player.GetComponent<NetworkIdentity>().connectionToClient, player);
-            RpcStandPlayer(player);
-        }
-
         // [TargetRpc]
         private void RpcSitPlayer(/*NetworkConnection conn,*/ GameObject player, GameObject chairObj)
         {
             var chair = chairObj.GetComponent<ChairInteractable>();
-            var movement = player.GetComponent<PlayerMovement3D>();
 
             if (chair != null)
             {
-                if (movement != null)
-                {
-                    movement.isSeated = true;
-                    movement.UpdateCursorState();
-                }
-                
-                // Teleport and lock physics
-                var rb = player.GetComponent<Rigidbody>();
-                if (rb != null)
-                {
-                    rb.linearVelocity = Vector3.zero;
-                    rb.angularVelocity = Vector3.zero;
-                    rb.isKinematic = true;
-                }
-                
                 player.transform.position = chair.sitTransform.position;
                 // Make the player always face the center of the table (viraPosition) and stay upright
                 Vector3 lookTarget = (TableManager.Instance != null && TableManager.Instance.viraPosition != null) 
@@ -252,7 +295,11 @@ namespace Code.GameLogic
             }
 
             // Only update the camera if the player who is sitting down is the local player!
-            bool isLocal = player.GetComponent<PlayerLocal>() != null || player.GetComponentInChildren<PlayerLocal>(true) != null;
+            // Every networked player carries a PlayerLocal component, so checking for
+            // its presence is not enough — isLocalPlayer must be true.
+            var seatedPlayerLocal = player.GetComponent<PlayerLocal>();
+            if (seatedPlayerLocal == null) seatedPlayerLocal = player.GetComponentInChildren<PlayerLocal>(true);
+            bool isLocal = seatedPlayerLocal != null && seatedPlayerLocal.isLocalPlayer;
             if (chair != null && isLocal)
             {
                 var camManager = player.GetComponent<CameraManager>();
@@ -276,43 +323,6 @@ namespace Code.GameLogic
                 else
                 {
                     Debug.LogError("[SeatManager] ERROR: Jugador local sentándose pero no se encontró el CameraManager.");
-                }
-            }
-            else if (chair != null)
-            {
-            }
-        }
-
-        // [TargetRpc]
-        private void RpcStandPlayer(/*NetworkConnection conn,*/ GameObject player)
-        {
-            var movement = player.GetComponent<PlayerMovement3D>();
-            var rb = player.GetComponent<Rigidbody>();
-
-            if (movement != null) movement.isSeated = false;
-            if (rb != null) rb.isKinematic = false;
-
-            // Only update the camera if the player who is standing up is the local player!
-            bool isLocal = player.GetComponent<PlayerLocal>() != null || player.GetComponentInChildren<PlayerLocal>(true) != null;
-            if (isLocal)
-            {
-                var camManager = player.GetComponent<CameraManager>();
-                if (camManager == null)
-                {
-                    camManager = player.GetComponentInChildren<CameraManager>(true);
-                }
-                if (camManager == null)
-                {
-                    camManager = CameraManager.Instance;
-                }
-                if (camManager == null)
-                {
-                    camManager = FindAnyObjectByType<CameraManager>();
-                }
-
-                if (camManager != null)
-                {
-                    camManager.SetWalkingCamera();
                 }
             }
         }

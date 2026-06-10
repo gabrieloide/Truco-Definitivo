@@ -88,6 +88,16 @@
     margin-bottom: 20px;
 }
 
+.status-text {
+    color: #C0392B;
+    font-size: 22px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    white-space: normal;
+}
+
 .credits-text {
     color: #5C4E3A;
     font-size: 24px;
@@ -262,6 +272,34 @@
 /* =========================================================
    LOBBY SPECIFICS (SIDE BY SIDE CARDS)
    ========================================================= */
+.room-code-row {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.room-code-label {
+    margin-bottom: 0;
+}
+
+/* Botón compacto que hereda el look táctil de .menu-btn */
+.menu-btn--copy {
+    width: auto;
+    margin: 0 0 0 14px;
+    padding: 8px 18px;
+    border-bottom-width: 6px;
+}
+
+.menu-btn--copy:active {
+    translate: 0px 3px;
+    border-bottom-width: 3px;
+}
+
+.menu-btn--copy__text {
+    font-size: 16px;
+}
+
 .lobby-teams-container {
     flex-direction: row;
     justify-content: space-between;

@@ -1,5 +1,7 @@
 using UnityEngine;
 using DG.Tweening;
+using Unity.Cinemachine;
+using Code.Player;
 
 namespace Code.GameLogic
 {
@@ -16,9 +18,6 @@ namespace Code.GameLogic
         [Header("Particle Settings")]
         public GameObject cardImpactParticlePrefab;
 
-        private Vector3 _originalCameraPos;
-        private Transform _mainCameraTransform;
-
         private void Awake()
         {
             if (Instance == null)
@@ -31,55 +30,66 @@ namespace Code.GameLogic
                 Destroy(gameObject);
                 return;
             }
-
-            SetupCameraReference();
-        }
-
-        private void SetupCameraReference()
-        {
-            if (Camera.main != null)
-            {
-                _mainCameraTransform = Camera.main.transform;
-                _originalCameraPos = _mainCameraTransform.localPosition;
-            }
         }
 
         /// <summary>
-        /// Realiza una sacudida de la cámara principal.
+        /// Realiza una sacudida directamente sobre el transform de la cámara activa.
         /// </summary>
         public void ShakeCamera(float duration = -1f, float strength = -1f)
         {
-            if (_mainCameraTransform == null) SetupCameraReference();
-            if (_mainCameraTransform == null) return;
-
             float d = duration > 0 ? duration : defaultShakeDuration;
             float s = strength > 0 ? strength : defaultShakeStrength;
 
-            // Reiniciar posición antes de sacudir
-            _mainCameraTransform.DOKill();
-            
-            _mainCameraTransform.DOShakePosition(d, s, defaultShakeVibrato, defaultShakeRandomness)
-                .OnComplete(() =>
+            // Buscamos la cámara activa a través del CameraManager
+            if (CameraManager.Instance != null && CameraManager.Instance.ActiveCamera != null)
+            {
+                Transform camTransform = CameraManager.Instance.ActiveCamera.transform;
+                
+                // CRITICAL: Capturar la posición local ACTUAL antes de sacudir
+                Vector3 initialLocalPos = camTransform.localPosition;
+                
+                Debug.Log($"[JuiceVFXManager] Sacudiendo cámara: {CameraManager.Instance.ActiveCamera.gameObject.name}. Fuerza: {s}. Posición original: {initialLocalPos}");
+
+                // Matar cualquier shake previo
+                camTransform.DOKill(true);
+                
+                // Realizar sacudida
+                camTransform.DOShakePosition(d, s, defaultShakeVibrato, defaultShakeRandomness)
+                    .OnComplete(() => {
+                        // Volver exactamente a la posición que tenía antes del shake
+                        camTransform.DOLocalMove(initialLocalPos, 0.1f).SetEase(Ease.OutQuad);
+                    });
+            }
+            else
+            {
+                // Fallback a Main Camera
+                if (Camera.main != null)
                 {
-                    // Volver suavemente a la posición original local para evitar desalineación de la cámara
-                    _mainCameraTransform.DOLocalMove(_originalCameraPos, 0.1f);
-                });
+                    Transform mainCam = Camera.main.transform;
+                    Vector3 initialPos = mainCam.localPosition;
+                    mainCam.DOKill(true);
+                    mainCam.DOShakePosition(d, s, defaultShakeVibrato, defaultShakeRandomness)
+                        .OnComplete(() => mainCam.DOLocalMove(initialPos, 0.1f));
+                }
+            }
         }
 
-        /// <summary>
-        /// Genera partículas en el punto donde impacta la carta contra la mesa.
-        /// </summary>
+        public void DenyActionFeedback()
+        {
+            ShakeCamera(0.2f, 0.05f);
+
+            if (Code.Scripts.Audio.AudioManager.Instance != null)
+            {
+                Code.Scripts.Audio.AudioManager.Instance.PlaySFX("decline_noquiero_neg");
+            }
+        }
+
         public void PlayImpactParticles(Vector3 position, Color? colorHint = null)
         {
-            if (cardImpactParticlePrefab == null)
-            {
-                // Fallback silencioso si no hay prefab asignado
-                return;
-            }
+            if (cardImpactParticlePrefab == null) return;
 
             GameObject particles = Instantiate(cardImpactParticlePrefab, position, Quaternion.identity);
-            
-            // Si el prefab tiene un componente ParticleSystem y queremos pasarle un tinte de color
+
             if (colorHint.HasValue)
             {
                 var ps = particles.GetComponent<ParticleSystem>();
@@ -90,7 +100,6 @@ namespace Code.GameLogic
                 }
             }
 
-            // Destruir automáticamente las partículas tras finalizar su reproducción
             Destroy(particles, 2f);
         }
     }

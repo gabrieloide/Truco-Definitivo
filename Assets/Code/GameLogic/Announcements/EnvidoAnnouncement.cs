@@ -13,9 +13,20 @@ namespace Code.GameLogic.Announcement
     {
         public override GameObject AnnounceButton() => GameObject.Find("EnvidoButton");
         protected override AnnounceState AnnounceState() => global::AnnounceState.Envido;
-        public override int[] IncreasingAmount() => new[] { 1, 2, 4, 5, 7, 12 };
+
+        // Índices por acceptAmount: 0 = envido rechazado (1 piedra), 1+ = envido
+        // querido (2 piedras fijas del que lo cantó). Los re-envidos NO agregan
+        // puntos base propios: solo aportan las piedras extra que ponga cada cantor
+        // (acumuladas en extraPoints). Ej: envido → re-envido +3 → quiero = 2+3 = 5.
+        public override int[] IncreasingAmount() => new[] { 1, 2, 2, 2, 2, 2 };
 
         // UI handling is now managed by PlayerHUD and AnnouncementManager
+        public int extraPoints = 0; // Piedras extra acumuladas de todos los re-envidos
+
+        // Piedras del último re-envido todavía no aceptado. Re-envidar por encima de un
+        // re-envido implica aceptarlo, así que esto siempre es solo el último de la
+        // cadena. Un "No quiero" paga lo último aceptado: extraPoints - este valor.
+        public int pendingRaiseStones = 0;
         
         public override void UpdateTotalScore()
         {
@@ -26,7 +37,12 @@ namespace Code.GameLogic.Announcement
             if (deckCreator == null) return;
 
             var vira = deckCreator.cardVira;
-            int pointsToAward = IncreasingAmount()[acceptAmount];
+            
+            // Calculamos puntos base + puntos extra del slider
+            int basePoints = IncreasingAmount()[acceptAmount];
+            int pointsToAward = basePoints + extraPoints;
+
+            if (extraPoints > 0) Debug.Log($"[Envido] Resolviendo Envido: {basePoints} base + {extraPoints} extra = {pointsToAward} totales.");
 
             // Calculate scores for everyone
             int bestScoreTeam1 = -1;

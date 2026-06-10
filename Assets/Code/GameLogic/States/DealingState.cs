@@ -1,3 +1,6 @@
+using System.Linq;
+using Code.Networking;
+using Mirror;
 using UnityEngine;
 using Code.GameLogic;
 
@@ -39,6 +42,10 @@ namespace Code.GameLogic.States
                 {
                     var cardsHandler = player.GetComponent<Code.Cards.CardsHandler>();
                     if (cardsHandler != null) cardsHandler.ClearCards();
+
+                    // Clients also clear their rendered copy of this hand
+                    if (NetworkServer.active)
+                        player.GetComponent<PlayerNetworkSync>()?.RpcClearHand();
                 }
                 foreach (var npc in allNPCs)
                 {
@@ -81,6 +88,10 @@ namespace Code.GameLogic.States
                                 {
                                     var ch = p.GetComponent<Code.Cards.CardsHandler>();
                                     if (ch != null) ch.ReceiveSingleCard(cards[0]);
+
+                                    // Remote viewers render this card face-down (no value leaked)
+                                    if (NetworkServer.active)
+                                        p.GetComponent<PlayerNetworkSync>()?.RpcDealHiddenCard();
                                 }
                                 else if (occupant is Code.Player.NPCPlayer npc)
                                 {
@@ -95,10 +106,33 @@ namespace Code.GameLogic.States
 
                 yield return new UnityEngine.WaitForSeconds(0.4f);
 
+                // In multiplayer: send each remote human player's private hand via TargetRpc
+                // (the host's own hand was already dealt by the loop above)
+                if (NetworkServer.active)
+                {
+                    foreach (var p in allPlayers)
+                    {
+                        var netSync = p.GetComponent<PlayerNetworkSync>();
+                        if (netSync == null || netSync.connectionToClient == null) continue;
+                        if (netSync.connectionToClient is LocalConnectionToClient) continue;
+                        var ch = p.GetComponent<Code.Cards.CardsHandler>();
+                        if (ch == null) continue;
+                        var netData = ch.InitialHand.Select(CardNetData.From).ToList();
+                        netSync.TargetReceiveHand(netSync.connectionToClient, netData);
+                    }
+                }
+
                 // 5. Mostrar la Vira al final
                 if (TableManager.Instance != null)
                 {
                     TableManager.Instance.SpawnVira3D(deckCreator.cardVira, gameManager.dealerIndex);
+                }
+
+                // Multiplayer: clients render deck + vira and store it for envido checks
+                if (NetworkServer.active)
+                {
+                    var netMgr = NetworkManager.singleton as MyNetworkingManager;
+                    netMgr?.BroadcastVira(deckCreator.cardVira, gameManager.dealerIndex);
                 }
 
                 yield return new UnityEngine.WaitForSeconds(0.8f);

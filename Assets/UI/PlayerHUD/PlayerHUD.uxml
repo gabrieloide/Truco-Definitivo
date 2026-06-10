@@ -21,6 +21,10 @@
                         <engine:VisualElement class="trick-dot" />
                     </engine:VisualElement>
                 </engine:VisualElement>
+
+                <engine:VisualElement class="hud-turn-indicator" picking-mode="Ignore" style="margin-top: 6px; align-items: center;">
+                    <engine:Label name="turn-label" text="IT&apos;S YOUR TURN" class="hud-turn__text" style="background-color: rgba(0, 0, 0, 0.65); border-radius: 8px; padding: 4px 14px; -unity-font-style: bold;" />
+                </engine:VisualElement>
             </engine:VisualElement>
 
             <engine:Button name="camera-button" class="hud-btn-icon hud-btn-camera">
@@ -38,23 +42,19 @@
             <engine:Label name="notification-label" text="¡CANTO!" />
         </engine:VisualElement>
         
-        <engine:VisualElement class="hud-turn-indicator bottom-turn-indicator" picking-mode="Ignore">
-            <engine:Label name="turn-label" text="IT&apos;S YOUR TURN" class="hud-turn__text" />
-        </engine:VisualElement>
-
         <engine:VisualElement class="hud-right-area" picking-mode="Ignore">
             <engine:VisualElement name="hud-response-bar" class="hud-action-bar" picking-mode="Ignore">
                 <engine:Label name="response-title-label" text="RESPONDER" class="hud-response-title__text" />
-                <engine:VisualElement name="hud-slider-container" class="hud-slider-container">
-                    <engine:Label name="slider-value-label" text="+1 PIEDRA" class="hud-slider__label" />
-                    <engine:SliderInt name="stones-slider" low-value="1" high-value="10" value="1" class="hud-slider" />
-                </engine:VisualElement>
                 <engine:Button name="accept-button" class="hud-btn hud-btn--accept">
                     <engine:Label text="QUIERO" class="hud-btn__text" />
                 </engine:Button>
                 <engine:Button name="decline-button" class="hud-btn hud-btn--decline">
                     <engine:Label text="NO QUIERO" class="hud-btn__text" />
                 </engine:Button>
+                <engine:VisualElement name="hud-slider-container" class="hud-slider-container">
+                    <engine:Label name="slider-value-label" text="+1 PIEDRA" class="hud-slider__label" />
+                    <engine:SliderInt name="stones-slider" low-value="1" high-value="10" value="1" class="hud-slider" />
+                </engine:VisualElement>
                 <engine:Button name="more-button" class="hud-btn hud-btn--more">
                     <engine:Label text="RE-ENVIDAR" class="hud-btn__text" />
                 </engine:Button>

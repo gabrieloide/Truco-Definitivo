@@ -106,8 +106,16 @@ namespace Code.GameLogic
                         }
                     }
                 }
-                
 
+                // No pair found: just the highest single card value (no +20 base).
+                // E.g. 2, 7 and 5 of different suits → envido 7.
+                if (maxScore == 0)
+                {
+                    int highestCard = 0;
+                    foreach (var c in hand)
+                        highestCard = Mathf.Max(highestCard, GetEnvidoValue(c, false, false));
+                    maxScore = highestCard;
+                }
             }
 
             return maxScore;

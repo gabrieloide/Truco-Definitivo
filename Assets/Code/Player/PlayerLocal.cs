@@ -1,7 +1,7 @@
 using System;
 using Code.Cards;
 using Code.GameLogic;
-// using Mirror;
+using Mirror;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
@@ -10,8 +10,14 @@ namespace Code.Player
 {
     public class PlayerLocal : MonoBehaviour
     {
-        public bool isLocalPlayer = true;
-        public bool isServer = true;
+        // In singleplayer these are always true.
+        // In multiplayer: PlayerNetworkSync (NetworkBehaviour) provides the authoritative values.
+        // NetworkClient.active guard: in singleplayer the prefab still carries an
+        // unspawned PlayerNetworkSync whose isLocalPlayer would always be false.
+        public bool isLocalPlayer => (_netSync != null && NetworkClient.active) ? _netSync.isLocalPlayer : true;
+        public bool isServer      => !NetworkClient.active || NetworkServer.active;
+
+        private Code.Networking.PlayerNetworkSync _netSync;
         public Player player;
         [HideInInspector] public CardsHandler cardsHandler;
         [HideInInspector] public PlayerControllers playerControllers;
@@ -21,18 +27,17 @@ namespace Code.Player
 
         private void Awake()
         {
+            _netSync = GetComponent<Code.Networking.PlayerNetworkSync>();
+
             if (cardsHandler == null)
                 cardsHandler = GetComponent<CardsHandler>();
 
             if (playerControllers == null)
                 playerControllers = gameObject.AddComponent<PlayerControllers>();
             
-            // Ensure interaction and movement are added if missing
+            // Ensure card interaction is added if missing
             if (GetComponent<PlayerInteract>() == null)
                 gameObject.AddComponent<PlayerInteract>();
-            
-            if (GetComponent<PlayerMovement3D>() == null)
-                gameObject.AddComponent<PlayerMovement3D>();
 
             if (player == null)
                 player = GetComponent<Player>();
@@ -53,16 +58,19 @@ namespace Code.Player
             if (!isLocalPlayer)
                 return;
 
-            // Register player to game manager for solo mode
-            if (GameManager.Instance != null)
-            {
-                GameManager.Instance.AddPlayerToServer(this);
-            }
-            else
-            {
-                Debug.LogError("[PlayerLocal] ERROR: No se encontró el GameManager al intentar registrarse.");
-            }
+            StartCoroutine(RegisterWhenGameManagerReady());
+        }
 
+        // In the multiplayer lobby (MainMenu scene) GameManager doesn't exist yet —
+        // it appears when GameScene loads, so registration is deferred, not an error.
+        // AddPlayerToServer is idempotent, so a second registration from
+        // MyNetworkingManager is harmless.
+        private System.Collections.IEnumerator RegisterWhenGameManagerReady()
+        {
+            while (GameManager.Instance == null)
+                yield return null;
+
+            GameManager.Instance.AddPlayerToServer(this);
             CmdRequestPlayerFromServer();
         }
 

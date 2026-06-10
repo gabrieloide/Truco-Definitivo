@@ -4,7 +4,7 @@ using System.Linq;
 using Code.Cards;
 using Code.Networking;
 using Code.Player;
-// using Mirror;
+using Mirror;
 using Unity.Collections;
 using UnityEngine;
 using TMPro;
@@ -18,7 +18,8 @@ namespace Code.GameLogic
         public static event Action<int, GameObject> OnTurnStarted;
         public static event Action<int, int> OnScoreChanged;
         
-        public bool isServer = true;
+        // True when this instance is authoritative (singleplayer OR multiplayer server/host)
+        public bool isServer => !NetworkClient.active || NetworkServer.active;
         private static GameManager _instance;
 
         public static GameManager Instance
@@ -149,6 +150,10 @@ namespace Code.GameLogic
             }
         }
 
+        [Header("Match Settings")]
+        public int maxPoints = 15; // Límite de puntos para ganar la partida
+        private bool _matchEnded = false;
+
         private void Awake()
         {
             Debug.Log($"[GameManager] Awake ejecutado. Escena activa: {UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}. Escena de este objeto: {gameObject.scene.name}");
@@ -160,6 +165,11 @@ namespace Code.GameLogic
             }
             
             _instance = this;
+
+            // Cargar configuración elegida en el Menú Principal (12 o 24 puntos)
+            maxPoints = Code.UI.MainMenuController.SingleplayerMaxPoints;
+            Debug.Log($"[GameManager] Límite de puntos configurado a: {maxPoints}");
+
             UnityEngine.Random.InitState((int)System.DateTime.Now.Ticks);
 
             stateMachine = gameObject.AddComponent<Code.GameLogic.States.GameStateMachine>();
@@ -245,6 +255,43 @@ namespace Code.GameLogic
 
         private void RunOnlyOnce()
         {
+            // In multiplayer, pure clients only prepare the local scene (chairs, raycaster):
+            // seating, dealing and turns are driven by the server via RPCs/SyncVars.
+            if (NetworkClient.active && !NetworkServer.active)
+            {
+                _gameSceneStarted = true;
+
+                if (Camera.main != null && Camera.main.GetComponent<UnityEngine.EventSystems.PhysicsRaycaster>() == null)
+                    Camera.main.gameObject.AddComponent<UnityEngine.EventSystems.PhysicsRaycaster>();
+
+                SeatManager.Instance?.InitializeLayout();
+                // The deck visual is the DeckCreator's own GameObject, and the client
+                // also needs DeckCreator.Instance to store the vira for envido checks.
+                EnsureDeckCreator();
+                DisableNpcsForMultiplayer();
+                return;
+            }
+
+            // Multiplayer host: prepare the scene but let MyNetworkingManager seat the
+            // connected players and call StartMultiplayerMatch() once everyone is ready.
+            if (NetworkServer.active)
+            {
+                _gameSceneStarted = true;
+
+                if (Camera.main != null && Camera.main.GetComponent<UnityEngine.EventSystems.PhysicsRaycaster>() == null)
+                    Camera.main.gameObject.AddComponent<UnityEngine.EventSystems.PhysicsRaycaster>();
+
+                if (SeatManager.Instance == null || SeatManager.Instance.InitializeLayout() == 0)
+                {
+                    Debug.LogError("[GameManager] CRITICAL: Sin sillas disponibles en multiplayer.");
+                    return;
+                }
+
+                EnsureDeckCreator();
+                DisableNpcsForMultiplayer();
+                return;
+            }
+
             Debug.Log("[GameManager] RunOnlyOnce: Iniciando configuracion de la escena de juego.");
 
             if (Camera.main != null && Camera.main.GetComponent<UnityEngine.EventSystems.PhysicsRaycaster>() == null)
@@ -253,27 +300,25 @@ namespace Code.GameLogic
             }
 
             _gameSceneStarted = true;
+
+            // 1. INICIALIZACIÓN DE SILLAS (CONTROL TOTAL)
+            if (SeatManager.Instance != null)
+            {
+                int chairCount = SeatManager.Instance.InitializeLayout();
+                if (chairCount == 0)
+                {
+                    Debug.LogError("[GameManager] CRITICAL: El SeatManager no pudo encontrar ni crear ninguna silla. Abortando inicio.");
+                    return;
+                }
+            }
+            else
+            {
+                Debug.LogError("[GameManager] CRITICAL: No se encontró SeatManager en la escena.");
+                return;
+            }
             
             // Ensure only one DeckCreator exists in the scene to prevent Vira or shuffle desyncs
-            DeckCreator deckCreator = DeckCreator.Instance;
-            Debug.Log($"[GameManager] DeckCreator.Instance = {(deckCreator != null ? deckCreator.name : "NULL")}");
-            
-            if (deckCreator == null)
-            {
-                if (deckPrefab != null)
-                {
-                    GameObject go = Instantiate(deckPrefab);
-                    go.name = "DeckCreator_Generated";
-                    deckCreator = go.GetComponent<DeckCreator>();
-                    if (deckCreator == null) deckCreator = go.AddComponent<DeckCreator>();
-                }
-                else
-                {
-                    GameObject go = new GameObject("DeckCreator_Generated");
-                    deckCreator = go.AddComponent<DeckCreator>();
-                }
-                Debug.Log($"[GameManager] Creado nuevo DeckCreator: {deckCreator.name}");
-            }
+            DeckCreator deckCreator = EnsureDeckCreator();
 
             var localPlayer = FindAnyObjectByType<PlayerLocal>();
             Debug.Log($"[GameManager] localPlayer inicial buscado en escena = {(localPlayer != null ? localPlayer.name : "NULL")}");
@@ -322,14 +367,14 @@ namespace Code.GameLogic
 
                 if (SeatManager.Instance != null)
                 {
-                    Debug.Log($"[GameManager] SeatManager.Instance is active. allChairs.Count = {SeatManager.Instance.allChairs.Count}");
+                    Debug.Log($"[GameManager] SeatManager.Instance allChairs.Count = {SeatManager.Instance.allChairs.Count}");
                     if (SeatManager.Instance.allChairs.Count > defaultLocalSeatIndex)
                     {
                         var chair = SeatManager.Instance.allChairs[defaultLocalSeatIndex];
-                        Debug.Log($"[GameManager] Requesting seat {defaultLocalSeatIndex} for {playerGameObject.name}. Is chair occupied? {chair.isOccupied}");
+                        Debug.Log($"[GameManager] Requesting seat {defaultLocalSeatIndex} for {playerGameObject.name}.");
                         SeatManager.Instance.RequestSeat(playerGameObject, chair);
                     }
-                    else
+                    else if (SeatManager.Instance.allChairs.Count > 0)
                     {
                         Debug.Log($"[GameManager] Falling back to AutoSeatLocalPlayer for {playerGameObject.name}");
                         SeatManager.Instance.AutoSeatLocalPlayer(playerGameObject);
@@ -409,6 +454,118 @@ namespace Code.GameLogic
 
             OnStartGame();
         }
+        private DeckCreator EnsureDeckCreator()
+        {
+            DeckCreator deckCreator = DeckCreator.Instance;
+            Debug.Log($"[GameManager] DeckCreator.Instance = {(deckCreator != null ? deckCreator.name : "NULL")}");
+
+            if (deckCreator == null)
+            {
+                if (deckPrefab != null)
+                {
+                    GameObject go = Instantiate(deckPrefab);
+                    go.name = "DeckCreator_Generated";
+                    deckCreator = go.GetComponent<DeckCreator>();
+                    if (deckCreator == null) deckCreator = go.AddComponent<DeckCreator>();
+                }
+                else
+                {
+                    GameObject go = new GameObject("DeckCreator_Generated");
+                    deckCreator = go.AddComponent<DeckCreator>();
+                }
+                Debug.Log($"[GameManager] Creado nuevo DeckCreator: {deckCreator.name}");
+            }
+            return deckCreator;
+        }
+
+        private void DisableNpcsForMultiplayer()
+        {
+            // Online matches are humans-only: scene NPCs would steal seats and turns.
+            foreach (var npc in FindObjectsByType<NPCPlayer>(FindObjectsSortMode.None))
+                npc.gameObject.SetActive(false);
+            npcs = new List<NPCPlayer>();
+        }
+
+        /// <summary>
+        /// Server-side match start for multiplayer. Called by MyNetworkingManager once
+        /// every connected player is ready and seated. Mirrors the singleplayer tail of
+        /// RunOnlyOnce: teams by seat parity, dealer/mano selection, then DealingState.
+        /// </summary>
+        public void StartMultiplayerMatch()
+        {
+            if (!NetworkServer.active) return;
+
+            var seatMgr = SeatManager.Instance;
+            if (seatMgr == null || seatMgr.allChairs.Count == 0)
+            {
+                Debug.LogError("[GameManager] StartMultiplayerMatch: sin sillas.");
+                return;
+            }
+
+            allPlayers = FindObjectsByType<Code.Player.Player>(FindObjectsSortMode.None).ToList();
+
+            int occupiedCount = 0;
+            for (int i = 0; i < seatMgr.allChairs.Count; i++)
+            {
+                var occupant = seatMgr.allChairs[i].occupant;
+                if (occupant == null) continue;
+                occupiedCount++;
+
+                var pComp = occupant.GetComponent<Code.Player.Player>();
+                if (pComp != null)
+                {
+                    // The lobby team wins over chair parity: in 1v1 the players sit on
+                    // facing chairs (0 and 2, both even), so parity would put them on
+                    // the same team.
+                    var occupantSync = occupant.GetComponent<Code.Networking.PlayerNetworkSync>();
+                    int teamIdx = (occupantSync != null && occupantSync.teamIndex >= 0)
+                        ? Mathf.Clamp(occupantSync.teamIndex, 0, 1)
+                        : i % 2;
+                    pComp.team = teams[teamIdx];
+                }
+            }
+
+            if (occupiedCount < 2)
+            {
+                Debug.LogError($"[GameManager] StartMultiplayerMatch: solo {occupiedCount} jugador(es) sentado(s).");
+                return;
+            }
+
+            _totalPlayersCount = occupiedCount;
+
+            dealerIndex = seatMgr.allChairs.Count - 1;
+            while (seatMgr.allChairs[dealerIndex].occupant == null)
+                dealerIndex = (dealerIndex + 1) % seatMgr.allChairs.Count;
+
+            currentManoSeatIndex = (dealerIndex + 1) % seatMgr.allChairs.Count;
+            while (seatMgr.allChairs[currentManoSeatIndex].occupant == null)
+                currentManoSeatIndex = (currentManoSeatIndex + 1) % seatMgr.allChairs.Count;
+            currentTrickStartSeatIndex = currentManoSeatIndex;
+
+            // Send each remote client its name + team index
+            foreach (var conn in NetworkServer.connections.Values)
+            {
+                if (conn.identity == null || conn is LocalConnectionToClient) continue;
+                var netSync = conn.identity.GetComponent<Code.Networking.PlayerNetworkSync>();
+                var pLocal = conn.identity.GetComponent<PlayerLocal>();
+                if (netSync == null || pLocal == null || pLocal.player == null) continue;
+
+                int teamIdx = pLocal.player.team != null ? teams.IndexOf(pLocal.player.team) : 0;
+                netSync.TargetSyncPlayerInfo(conn, pLocal.player.playerName, Mathf.Max(teamIdx, 0));
+            }
+
+            Debug.Log($"[GameManager] StartMultiplayerMatch: {occupiedCount} jugadores. Dealer={dealerIndex}, Mano={currentManoSeatIndex}.");
+            stateMachine.ChangeState(new Code.GameLogic.States.DealingState());
+        }
+
+        /// <summary>Locks the turn flag on every client (multiplayer only).</summary>
+        public void BroadcastTurnLock()
+        {
+            if (!NetworkServer.active) return;
+            foreach (var conn in NetworkServer.connections.Values)
+                conn.identity?.GetComponent<Code.Networking.PlayerNetworkSync>()?.RpcSetTurn(false);
+        }
+
         public void StartTurn(int index)
         {
             StartTurnRecursive(index, 0);
@@ -443,7 +600,13 @@ namespace Code.GameLogic
             }
 
             var playerComp = occupant.GetComponent<Code.Player.Player>();
-            if (playerComp != null) playerComp.canPlayCard = true;
+            if (playerComp != null)
+            {
+                playerComp.canPlayCard = true;
+                // In multiplayer, the owning client needs the flag too (it gates clicks)
+                if (NetworkServer.active)
+                    occupant.GetComponent<Code.Networking.PlayerNetworkSync>()?.RpcSetTurn(true);
+            }
             else
             {
                 var npc = occupant.GetComponent<NPCPlayer>();
@@ -495,7 +658,8 @@ namespace Code.GameLogic
             // Bloqueamos el turno actual para todos antes de evaluar
             var players = UnityEngine.Object.FindObjectsByType<Code.Player.Player>(UnityEngine.FindObjectsSortMode.None);
             foreach (var p in players) p.canPlayCard = false;
-            
+            BroadcastTurnLock();
+
             // Usamos ResetTurnState para asegurar que los NPCs detengan cualquier acción pendiente
             foreach (var npc in npcs) npc.ResetTurnState();
 
@@ -610,6 +774,16 @@ namespace Code.GameLogic
 
             trickWinners.Add(winnerTeam);
 
+            // Parda en la primera vuelta: entra muerte súbita — cada jugador elige UNA
+            // sola carta y esa define la mano entera (la tercera no se juega).
+            if (trickWinners.Count == 1 && winnerTeam == 0)
+            {
+                const string suddenDeathMsg = "¡PARDA! MUERTE SÚBITA: ELEGÍ UNA CARTA, LA PRÓXIMA DEFINE LA MANO";
+                if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(suddenDeathMsg, 3.5f);
+                if (NetworkServer.active)
+                    (NetworkManager.singleton as MyNetworkingManager)?.BroadcastHudEvent(suddenDeathMsg, 3.5f);
+            }
+
             // Notificamos al HUD
             RpcUpdateScores(teams[0].teamScore, teams[1].teamScore, teams[0].roundsWon, teams[1].roundsWon);
 
@@ -636,6 +810,9 @@ namespace Code.GameLogic
                 {
                     if (trickWinners[0] == 0 && trickWinners[1] != 0) handWinner = trickWinners[1];
                     else if (trickWinners[0] != 0 && trickWinners[1] == 0) handWinner = trickWinners[0];
+                    // Muerte súbita tras parda en la primera: la mano termina acá sí o sí.
+                    // Si la carta de desempate también emparda, gana el equipo Mano.
+                    else if (trickWinners[0] == 0 && trickWinners[1] == 0) handWinner = _manoTeamIndex;
                 }
                 else if (currentRound == 3)
                 {
@@ -689,12 +866,26 @@ namespace Code.GameLogic
             foreach (var npc in npcs) npc.ResetTurnState();
             var players = UnityEngine.Object.FindObjectsByType<Code.Player.Player>(UnityEngine.FindObjectsSortMode.None);
             foreach (var p in players) p.canPlayCard = false;
+            BroadcastTurnLock();
 
             StartCoroutine(ResolveHandWinnerCoroutine(teamName, points));
         }
 
         private System.Collections.IEnumerator ResolveHandWinnerCoroutine(string teamName, int points)
         {
+            // 0. Resolver Flor primero (si se cantó)
+            var announceManager = FindAnyObjectByType<AnnouncementManager>();
+            if (announceManager != null && (announceManager.WasAnnouncementCalledThisHand(AnnounceState.Flor)
+                || announceManager.WasAnnouncementCalledThisHand(AnnounceState.ALey)))
+            {
+                var flor = announceManager.GetComponentInChildren<Code.GameLogic.Announcement.FlorAnnouncement>();
+                if (flor != null)
+                {
+                    flor.UpdateTotalScore();
+                    yield return new WaitForSeconds(3.0f); // Tiempo para ver las cartas de la Flor
+                }
+            }
+
             // 1. Resolver Envido pendiente primero
             if (pendingEnvidoResolution)
             {
@@ -760,11 +951,13 @@ namespace Code.GameLogic
 
         private bool CheckForMatchWinner()
         {
+            if (_matchEnded) return true;
+
             bool gameOver = false;
             Team matchWinner = null;
             foreach (var team in teams)
             {
-                if (team.teamScore >= 30)
+                if (team.teamScore >= maxPoints)
                 {
                     gameOver = true;
                     matchWinner = team;
@@ -774,8 +967,11 @@ namespace Code.GameLogic
 
             if (gameOver && matchWinner != null)
             {
+                _matchEnded = true;
                 var playerLocal = FindAnyObjectByType<PlayerLocal>();
                 Team humanTeam = (playerLocal != null && playerLocal.player != null) ? playerLocal.player.team : null;
+
+                Debug.Log($"[GameManager] ¡PARTIDA FINALIZADA! Ganador: {matchWinner.teamName} con {matchWinner.teamScore} puntos.");
 
                 if (PlayerHUD.Instance != null)
                 {
@@ -802,23 +998,39 @@ namespace Code.GameLogic
         private System.Collections.IEnumerator DelayedQuitToMainMenu()
         {
             yield return new WaitForSeconds(6.0f);
-            
+
             if (PlayerHUD.Instance != null)
             {
                 Destroy(PlayerHUD.Instance.gameObject);
-            }
-            var playerLocal = FindAnyObjectByType<PlayerLocal>();
-            if (playerLocal != null)
-            {
-                Destroy(playerLocal.gameObject);
             }
             var debugCommands = FindAnyObjectByType<DebugCommands>();
             if (debugCommands != null)
             {
                 Destroy(debugCommands.gameObject);
             }
-            
-            Destroy(gameObject); // Destroy GameManager
+
+            // Multiplayer: stopping the session is enough — Mirror destroys the spawned
+            // player objects (a manual Destroy on a spawned identity corrupts its state)
+            // and OnClientDisconnect performs the single scene change back to the menu.
+            if (NetworkServer.active)
+            {
+                NetworkManager.singleton.StopHost();
+                yield break;
+            }
+            if (NetworkClient.active)
+            {
+                NetworkManager.singleton.StopClient();
+                yield break;
+            }
+
+            // Singleplayer: the player object is ours (DontDestroyOnLoad), clean it up
+            // manually along with this GameManager before going back.
+            var playerLocal = FindAnyObjectByType<PlayerLocal>();
+            if (playerLocal != null)
+            {
+                Destroy(playerLocal.gameObject);
+            }
+            Destroy(gameObject);
             UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
         }
 
@@ -849,6 +1061,7 @@ namespace Code.GameLogic
             foreach (var npc in npcs) npc.ResetTurnState();
             var players = UnityEngine.Object.FindObjectsByType<Code.Player.Player>(UnityEngine.FindObjectsSortMode.None);
             foreach (var p in players) p.canPlayCard = false;
+            BroadcastTurnLock();
 
             // Reset announcements state for the new hand
             var announceManager = FindAnyObjectByType<AnnouncementManager>();
@@ -900,17 +1113,21 @@ namespace Code.GameLogic
             foreach (var team in teams) team.roundsWon = 0;
         }
 
-        // [ClientRpc]
         private void RpcUpdateScores(int scoreTeam1, int scoreTeam2, int roundsTeam1 = 0, int roundsTeam2 = 0)
         {
             teams[0].teamScore = scoreTeam1;
             teams[1].teamScore = scoreTeam2;
             teams[0].roundsWon = roundsTeam1;
             teams[1].roundsWon = roundsTeam2;
-            
-            if (PlayerHUD.Instance != null) 
-            {
+
+            if (PlayerHUD.Instance != null)
                 PlayerHUD.Instance.UpdateScore(scoreTeam1, scoreTeam2, roundsTeam1, roundsTeam2);
+
+            // Broadcast to all clients in multiplayer
+            if (NetworkServer.active)
+            {
+                var netMgr = NetworkManager.singleton as MyNetworkingManager;
+                netMgr?.BroadcastScores(scoreTeam1, scoreTeam2, roundsTeam1, roundsTeam2);
             }
         }
     }

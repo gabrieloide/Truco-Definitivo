@@ -73,22 +73,31 @@ namespace Code.Cards
         /// <summary>
         /// Anima la carta al repartirse desde el mazo hacia la mano.
         /// </summary>
-        public void AnimateToHand(Vector3 startPos, Vector3 targetLocalPos, Quaternion targetLocalRot, float duration, float delay, Action onComplete = null)
+        public void AnimateToHand(Vector3 startWorldPos, Vector3 targetLocalPos, Quaternion targetLocalRot, float duration, float delay, Action onComplete = null)
         {
             KillAllTweens();
             
-            // Posición inicial (del mazo en el mundo)
-            transform.position = startPos;
-            transform.rotation = Quaternion.identity;
+            // Empezamos invisible y en escala cero hasta que el delay pase
             transform.localScale = Vector3.zero;
 
             Sequence dealSeq = DOTween.Sequence();
-            dealSeq.SetDelay(delay);
+            dealSeq.AppendInterval(delay);
             
-            // Escalado progresivo de aparición
-            dealSeq.Join(transform.DOScale(_originalScale, duration).SetEase(Ease.OutBack));
+            dealSeq.AppendCallback(() => {
+                // Justo cuando empieza el movimiento, colocamos la carta en el mazo (espacio de mundo).
+                transform.position = startWorldPos;
+                transform.rotation = Quaternion.identity;
+                
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlaySFX("card_deal_swoosh");
+                }
+            });
             
-            // Movimiento local al contenedor de la mano
+            // Escalado progresivo de aparición (Append para que sea el primero después del callback)
+            dealSeq.Append(transform.DOScale(_originalScale, duration).SetEase(Ease.OutBack));
+            
+            // Movimiento local al contenedor de la mano (Join para que ocurra al mismo tiempo que el escalado)
             dealSeq.Join(transform.DOLocalMove(targetLocalPos, duration).SetEase(Ease.OutQuad));
             
             // Rotación local a su lugar en el abanico

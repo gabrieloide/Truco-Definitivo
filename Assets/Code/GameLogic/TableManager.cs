@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Code.Cards;
 using DG.Tweening;
-// using Mirror;
+using Mirror;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Code.Scripts.Audio;
@@ -20,7 +20,6 @@ namespace Code.GameLogic
         [Header("3D Card Spawning")]
         public GameObject card3DPrefab;
 
-
         private void Awake()
         {
             if (Instance == null)
@@ -34,11 +33,17 @@ namespace Code.GameLogic
         }
 
         [Header("3D Card Transforms")]
-        [Header("3D Card Transforms")]
         public Transform viraPosition;
         public GameObject deckVisualPrefab; // Prefab for the stack of cards
-        public float viraHeightOffset = 0.02f; // Altura adicional para la vira sobre la mesa
-        public float deckHeightOffset = 0.01f; // Altura adicional para el mazo sobre la mesa
+        public float viraHeightOffset = 0.02f; 
+        public float deckHeightOffset = 0.01f; 
+
+        [Header("Placement Offsets (X, Z)")]
+        [Tooltip("Offset del mazo respecto al punto central de la mesa o silla del repartidor.")]
+        public Vector2 deckOffset = new Vector2(0.25f, -0.1f);
+        [Tooltip("Distancia de la vira respecto a la posición del mazo.")]
+        public Vector2 viraOffset = new Vector2(0f, 0.15f);
+
         private GameObject _currentViraObj;
         private GameObject _currentDeckObj;
 
@@ -51,6 +56,7 @@ namespace Code.GameLogic
                 return transform.position;
             }
         }
+        
         [Header("Table Configuration")]
         
         // Track how many cards each player has played on their spot
@@ -72,9 +78,9 @@ namespace Code.GameLogic
             Vector3 basePos = anchor.position;
             Quaternion baseRot = anchor.rotation;
 
-            // Offset para el Mazo: A la derecha y un poco atrás
-            Vector3 deckOffset = (anchor.right * 0.25f) + (anchor.forward * -0.1f);
-            Vector3 deckPos = basePos + deckOffset + (anchor.up * deckHeightOffset);
+            // Offset para el Mazo usando la variable del Inspector
+            Vector3 worldDeckOffset = (anchor.right * deckOffset.x) + (anchor.forward * deckOffset.y);
+            Vector3 deckPos = basePos + worldDeckOffset + (anchor.up * deckHeightOffset);
             Quaternion deckRot = baseRot * Quaternion.Euler(0, UnityEngine.Random.Range(-5f, 5f), 0);
 
             if (_currentDeckObj == null && DeckCreator.Instance != null)
@@ -121,10 +127,13 @@ namespace Code.GameLogic
             Vector3 basePos = anchor.position;
             Quaternion baseRot = anchor.rotation;
 
-            // Offset
-            Vector3 deckOffset = (anchor.right * 0.25f) + (anchor.forward * -0.1f);
-            Vector3 deckPos = basePos + deckOffset + (anchor.up * deckHeightOffset);
-            Vector3 viraPos = basePos + deckOffset + (anchor.forward * 0.15f) + (anchor.up * viraHeightOffset);
+            // Calculamos posición del mazo primero (base para la vira)
+            Vector3 worldDeckOffset = (anchor.right * deckOffset.x) + (anchor.forward * deckOffset.y);
+            Vector3 deckPos = basePos + worldDeckOffset + (anchor.up * deckHeightOffset);
+            
+            // La vira se posiciona relativa al mazo usando viraOffset
+            Vector3 worldViraOffset = (anchor.right * viraOffset.x) + (anchor.forward * viraOffset.y);
+            Vector3 viraPos = deckPos + worldViraOffset + (anchor.up * (viraHeightOffset - deckHeightOffset));
             
             Quaternion flatRot = baseRot * Quaternion.Euler(90f, 180f, 0f);
             
@@ -156,7 +165,7 @@ namespace Code.GameLogic
         }
 
         // [Server]
-        public void SpawnCard3D(Card card, GameObject player, Vector3? customStartPos = null)
+        public void SpawnCard3D(Card card, GameObject player, Vector3? customStartPos = null, bool isSpecialCard = false)
         {
             if (card3DPrefab == null)
             {
@@ -232,7 +241,10 @@ namespace Code.GameLogic
                 {
                     if (JuiceVFXManager.Instance != null)
                     {
-                        JuiceVFXManager.Instance.ShakeCamera(0.15f, 0.05f);
+                        if (isSpecialCard)
+                            JuiceVFXManager.Instance.ShakeCamera(0.3f, 0.15f);
+                        else
+                            JuiceVFXManager.Instance.ShakeCamera(0.15f, 0.05f);
                         JuiceVFXManager.Instance.PlayImpactParticles(targetPos);
                     }
                     if (AudioManager.Instance != null)
@@ -247,6 +259,10 @@ namespace Code.GameLogic
 
         public void AnimateCardsToDeck(System.Action onComplete = null)
         {
+            // Clients track their own spawned table cards — mirror the cleanup there
+            if (NetworkServer.active)
+                (NetworkManager.singleton as MyNetworkingManager)?.BroadcastAnimateCardsToDeck();
+
             if (_currentDeckObj == null || (_spawnedCards.Count == 0 && _currentViraObj == null))
             {
                 ClearTable();
@@ -324,9 +340,7 @@ namespace Code.GameLogic
             if (deckCreator != null && deckCreator.cardVira != null)
             {
                 card.realValue = TrucoRules.GetCardRealValue(card, deckCreator.cardVira);
-            }
-            else
-            {
+                Debug.Log($"[TableManager] PlaceCard: {card.value} de {card.suit}. RealValue={card.realValue}. Vira={deckCreator.cardVira.value} de {deckCreator.cardVira.suit}");
             }
 
             if (card.isBurned)
@@ -335,7 +349,27 @@ namespace Code.GameLogic
             }
 
             CardsInTable.Add(card);
-            SpawnCard3D(card, player, startPos);
+            bool isPericoOrPerica = card.realValue == 100 || card.realValue == 99;
+            if (isPericoOrPerica) Debug.Log("[TableManager] ¡PIEZA ESPECIAL DETECTADA (Perico/Perica)!");
+
+            SpawnCard3D(card, player, startPos, isPericoOrPerica);
+
+            // On the host, a remote player's rendered hand must lose the played card.
+            // No fallback: the local player's card was already removed by PlayCardToTable.
+            var ownerHandler = player.GetComponent<CardsHandler>();
+            ownerHandler?.RemoveRenderedCard(card.dbId, fallbackToLast: false);
+
+            // Broadcast to non-host clients in multiplayer. A burned card travels with
+            // its identity scrubbed: the value must not even reach the other clients.
+            if (NetworkServer.active)
+            {
+                int seatIdx = SeatManager.Instance?.GetPlayerSeatIndex(player) ?? -1;
+                var netMgr = NetworkManager.singleton as MyNetworkingManager;
+                if (card.isBurned)
+                    netMgr?.BroadcastCardOnTable(-1, 0, "", seatIdx, true);
+                else
+                    netMgr?.BroadcastCardOnTable(card.dbId, card.value, card.suit, seatIdx, false);
+            }
             
             // Disable turn state immediately for local player to avoid double clicks
             var playerLocal = player.GetComponent<Code.Player.PlayerLocal>();
@@ -427,7 +461,6 @@ namespace Code.GameLogic
             RpcHighestCard(winningCard, null);
             OnTrickEvaluated?.Invoke();
         }
-
 
         // [ClientRpc]
         private void RpcHighestCard(Card highestCard, Card lowestCard)

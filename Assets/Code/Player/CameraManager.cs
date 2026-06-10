@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Cinemachine; // Adjust namespace if using an older Cinemachine version
 using Code.GameLogic;
+using DG.Tweening;
 
 namespace Code.Player
 {
@@ -10,18 +11,20 @@ namespace Code.Player
     {
         public bool isLocalPlayer = true;
         [Header("Cinemachine Cameras")]
-        public CinemachineCamera vcamWalking; // The camera attached to the player's head
         public CinemachineCamera vcamSeated;  // The camera looking at the table
         public CinemachineCamera vcamAlternative; // La cámara secundaria de la mesa
 
-        [Header("Seated Camera Panning")]
-        public float panSpeed = 45f;
-        public float edgeThreshold = 0.05f; // 5% of screen edge
-        public float maxPanAngle = 40f;
-        
+        [Header("Seated View States (W/S Keys)")]
+        [Tooltip("Offset de rotación local cuando miramos las cartas (tecla S). Solo rotamos un poco hacia abajo.")]
+        public Vector3 handViewRotOffset = new Vector3(10f, 0f, 0f);
+        public float viewTransitionDuration = 0.3f;
+
         private Quaternion _seatedBaseRotation;
-        private float _currentPan = 0f;
+        private Vector3 _seatedBaseLocalPos;
         private CinemachineCamera _activeSeatedCamera;
+        private bool _isLookingAtHand = false;
+
+        public CinemachineCamera ActiveCamera => _activeSeatedCamera != null ? _activeSeatedCamera : vcamSeated;
 
         public static CameraManager Instance { get; private set; }
 
@@ -40,84 +43,58 @@ namespace Code.Player
         {
             if (!isLocalPlayer)
             {
-                if (vcamWalking != null) vcamWalking.gameObject.SetActive(false);
                 if (vcamSeated != null) vcamSeated.gameObject.SetActive(false);
-                return;
             }
-
-            var movement = GetComponent<PlayerMovement3D>();
-            if (movement != null && movement.isSeated)
-            {
-                // Ya fuimos sentados por el GameManager antes de que Start() se ejecutara, 
-                // así que no sobreescribimos la cámara.
-                return;
-            }
-
-            // Start in walking mode
-            SetWalkingCamera();
+            // Local player: the camera is set by SetSeatedCamera when the seat is assigned.
         }
 
         private void Update()
         {
             if (!isLocalPlayer || _activeSeatedCamera == null) return;
             
-            // Check if we are using the seated camera
-            if (_activeSeatedCamera.Priority > (vcamWalking != null ? vcamWalking.Priority : 0))
+            // Solo permitimos el cambio de vista si la cámara sentada está activa (prioridad alta)
+            if (_activeSeatedCamera.Priority >= 100)
             {
-                HandleEdgePanning();
+                HandleViewInput();
             }
         }
 
-        private void HandleEdgePanning()
+        private void HandleViewInput()
         {
-            if (Application.isMobilePlatform) return;
-            if (Mouse.current == null) return;
+            if (Keyboard.current == null) return;
 
-            Vector2 mousePos = Mouse.current.position.ReadValue();
-            float screenWidth = Screen.width;
-            
-            float panDirection = 0f;
-            if (mousePos.x < screenWidth * edgeThreshold)
+            // S para bajar a ver las cartas, W para subir a ver la mesa
+            if (Keyboard.current.sKey.wasPressedThisFrame && !_isLookingAtHand)
             {
-                panDirection = -1f; // Mouse on left edge
+                TransitionToView(true);
             }
-            else if (mousePos.x > screenWidth * (1f - edgeThreshold))
+            else if (Keyboard.current.wKey.wasPressedThisFrame && _isLookingAtHand)
             {
-                panDirection = 1f;  // Mouse on right edge
+                TransitionToView(false);
             }
-
-            if (panDirection != 0f)
-            {
-                _currentPan += panDirection * panSpeed * Time.deltaTime;
-                _currentPan = Mathf.Clamp(_currentPan, -maxPanAngle, maxPanAngle);
-            }
-
-            // Apply rotation around the Y axis relative to its initial orientation
-            _activeSeatedCamera.transform.rotation = _seatedBaseRotation * Quaternion.Euler(0, _currentPan, 0);
         }
 
-        public void SetWalkingCamera()
+        private void TransitionToView(bool lookAtHand)
         {
-            if (!isLocalPlayer) return;
+            _isLookingAtHand = lookAtHand;
+            if (_activeSeatedCamera == null) return;
             
-            if (_activeSeatedCamera != null) 
+            Transform targetTransform = _activeSeatedCamera.transform;
+
+            // Matar tweens previos para evitar conflictos
+            targetTransform.DOKill();
+
+            if (lookAtHand)
             {
-                // Restore rotation when standing up
-                if (_seatedBaseRotation != default(Quaternion) && _seatedBaseRotation != Quaternion.identity)
-                {
-                    _activeSeatedCamera.transform.rotation = _seatedBaseRotation;
-                }
-                _activeSeatedCamera.Priority = 0;
+                // Solo rotar ligeramente hacia abajo para ver las cartas
+                targetTransform.DOLocalRotateQuaternion(_seatedBaseRotation * Quaternion.Euler(handViewRotOffset), viewTransitionDuration).SetEase(Ease.OutQuad);
             }
-
-            if (vcamSeated != null) vcamSeated.Priority = 0;
-            if (vcamAlternative != null) vcamAlternative.Priority = 0;
-            if (vcamWalking != null) vcamWalking.Priority = 10;
+            else
+            {
+                // Volver a la rotación original de la mesa
+                targetTransform.DOLocalRotateQuaternion(_seatedBaseRotation, viewTransitionDuration).SetEase(Ease.OutQuad);
+            }
         }
-
-        [Header("Camera Pivot")]
-        [Tooltip("Asigna aquí el objeto Pivot que sigue tu vcamSeated. Si está asignado, moveremos el Pivot en lugar de la cámara.")]
-        public Transform cameraPivot;
 
         public void SetSeatedCamera(ChairInteractable chair)
         {
@@ -133,26 +110,33 @@ namespace Code.Player
                 // If falling back to the generic vcamSeated, use the parenting logic to move it
                 if (targetCamera == vcamSeated && chair != null)
                 {
-                    Transform objectToMove = cameraPivot != null ? cameraPivot : vcamSeated.transform;
-                    if (chair.cameraPosition != null)
+                    Transform anchor = (chair.cameraPosition != null) ? chair.cameraPosition : chair.sitTransform;
+                    if (anchor != null)
                     {
-                        objectToMove.SetParent(chair.cameraPosition);
-                        objectToMove.localPosition = Vector3.zero;
-                        objectToMove.localRotation = Quaternion.identity;
-                    }
-                    else if (chair.sitTransform != null)
-                    {
-                        objectToMove.SetParent(chair.sitTransform);
-                        objectToMove.localPosition = Vector3.up * 1.5f;
-                        Vector3 lookTarget = (TableManager.Instance != null && TableManager.Instance.viraPosition != null) 
-                            ? TableManager.Instance.viraPosition.position 
-                            : (TableManager.Instance != null ? TableManager.Instance.transform.position : Vector3.zero);
-                        objectToMove.LookAt(lookTarget);
+                        // IMPORTANTE: Mantener la posición de mundo antes de emparentar para que no "salte" al suelo
+                        if (chair.cameraPosition != null)
+                        {
+                            targetCamera.transform.SetParent(chair.cameraPosition);
+                            targetCamera.transform.localPosition = Vector3.zero;
+                            targetCamera.transform.localRotation = Quaternion.identity;
+                        }
+                        else
+                        {
+                            targetCamera.transform.SetParent(chair.sitTransform);
+                            targetCamera.transform.localPosition = Vector3.up * 1.5f; // Altura de ojos por defecto
+                            
+                            Vector3 lookTarget = (TableManager.Instance != null && TableManager.Instance.viraPosition != null) 
+                                ? TableManager.Instance.viraPosition.position 
+                                : (TableManager.Instance != null ? TableManager.Instance.transform.position : Vector3.zero);
+                            targetCamera.transform.LookAt(lookTarget);
+                        }
                     }
                 }
 
-                _seatedBaseRotation = targetCamera.transform.rotation;
-                _currentPan = 0f;
+                // Capturamos el estado base para volver tras un shake o cambio de vista
+                _seatedBaseLocalPos = targetCamera.transform.localPosition;
+                _seatedBaseRotation = targetCamera.transform.localRotation;
+                _isLookingAtHand = false;
 
                 // Force instant cut in Cinemachine
                 targetCamera.PreviousStateIsValid = false;
@@ -162,9 +146,8 @@ namespace Code.Player
                 Debug.LogError("[CameraManager] ERROR: No seated camera available (chair.virtualCamera and fallback vcamSeated are both null)!");
             }
 
-            if (vcamWalking != null) vcamWalking.Priority = 0;
             if (vcamAlternative != null) vcamAlternative.Priority = 0;
-            
+
             // Lower priority of the fallback camera if using chair-specific camera
             if (vcamSeated != null && vcamSeated != targetCamera)
             {
@@ -224,15 +207,10 @@ namespace Code.Player
                     _activeSeatedCamera.gameObject.SetActive(true);
                     _activeSeatedCamera.Priority = 100;
                 }
-                else if (vcamSeated != null) 
+                else if (vcamSeated != null)
                 {
                     vcamSeated.gameObject.SetActive(true);
                     vcamSeated.Priority = 100;
-                }
-                else if (vcamWalking != null) 
-                {
-                    vcamWalking.gameObject.SetActive(true);
-                    vcamWalking.Priority = 100;
                 }
 
                 if (cardsHandler != null) cardsHandler.ToggleCardsVisibility(true);
@@ -244,7 +222,6 @@ namespace Code.Player
                 vcamAlternative.Priority = 100;
                 if (_activeSeatedCamera != null) _activeSeatedCamera.Priority = 0;
                 if (vcamSeated != null) vcamSeated.Priority = 0;
-                if (vcamWalking != null) vcamWalking.Priority = 0;
 
                 if (cardsHandler != null) cardsHandler.ToggleCardsVisibility(false);
             }

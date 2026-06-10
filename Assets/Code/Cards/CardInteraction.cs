@@ -1,7 +1,8 @@
 using Code.GameLogic;
+using Code.Networking;
 using Code.Player;
 using DG.Tweening;
-// using Mirror;
+using Mirror;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Code.Scripts.Audio;
@@ -113,13 +114,6 @@ namespace Code.Cards
             var player = GetComponent<PhysicalCard3D>()?.owner;
             if (player == null || !player.isLocalPlayer) return;
 
-            var movement = player.GetComponent<PlayerMovement3D>();
-
-            if (movement != null && !movement.isSeated)
-            {
-                return;
-            }
-
             if (player.player != null && player.player.canPlayCard)
             {
                 if (!Application.isMobilePlatform)
@@ -147,6 +141,11 @@ namespace Code.Cards
             }
             else
             {
+                // Feedback de "No es tu turno" o "No puedes jugar"
+                if (JuiceVFXManager.Instance != null)
+                {
+                    JuiceVFXManager.Instance.DenyActionFeedback();
+                }
             }
         }
 
@@ -166,12 +165,32 @@ namespace Code.Cards
         public void PlayCardToTable(bool isBurned = false)
         {
             var player = GetComponent<PhysicalCard3D>()?.owner;
+            if (player == null) return;
             _isOnHand = false;
             isSelected = false;
+
+            if (player.cardsHandler != null && player.cardsHandler.mouseOutTexture != null)
+                Cursor.SetCursor(player.cardsHandler.mouseOutTexture, Vector2.zero, CursorMode.Auto);
+
+            // IMPORTANTE: Quitar la carta de la lista de la mano para que no reaparezca al cambiar de cámara
+            if (player.cardsHandler != null && player.cardsHandler.Cards.Contains(gameObject))
+            {
+                player.cardsHandler.Cards.Remove(gameObject);
+            }
             
-            Cursor.SetCursor(player.cardsHandler.mouseOutTexture, Vector2.zero, CursorMode.Auto);
-            
-            // Execute the play card command
+            // In multiplayer pure client: route through server Command
+            if (NetworkClient.active && !NetworkServer.active)
+            {
+                var netSync = player.GetComponent<PlayerNetworkSync>();
+                if (netSync != null)
+                {
+                    netSync.CmdPlayCard(Card.dbId, Card.value, Card.suit, isBurned);
+                    gameObject.SetActive(false);
+                    return;
+                }
+            }
+
+            // Singleplayer or host: execute directly
             Code.GameLogic.Architecture.ICommand playCommand = new Code.GameLogic.Architecture.PlayCardCommand(Card, player.gameObject, null, isBurned);
             playCommand.Execute();
 

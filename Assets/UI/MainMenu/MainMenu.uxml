@@ -33,12 +33,35 @@
         </engine:VisualElement>
 
         <!-- ============================================== -->
+        <!-- SCREEN: SINGLEPLAYER SETUP                     -->
+        <!-- ============================================== -->
+        <engine:VisualElement name="screen-singleplayer-setup" class="screen-container" style="display: none;">
+            <engine:VisualElement class="panel-container">
+                <engine:Label text="MODO UN JUGADOR" class="title-text" />
+                
+                <engine:VisualElement class="settings-group" style="margin-bottom: 40px;">
+                    <engine:Label text="Configura tu partida:" class="input-label" style="-unity-font-style: bold; margin-bottom: 10px;" />
+                    <engine:DropdownField name="dropdown-single-points" label="Puntos de Victoria:" choices="12,24" index="0" class="menu-dropdown" />
+                </engine:VisualElement>
+
+                <engine:Button name="btn-single-start" class="menu-btn menu-btn--primary">
+                    <engine:Label text="EMPEZAR PARTIDA" class="menu-btn__text" />
+                </engine:Button>
+
+                <engine:Button name="btn-single-back" class="menu-btn menu-btn--back" style="margin-top: 20px;">
+                    <engine:Label text="VOLVER" class="menu-btn__text" />
+                </engine:Button>
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <!-- ============================================== -->
         <!-- SCREEN: PLAY / CONNECTION                      -->
         <!-- ============================================== -->
         <engine:VisualElement name="screen-play" class="screen-container" style="display: none;">
             <engine:VisualElement class="panel-container">
                 <engine:Label text="MULTIJUGADOR" class="title-text" />
-                
+                <engine:Label name="lbl-play-status" text="" class="status-text" style="display: none;" />
+
                 <engine:VisualElement class="input-group">
                     <engine:Label text="Tu Nombre:" class="input-label" />
                     <engine:TextField name="input-nickname" class="menu-input" />
@@ -71,7 +94,12 @@
         <engine:VisualElement name="screen-lobby" class="screen-container" style="display: none;">
             <engine:VisualElement class="panel-container lobby-panel">
                 <engine:Label text="SALA DE ESPERA" class="title-text" />
-                <engine:Label name="lbl-room-code" text="CÓDIGO: ----" class="subtitle-text" />
+                <engine:VisualElement class="room-code-row">
+                    <engine:Label name="lbl-room-code" text="CÓDIGO: ----" class="subtitle-text room-code-label" />
+                    <engine:Button name="btn-copy-code" class="menu-btn menu-btn--secondary menu-btn--copy">
+                        <engine:Label text="COPIAR" class="menu-btn__text menu-btn--copy__text" />
+                    </engine:Button>
+                </engine:VisualElement>
                 
                 <engine:VisualElement class="lobby-teams-container">
                     <engine:VisualElement class="lobby-team lobby-team-card">
@@ -99,10 +127,15 @@
                     </engine:VisualElement>
                 </engine:VisualElement>
 
+                <engine:Button name="btn-lobby-switch" class="menu-btn menu-btn--secondary">
+                    <engine:Label text="CAMBIAR DE EQUIPO" class="menu-btn__text" />
+                </engine:Button>
+
                 <engine:VisualElement class="settings-group">
-                    <engine:Toggle name="toggle-flor" label="Jugar con Flor" class="menu-toggle" />
-                    <engine:DropdownField name="dropdown-points" label="Puntos:" choices="15,30" index="1" class="menu-dropdown" />
+                    <engine:DropdownField name="dropdown-points" label="Puntos de Victoria:" choices="12,24" index="0" class="menu-dropdown" />
                 </engine:VisualElement>
+
+                <engine:Label name="lbl-lobby-status" text="" class="status-text" style="display: none;" />
 
                 <engine:VisualElement class="row-buttons">
                     <engine:Button name="btn-lobby-back" class="menu-btn menu-btn--danger">
