@@ -103,7 +103,7 @@
                 
                 <engine:VisualElement class="lobby-teams-container">
                     <engine:VisualElement class="lobby-team lobby-team-card">
-                        <engine:Label text="EQUIPO 1" class="team-title" />
+                        <engine:TextField name="input-team1-name" value="EQUIPO 1" max-length="16" class="team-name-input" />
                         <engine:VisualElement class="player-slot">
                             <engine:Label name="lbl-t1-p1" text="Esperando..." class="player-name" />
                         </engine:VisualElement>
@@ -114,10 +114,16 @@
                     
                     <engine:VisualElement class="vs-badge">
                         <engine:Label text="VS" class="vs-text" />
+                        <engine:Button name="btn-lobby-swap-1" class="menu-btn menu-btn--secondary swap-btn">
+                            <engine:Label text="↔" class="menu-btn__text swap-btn__text" />
+                        </engine:Button>
+                        <engine:Button name="btn-lobby-swap-2" class="menu-btn menu-btn--secondary swap-btn">
+                            <engine:Label text="↔" class="menu-btn__text swap-btn__text" />
+                        </engine:Button>
                     </engine:VisualElement>
 
                     <engine:VisualElement class="lobby-team lobby-team-card">
-                        <engine:Label text="EQUIPO 2" class="team-title" />
+                        <engine:TextField name="input-team2-name" value="EQUIPO 2" max-length="16" class="team-name-input" />
                         <engine:VisualElement class="player-slot">
                             <engine:Label name="lbl-t2-p1" text="Esperando..." class="player-name" />
                         </engine:VisualElement>
@@ -126,10 +132,6 @@
                         </engine:VisualElement>
                     </engine:VisualElement>
                 </engine:VisualElement>
-
-                <engine:Button name="btn-lobby-switch" class="menu-btn menu-btn--secondary">
-                    <engine:Label text="CAMBIAR DE EQUIPO" class="menu-btn__text" />
-                </engine:Button>
 
                 <engine:VisualElement class="settings-group">
                     <engine:DropdownField name="dropdown-points" label="Puntos de Victoria:" choices="12,24" index="0" class="menu-dropdown" />

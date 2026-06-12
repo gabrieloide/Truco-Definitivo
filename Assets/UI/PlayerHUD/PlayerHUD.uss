@@ -431,3 +431,30 @@
     -unity-text-outline-width: 1px;
     -unity-text-outline-color: rgba(0,0,0,0.8);
 }
+/* =========================================================
+   CARD ACTION MENU (móvil): chico y centrado encima de las cartas,
+   sin ocupar todo el ancho de abajo.
+   ========================================================= */
+.card-action-menu {
+    position: absolute;
+    bottom: 25%;
+    left: 0;
+    right: 0;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.card-action-menu .hud-btn {
+    padding: 8px 18px;
+    margin: 4px;
+}
+
+.card-action-menu .hud-btn__text {
+    font-size: 18px;
+}
+
+/* Botón "mirar las cartas" (sólo móvil; en PC son las teclas W/S) */
+.hud-btn-look { right: 285px; background-color: #00695C; border-color: #26A69A; border-bottom-color: #004D40; }
+.hud-btn-look:hover { background-color: #00897B; }
+.hud-btn-look .hud-btn-icon__text { color: #ffffff; }

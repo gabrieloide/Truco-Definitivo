@@ -40,6 +40,9 @@ namespace Code.Player
         /*[SyncVar]*/ public AnnounceState _announceState = AnnounceState.None;
         public Code.Player.Team currentAnnouncerTeam;
         public string currentAnnouncerName;
+        // Silla del cantor vigente: el que responde es siempre el rival "a la derecha"
+        // (la silla siguiente en el orden de turnos). -1 = desconocida.
+        public int currentAnnouncerSeat = -1;
         public GameObject[] respondButtons;
         public string[] announcementPlayerNames = new string[2];
         private Dictionary<AnnounceState, bool> _announcementsCalledThisHand = new Dictionary<AnnounceState, bool>();
@@ -128,6 +131,7 @@ namespace Code.Player
             _announceState = AnnounceState.None;
             currentAnnouncerTeam = null;
             currentAnnouncerName = "";
+            currentAnnouncerSeat = -1;
             _localFlorSung = false;
             _florSingers.Clear();
             foreach (var p in FindObjectsByType<Code.Player.Player>(FindObjectsSortMode.None))
@@ -395,6 +399,8 @@ namespace Code.Player
 
             string playerName = playerLocal != null && playerLocal.player != null ? playerLocal.player.playerName : "Tú";
             currentAnnouncerName = playerName;
+            currentAnnouncerSeat = (playerLocal != null && SeatManager.Instance != null)
+                ? SeatManager.Instance.GetPlayerSeatIndex(playerLocal.gameObject) : -1;
 
             string teamSuffix = "";
             if (playerLocal != null && playerLocal.player != null && playerLocal.player.team != null)
@@ -561,6 +567,8 @@ namespace Code.Player
                 ? npcComp.playerName
                 : (humanComp?.player?.playerName ?? npcObj.name);
             currentAnnouncerName = npcName;
+            currentAnnouncerSeat = SeatManager.Instance != null
+                ? SeatManager.Instance.GetPlayerSeatIndex(npcObj) : -1;
 
             string teamSuffix = npcTeam != null ? $" ({npcTeam.teamName})" : "";
 
@@ -816,12 +824,30 @@ namespace Code.Player
             ShowRespondButtons();
         }
 
-        /// <summary>Server-side: finds the first human player on the opposing team and shows
-        /// the response UI on his machine (host UI directly, remote client via TargetRpc).
-        /// Returns false when no human opponent exists.</summary>
+        /// <summary>Server-side: shows the response UI to the opponent at the announcer's
+        /// RIGHT — the next occupied seat in turn order (host UI directly, remote client
+        /// via TargetRpc). Falls back to the first connected opponent when the announcer's
+        /// seat is unknown. Returns false when no human opponent exists.</summary>
         private bool TryShowResponseToHumanOpponent(Team announcerTeam)
         {
             if (!NetworkServer.active || announcerTeam == null) return false;
+
+            var seatMgr = SeatManager.Instance;
+            if (currentAnnouncerSeat >= 0 && seatMgr != null && seatMgr.allChairs.Count > 0)
+            {
+                int count = seatMgr.allChairs.Count;
+                for (int step = 1; step <= count; step++)
+                {
+                    var occupant = seatMgr.allChairs[(currentAnnouncerSeat + step) % count].occupant;
+                    if (occupant == null) continue;
+
+                    var p = occupant.GetComponent<Code.Player.Player>();
+                    if (p == null || p.team == null || p.team.teamName == announcerTeam.teamName) continue;
+
+                    var netSync = occupant.GetComponent<PlayerNetworkSync>();
+                    if (netSync != null && ShowResponseTo(netSync)) return true;
+                }
+            }
 
             foreach (var conn in NetworkServer.connections.Values)
             {
@@ -832,15 +858,22 @@ namespace Code.Player
                 if (p == null || p.team == null || p.team.teamName == announcerTeam.teamName) continue;
 
                 var netSync = identity.GetComponent<PlayerNetworkSync>();
-                if (netSync == null) continue;
-
-                if (conn is LocalConnectionToClient)
-                    ShowRespondButtons();
-                else
-                    netSync.TargetShowResponseButtons(conn, (int)_announceState, currentAnnouncerName);
-                return true;
+                if (netSync != null && ShowResponseTo(netSync)) return true;
             }
             return false;
+        }
+
+        /// <summary>Server-side: opens the response bar on this player's machine.</summary>
+        private bool ShowResponseTo(PlayerNetworkSync netSync)
+        {
+            var conn = netSync.connectionToClient;
+            if (conn == null) return false;
+
+            if (conn is LocalConnectionToClient)
+                ShowRespondButtons();
+            else
+                netSync.TargetShowResponseButtons(conn, (int)_announceState, currentAnnouncerName);
+            return true;
         }
 
         /// <summary>Server-side: does this player's dealt hand really contain flor?
@@ -950,6 +983,7 @@ namespace Code.Player
 
             // El emisor del re-envido es el jugador que presionó el botón (el humano)
             currentAnnouncerName = playerName;
+            currentAnnouncerSeat = FindSeatByPlayerName(playerName);
             string teamSuffix = "";
             var playerLocal = FindAnyObjectByType<PlayerLocal>();
             if (playerLocal != null && playerLocal.player != null && playerLocal.player.team != null)
@@ -998,6 +1032,22 @@ namespace Code.Player
             {
                 GameManager.Instance.isAnnouncementPending = false;
             }
+        }
+
+        private static int FindSeatByPlayerName(string playerName)
+        {
+            var seatMgr = SeatManager.Instance;
+            if (seatMgr == null) return -1;
+            for (int i = 0; i < seatMgr.allChairs.Count; i++)
+            {
+                var occ = seatMgr.allChairs[i].occupant;
+                if (occ == null) continue;
+                var p = occ.GetComponent<Code.Player.Player>();
+                if (p != null && p.playerName == playerName) return i;
+                var npc = occ.GetComponent<NPCPlayer>();
+                if (npc != null && npc.playerName == playerName) return i;
+            }
+            return -1;
         }
 
         private Team FindTeamByPlayerName(string playerName)

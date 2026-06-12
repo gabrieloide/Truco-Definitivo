@@ -67,6 +67,17 @@ namespace Code.Player
         private Button _cardPlayBtn;
         private Button _cardBurnBtn;
 
+        // Botón "mirar las cartas" (sólo móvil; en PC son las teclas W/S)
+        private Button _lookButton;
+        private Label _lookButtonLabel;
+
+        // Modal de fin de partida multiplayer (revancha / salir)
+        private VisualElement _matchEndModal;
+        private Label _matchEndTitle;
+        private Label _matchEndStatus;
+        private Button _matchEndRematchBtn;
+        private Button _matchEndExitBtn;
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -316,6 +327,25 @@ namespace Code.Player
             _cameraButton = _root.Q<Button>("camera-button");
             SetupButton(_cameraButton, ToggleCamera);
 
+            // Look Button (mirar cartas / mesa): en PC ya están las teclas W/S
+            _lookButton = _root.Q<Button>("look-button");
+            _lookButtonLabel = _root.Q<Label>("look-button-label");
+            SetupButton(_lookButton, ToggleHandView);
+            if (_lookButton != null)
+                _lookButton.style.display = Application.isMobilePlatform ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // Match End Modal (multiplayer)
+            _matchEndModal = _root.Q<VisualElement>("match-end-modal");
+            _matchEndTitle = _root.Q<Label>("match-end-title");
+            _matchEndStatus = _root.Q<Label>("match-end-status");
+            _matchEndRematchBtn = _root.Q<Button>("match-end-rematch-button");
+            _matchEndExitBtn = _root.Q<Button>("match-end-exit-button");
+            SetupButton(_matchEndRematchBtn, OnRematchClicked);
+            SetupButton(_matchEndExitBtn, ConfirmQuitGame);
+            // El HUD sobrevive a la recarga de escena de la revancha: arrancar limpio
+            _matchEndModal?.RemoveFromClassList("visible");
+            _matchEndRematchBtn?.SetEnabled(true);
+
             // Card Action Menu
             _cardActionMenu = _root.Q<VisualElement>("card-action-menu");
             _cardPlayBtn = _root.Q<Button>("card-play-btn");
@@ -357,6 +387,9 @@ namespace Code.Player
             CleanupButton(_quitButton, ShowQuitConfirm);
             CleanupButton(_confirmYesButton, ConfirmQuitGame);
             CleanupButton(_confirmNoButton, CancelQuit);
+            CleanupButton(_lookButton, ToggleHandView);
+            CleanupButton(_matchEndRematchBtn, OnRematchClicked);
+            CleanupButton(_matchEndExitBtn, ConfirmQuitGame);
             CleanupButton(_infoButton, ShowCardHierarchy);
             CleanupButton(_cameraButton, ToggleCamera);
 
@@ -711,7 +744,22 @@ namespace Code.Player
 
         private void ConfirmQuitGame()
         {
-            
+            // Multiplayer: hay que cortar la sesión de Mirror, NO destruir objetos a mano.
+            // StopHost/StopClient dispara OnClientDisconnect (MyNetworkingManager), que
+            // destruye el HUD, abandona el lobby de Unity Services y carga el MainMenu.
+            // Sin esto la conexión y el lobby quedaban vivos: el host nunca se enteraba
+            // de que el cliente se fue y el próximo host/join fallaba.
+            if (NetworkServer.active)
+            {
+                NetworkManager.singleton.StopHost();
+                return;
+            }
+            if (NetworkClient.active)
+            {
+                NetworkManager.singleton.StopClient();
+                return;
+            }
+
             // Destruir GameManager si existe para reiniciar la partida la próxima vez
             if (GameManager.Instance != null)
             {
@@ -794,13 +842,23 @@ namespace Code.Player
             SceneManager.LoadScene("MainMenu");
         }
 
-        private void UpdateLocalPlayerTeam()
+        private void UpdateLocalPlayerTeam() => RefreshTeamLabel();
+
+        /// <summary>Refresca el marcador con los nombres reales de los equipos
+        /// (editables en el lobby 2v2; nombres de los jugadores en 1v1).</summary>
+        public void RefreshTeamLabel()
         {
-            if (_teamLabel != null)
+            if (_teamLabel == null) return;
+
+            string t1 = "TEAM 1", t2 = "TEAM 2";
+            if (GameManager.Instance != null && GameManager.Instance.teams.Count >= 2)
             {
-                _teamLabel.text = "TEAM 1    -    TEAM 2";
-                _teamLabel.style.display = DisplayStyle.Flex;
+                if (!string.IsNullOrWhiteSpace(GameManager.Instance.teams[0].teamName)) t1 = GameManager.Instance.teams[0].teamName;
+                if (!string.IsNullOrWhiteSpace(GameManager.Instance.teams[1].teamName)) t2 = GameManager.Instance.teams[1].teamName;
             }
+
+            _teamLabel.text = $"{t1.ToUpper()}    -    {t2.ToUpper()}";
+            _teamLabel.style.display = DisplayStyle.Flex;
         }
 
         public void ShowCardHierarchy()
@@ -829,24 +887,73 @@ namespace Code.Player
 
         private void ToggleCamera()
         {
+            FindLocalCameraManager()?.ToggleAlternativeCamera();
+        }
+
+        private CameraManager FindLocalCameraManager()
+        {
             if (NetworkClient.localPlayer != null)
             {
                 var camManager = NetworkClient.localPlayer.GetComponentInChildren<CameraManager>(true);
-                if (camManager != null)
-                {
-                    camManager.ToggleAlternativeCamera();
-                    return;
-                }
+                if (camManager != null) return camManager;
             }
 
             var camManagers = FindObjectsByType<CameraManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (var cm in camManagers)
-            {
                 if (cm.isLocalPlayer)
-                {
-                    cm.ToggleAlternativeCamera();
-                    return;
-                }
+                    return cm;
+            return null;
+        }
+
+        private void ToggleHandView()
+        {
+            var cm = FindLocalCameraManager();
+            if (cm == null) return;
+            cm.ToggleHandView();
+            // V = mirar las cartas (abajo), ^ = volver a la mesa
+            if (_lookButtonLabel != null)
+                _lookButtonLabel.text = cm.IsLookingAtHand ? "^" : "V";
+        }
+
+        // ─────────────────────── Fin de partida multiplayer ────────────────
+
+        /// <summary>Muestra el modal de revancha. El servidor lo dispara en todos
+        /// (host vía GameManager, clientes vía RpcMatchEnded).</summary>
+        public void ShowMatchEndModal(string winnerText)
+        {
+            if (_matchEndModal == null) return;
+
+            if (_matchEndTitle != null) _matchEndTitle.text = winnerText;
+            if (_matchEndStatus != null)
+                _matchEndStatus.text = NetworkServer.active
+                    ? "Sos el host: la revancha arranca para todos."
+                    : "La revancha arranca cuando el host la acepte.";
+
+            _matchEndRematchBtn?.SetEnabled(true);
+            _matchEndModal.AddToClassList("visible");
+        }
+
+        private void OnRematchClicked()
+        {
+            if (NetworkServer.active)
+            {
+                // Host: recargar GameScene reinicia el GameManager (y los puntajes)
+                // para todos; los player objects de Mirror sobreviven al cambio.
+                var netMgr = NetworkManager.singleton as MyNetworkingManager;
+                netMgr?.RestartMatch();
+                return;
+            }
+
+            if (NetworkClient.active)
+            {
+                // Cliente: avisarle al host que queremos revancha.
+                var sync = NetworkClient.localPlayer != null
+                    ? NetworkClient.localPlayer.GetComponent<Code.Networking.PlayerNetworkSync>()
+                    : null;
+                sync?.CmdRequestRematch();
+
+                if (_matchEndStatus != null) _matchEndStatus.text = "Revancha pedida. Esperando al host...";
+                _matchEndRematchBtn?.SetEnabled(false);
             }
         }
 

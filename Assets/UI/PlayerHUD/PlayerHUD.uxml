@@ -27,6 +27,9 @@
                 </engine:VisualElement>
             </engine:VisualElement>
 
+            <engine:Button name="look-button" class="hud-btn-icon hud-btn-look">
+                <engine:Label name="look-button-label" text="V" class="hud-btn-icon__text" />
+            </engine:Button>
             <engine:Button name="camera-button" class="hud-btn-icon hud-btn-camera">
                 <engine:Label text="O" class="hud-btn-icon__text" />
             </engine:Button>
@@ -79,7 +82,7 @@
         </engine:VisualElement>
 
         <!-- CARD ACTION MENU -->
-        <engine:VisualElement name="card-action-menu" class="card-action-menu" style="display: none;">
+        <engine:VisualElement name="card-action-menu" class="card-action-menu" picking-mode="Ignore" style="display: none;">
             <engine:Button name="card-play-btn" class="hud-btn hud-btn--accept" style="margin-right: 10px;">
                 <engine:Label text="JUGAR" class="hud-btn__text" />
             </engine:Button>
@@ -124,6 +127,22 @@
                 <engine:Button name="quit-button" class="hud-btn hud-btn--decline" style="align-self: center; margin-top: 20px; width: 200px;">
                     <engine:Label text="SALIR AL MENÚ" class="hud-btn__text" />
                 </engine:Button>
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <!-- MATCH END MODAL (multiplayer: revancha o salir) -->
+        <engine:VisualElement name="match-end-modal" class="hierarchy-modal-overlay">
+            <engine:VisualElement class="hierarchy-panel" style="width: 560px;">
+                <engine:Label name="match-end-title" text="FIN DE LA PARTIDA" class="hierarchy-title" style="white-space: normal; text-align: center;" />
+                <engine:Label name="match-end-status" text="" class="hierarchy-item" style="white-space: normal; -unity-text-align: middle-center; margin-top: 4px;" />
+                <engine:VisualElement style="flex-direction: row; justify-content: space-around; margin-top: 30px; width: 100%;">
+                    <engine:Button name="match-end-rematch-button" class="hud-btn hud-btn--truco" style="width: 210px;">
+                        <engine:Label text="REVANCHA" class="hud-btn__text" />
+                    </engine:Button>
+                    <engine:Button name="match-end-exit-button" class="hud-btn hud-btn--decline" style="width: 210px;">
+                        <engine:Label text="SALIR AL MENÚ" class="hud-btn__text" />
+                    </engine:Button>
+                </engine:VisualElement>
             </engine:VisualElement>
         </engine:VisualElement>
 

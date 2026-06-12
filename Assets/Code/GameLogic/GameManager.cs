@@ -840,6 +840,19 @@ namespace Code.GameLogic
             }
         }
 
+        /// <summary>Índice (0/1) de un equipo dentro de la lista oficial. Compara por
+        /// referencia y, como red de seguridad, por nombre: en multiplayer los equipos
+        /// se renombran en el lobby, así que comparar contra "Team 1"/"Team 2" no sirve.</summary>
+        public int GetTeamIndex(Team team)
+        {
+            if (team == null) return -1;
+            int idx = teams.IndexOf(team);
+            if (idx >= 0) return idx;
+            for (int i = 0; i < teams.Count; i++)
+                if (teams[i].teamName == team.teamName) return i;
+            return -1;
+        }
+
         public void AddAnnouncementPoints(string teamName, int points)
         {
             foreach (var team in teams)
@@ -893,7 +906,7 @@ namespace Code.GameLogic
                 
                 if (PlayerHUD.Instance != null)
                 {
-                    PlayerHUD.Instance.NotifyEvent($"ENVIDO: TEAM 1 ({pendingEnvidoScoreTeam1}) VS TEAM 2 ({pendingEnvidoScoreTeam2})", 3.0f);
+                    PlayerHUD.Instance.NotifyEvent($"ENVIDO: {teams[0].teamName.ToUpper()} ({pendingEnvidoScoreTeam1}) VS {teams[1].teamName.ToUpper()} ({pendingEnvidoScoreTeam2})", 3.0f);
                 }
                 
                 foreach (var team in teams)
@@ -989,10 +1002,28 @@ namespace Code.GameLogic
                         AudioManager.Instance.PlaySFX("match_defeat_sadness");
                     }
                 }
+                string winnerText = $"¡{matchWinner.teamName.ToUpper()} GANA LA PARTIDA!";
+
+                // Multiplayer: en vez de auto-salir, todos ven el modal de
+                // revancha/salir (clientes vía RPC, host con el mismo delay local).
+                if (Mirror.NetworkServer.active)
+                {
+                    (Mirror.NetworkManager.singleton as MyNetworkingManager)?.BroadcastMatchEnded(winnerText);
+                    StartCoroutine(ShowMatchEndModalAfterDelay(winnerText));
+                    return true;
+                }
+
                 StartCoroutine(DelayedQuitToMainMenu());
                 return true;
             }
             return false;
+        }
+
+        private System.Collections.IEnumerator ShowMatchEndModalAfterDelay(string winnerText)
+        {
+            // Mismo delay que usan los clientes: ver el banner y las cartas primero.
+            yield return new WaitForSeconds(3.0f);
+            PlayerHUD.Instance?.ShowMatchEndModal(winnerText);
         }
 
         private System.Collections.IEnumerator DelayedQuitToMainMenu()

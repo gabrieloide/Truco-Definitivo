@@ -65,18 +65,28 @@ namespace Code.Networking
             ApplyPlayerName(playerName);
         }
 
-        /// <summary>Client→server: move this player to the opposite lobby team if it has room.</summary>
+        /// <summary>Client→server: rename this player's own lobby team (2v2).</summary>
         [Command]
-        public void CmdSwitchTeam()
+        public void CmdSetTeamName(string newName)
         {
-            int target = teamIndex == 0 ? 1 : 0;
-            int occupied = 0;
-            foreach (var sync in FindObjectsByType<PlayerNetworkSync>(FindObjectsSortMode.None))
-                if (sync != this && sync.teamIndex == target)
-                    occupied++;
+            var netMgr = NetworkManager.singleton as MyNetworkingManager;
+            netMgr?.SetTeamName(Mathf.Clamp(teamIndex, 0, 1), newName);
+        }
 
-            if (occupied >= 2) return; // target team is full
-            teamIndex = target;
+        /// <summary>Server→clients: current team names. Updates the lobby UI and,
+        /// when the match is running, the in-game scoreboard. Runs on the host's
+        /// client too (no NetworkServer guard) so its lobby fields stay in sync.</summary>
+        [ClientRpc]
+        public void RpcSyncTeamNames(string team1, string team2)
+        {
+            if (!NetworkServer.active && GameManager.Instance != null && GameManager.Instance.teams.Count >= 2)
+            {
+                GameManager.Instance.teams[0].teamName = team1;
+                GameManager.Instance.teams[1].teamName = team2;
+                PlayerHUD.Instance?.RefreshTeamLabel();
+            }
+
+            Code.UI.MainMenuController.Instance?.ApplyTeamNames(team1, team2);
         }
 
         private void OnSeatIndexChanged(int _, int newSeat)
@@ -259,6 +269,31 @@ namespace Code.Networking
         {
             if (NetworkServer.active) return; // host already displayed it
             PlayerHUD.Instance?.NotifyEventLocal(message, duration);
+        }
+
+        /// <summary>Server→clients: the match is over. Each pure client shows the
+        /// rematch/exit modal locally instead of waiting for the host's disconnect.</summary>
+        [ClientRpc]
+        public void RpcMatchEnded(string winnerText)
+        {
+            if (NetworkServer.active) return; // the host shows the modal via GameManager
+            StartCoroutine(ShowMatchEndModalDelayed(winnerText));
+        }
+
+        private System.Collections.IEnumerator ShowMatchEndModalDelayed(string winnerText)
+        {
+            // Dejar ver el banner de victoria y las cartas antes de tapar con el modal.
+            yield return new WaitForSeconds(3.0f);
+            PlayerHUD.Instance?.ShowMatchEndModal(winnerText);
+        }
+
+        /// <summary>Client→server: this player wants a rematch. The host sees the
+        /// request through the mirrored HUD notification and decides.</summary>
+        [Command]
+        public void CmdRequestRematch()
+        {
+            string requester = string.IsNullOrWhiteSpace(playerName) ? "Un jugador" : playerName;
+            PlayerHUD.Instance?.NotifyEvent($"¡{requester.ToUpper()} QUIERE REVANCHA!", 4f);
         }
 
         // ──────────────────────── SERVER → this client only ───────────────

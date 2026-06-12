@@ -62,7 +62,7 @@ namespace Code.GameLogic.Announcement
 
         private class FlorData
         {
-            public string TeamName;
+            public int TeamIndex; // Índice en GameManager.teams (los nombres cambian en multiplayer)
             public int Points;
             public int ComparisonScore;
             public string PlayerName;
@@ -84,6 +84,8 @@ namespace Code.GameLogic.Announcement
 
             List<FlorData> allFlores = new List<FlorData>();
 
+            var gm = GameManager.Instance;
+            if (gm == null || gm.teams.Count < 2) return;
             var allPlayers = FindObjectsByType<Code.Player.Player>(FindObjectsSortMode.None);
             var allNpcs = FindObjectsByType<NPCPlayer>(FindObjectsSortMode.None);
 
@@ -99,9 +101,13 @@ namespace Code.GameLogic.Announcement
                 {
                     if (TrucoRules.IsFlor(cardsHandler.InitialHand, vira))
                     {
+                        // Por índice de equipo y no por nombre: en multiplayer los
+                        // equipos se renombran y "Team 1"/"Team 2" no matcheaba nunca,
+                        // así que la flor jamás sumaba puntos.
+                        int teamIdx = gm.GetTeamIndex(p.team);
                         allFlores.Add(new FlorData
                         {
-                            TeamName = p.team != null ? p.team.teamName : "Team 1",
+                            TeamIndex = teamIdx >= 0 ? teamIdx : 0,
                             Points = TrucoRules.CalculateFlorPoints(cardsHandler.InitialHand, vira),
                             ComparisonScore = TrucoRules.CalculateFlorComparisonScore(cardsHandler.InitialHand, vira),
                             PlayerName = p.playerName
@@ -114,9 +120,10 @@ namespace Code.GameLogic.Announcement
             {
                 if (npc.initialHand.Count >= 3 && TrucoRules.IsFlor(npc.initialHand, vira))
                 {
+                    int teamIdx = gm.GetTeamIndex(npc.team);
                     allFlores.Add(new FlorData
                     {
-                        TeamName = npc.team != null ? npc.team.teamName : "Team 2",
+                        TeamIndex = teamIdx >= 0 ? teamIdx : 1,
                         Points = TrucoRules.CalculateFlorPoints(npc.initialHand, vira),
                         ComparisonScore = TrucoRules.CalculateFlorComparisonScore(npc.initialHand, vira),
                         PlayerName = npc.playerName
@@ -131,8 +138,8 @@ namespace Code.GameLogic.Announcement
 
             _pointsAwardedThisHand = true;
 
-            var team1Flores = allFlores.FindAll(f => f.TeamName == "Team 1");
-            var team2Flores = allFlores.FindAll(f => f.TeamName == "Team 2");
+            var team1Flores = allFlores.FindAll(f => f.TeamIndex == 0);
+            var team2Flores = allFlores.FindAll(f => f.TeamIndex == 1);
 
 
             if (team1Flores.Count > 0 && team2Flores.Count == 0)
@@ -140,18 +147,18 @@ namespace Code.GameLogic.Announcement
                 // Solo el Equipo 1 tiene Flor
                 int totalPoints = 0;
                 foreach (var f in team1Flores) totalPoints += f.Points;
-                GameManager.Instance.AddAnnouncementPoints("Team 1", totalPoints);
+                gm.AddAnnouncementPoints(gm.teams[0].teamName, totalPoints);
                 if (PlayerHUD.Instance != null)
-                    PlayerHUD.Instance.NotifyEvent($"¡FLOR! TEAM 1 GANA +{totalPoints} PIEDRAS", 3.5f);
+                    PlayerHUD.Instance.NotifyEvent($"¡FLOR! {gm.teams[0].teamName.ToUpper()} GANA +{totalPoints} PIEDRAS", 3.5f);
             }
             else if (team2Flores.Count > 0 && team1Flores.Count == 0)
             {
                 // Solo el Equipo 2 tiene Flor
                 int totalPoints = 0;
                 foreach (var f in team2Flores) totalPoints += f.Points;
-                GameManager.Instance.AddAnnouncementPoints("Team 2", totalPoints);
+                gm.AddAnnouncementPoints(gm.teams[1].teamName, totalPoints);
                 if (PlayerHUD.Instance != null)
-                    PlayerHUD.Instance.NotifyEvent($"¡FLOR! TEAM 2 GANA +{totalPoints} PIEDRAS", 3.5f);
+                    PlayerHUD.Instance.NotifyEvent($"¡FLOR! {gm.teams[1].teamName.ToUpper()} GANA +{totalPoints} PIEDRAS", 3.5f);
             }
             else if (team1Flores.Count > 0 && team2Flores.Count > 0)
             {
@@ -169,27 +176,27 @@ namespace Code.GameLogic.Announcement
                     if (f.ComparisonScore > bestTeam2.ComparisonScore) bestTeam2 = f;
                 }
 
-                string winnerTeam = "";
+                int winnerIdx;
                 if (bestTeam1.ComparisonScore > bestTeam2.ComparisonScore)
                 {
-                    winnerTeam = "Team 1";
+                    winnerIdx = 0;
                 }
                 else if (bestTeam2.ComparisonScore > bestTeam1.ComparisonScore)
                 {
-                    winnerTeam = "Team 2";
+                    winnerIdx = 1;
                 }
                 else
                 {
                     // Empate en puntaje de Flor: Gana el equipo que es Mano
-                    int manoTeamIndex = GameManager.Instance.ManoTeamIndex;
-                    winnerTeam = "Team " + manoTeamIndex;
+                    winnerIdx = Mathf.Clamp(gm.ManoTeamIndex - 1, 0, 1);
                 }
+                string winnerTeam = gm.teams[winnerIdx].teamName;
 
                 int totalPoints = 0;
                 foreach (var f in allFlores) totalPoints += f.Points;
 
                 // Primero agregar los puntos (muestra notificación genérica brevemente)
-                GameManager.Instance.AddAnnouncementPoints(winnerTeam, totalPoints);
+                gm.AddAnnouncementPoints(winnerTeam, totalPoints);
 
                 // Luego sobreescribir con la notificación detallada de Contraflor para que
                 // el jugador entienda por qué ganó/perdió (de lo contrario la notificación

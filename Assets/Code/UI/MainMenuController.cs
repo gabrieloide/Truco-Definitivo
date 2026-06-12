@@ -13,6 +13,9 @@ namespace Code.UI
     {
         public static int SingleplayerMaxPoints = 12;
 
+        // Para que los RPCs (PlayerNetworkSync) puedan empujar datos al lobby UI.
+        public static MainMenuController Instance { get; private set; }
+
         private UIDocument _uiDocument;
         private VisualElement _root;
 
@@ -31,14 +34,23 @@ namespace Code.UI
         private Label _lblT1P1, _lblT1P2, _lblT2P1, _lblT2P2;
         private Button _btnLobbyStart;
         private Button _btnLobbyReady;
+        private Button _btnSwapRow1, _btnSwapRow2;
         private Label _lblPlayStatus;
         private Label _lblLobbyStatus;
 
         private float _lobbyRefreshTimer;
         private Coroutine _statusRoutine;
 
+        // Enter puede disparar KeyDown + NavigationSubmit en el mismo frame:
+        // sin este guard se intentaba unir dos veces a la misma sala.
+        private bool _isConnecting;
+
+        // Campos editables de nombre de equipo en el lobby (índice = equipo)
+        private readonly TextField[] _teamNameFields = new TextField[2];
+
         private void OnEnable()
         {
+            Instance = this;
             _uiDocument = GetComponent<UIDocument>();
             if (_uiDocument == null) return;
 
@@ -67,6 +79,8 @@ namespace Code.UI
             _lblT2P2      = _root.Q<Label>("lbl-t2-p2");
             _btnLobbyStart = _root.Q<Button>("btn-lobby-start");
             _btnLobbyReady = _root.Q<Button>("btn-lobby-ready");
+            _btnSwapRow1   = _root.Q<Button>("btn-lobby-swap-1");
+            _btnSwapRow2   = _root.Q<Button>("btn-lobby-swap-2");
             _lblPlayStatus  = _root.Q<Label>("lbl-play-status");
             _lblLobbyStatus = _root.Q<Label>("lbl-lobby-status");
 
@@ -98,7 +112,8 @@ namespace Code.UI
             Bind("btn-lobby-back",   HandleLeaveLobby);
             Bind("btn-lobby-ready",  HandleReadyState);
             Bind("btn-lobby-start",  HandleStartGame);
-            Bind("btn-lobby-switch", HandleSwitchTeam);
+            Bind("btn-lobby-swap-1", () => HandleSwapRow(0));
+            Bind("btn-lobby-swap-2", () => HandleSwapRow(1));
             Bind("btn-copy-code",    HandleCopyRoomCode);
 
             // El código en sí también copia al clickearlo
@@ -107,6 +122,47 @@ namespace Code.UI
             // Only host sees Start button
             if (_btnLobbyStart != null)
                 _btnLobbyStart.style.display = DisplayStyle.None;
+
+            // Enter dentro del campo de código = unirse directo, sin tocar el botón.
+            var roomCodeField = _root.Q<TextField>("input-room-code");
+            if (roomCodeField != null)
+            {
+                // TrickleDown: el TextElement interno consume el KeyDown antes de
+                // que suba en burbuja, así que hay que escucharlo en bajada.
+                roomCodeField.RegisterCallback<KeyDownEvent>(evt =>
+                {
+                    if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter) return;
+                    evt.StopPropagation();
+                    HandleJoinRoom();
+                }, TrickleDown.TrickleDown);
+
+                // Teclados táctiles mandan submit de navegación en vez de KeyDown.
+                roomCodeField.RegisterCallback<NavigationSubmitEvent>(evt =>
+                {
+                    evt.StopPropagation();
+                    HandleJoinRoom();
+                });
+            }
+
+            // Nombres de equipo editables (2v2). Se mandan al server al perder el
+            // foco o con Enter; el server los valida y los reparte a todos.
+            _teamNameFields[0] = _root.Q<TextField>("input-team1-name");
+            _teamNameFields[1] = _root.Q<TextField>("input-team2-name");
+            for (int i = 0; i < 2; i++)
+            {
+                int teamIdx = i; // copia para la clausura
+                var field = _teamNameFields[i];
+                if (field == null) continue;
+
+                field.maxLength = 16;
+                field.RegisterCallback<FocusOutEvent>(_ => SendTeamRename(teamIdx));
+                field.RegisterCallback<KeyDownEvent>(evt =>
+                {
+                    if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter) return;
+                    evt.StopPropagation();
+                    SendTeamRename(teamIdx);
+                }, TrickleDown.TrickleDown);
+            }
 
             // Nickname persistente entre sesiones (en WebGL sobrevive a recargar la página)
             var nickField = _root.Q<TextField>("input-nickname");
@@ -123,6 +179,11 @@ namespace Code.UI
             }
 
             ShowScreen(_screenMain);
+        }
+
+        private void OnDisable()
+        {
+            if (Instance == this) Instance = null;
         }
 
         private void Bind(string name, Action callback)
@@ -154,6 +215,8 @@ namespace Code.UI
 
         private async void HandleHostRoom()
         {
+            if (_isConnecting) return;
+
             string playerName = GetNickname();
             if (string.IsNullOrWhiteSpace(playerName))
             {
@@ -161,6 +224,7 @@ namespace Code.UI
                 return;
             }
 
+            _isConnecting = true;
             SetButtonsInteractable(false);
 
             try
@@ -184,12 +248,18 @@ namespace Code.UI
                 ShowStatus(_lblPlayStatus, "No se pudo crear la sala. Revisá tu conexión e intentá de nuevo.");
                 SetButtonsInteractable(true);
             }
+            finally
+            {
+                _isConnecting = false;
+            }
         }
 
         // ─────────────────────── Multiplayer CLIENT ───────────────────────
 
         private async void HandleJoinRoom()
         {
+            if (_isConnecting) return;
+
             string playerName = GetNickname();
             if (string.IsNullOrWhiteSpace(playerName))
             {
@@ -206,6 +276,7 @@ namespace Code.UI
                 return;
             }
 
+            _isConnecting = true;
             SetButtonsInteractable(false);
 
             try
@@ -228,6 +299,10 @@ namespace Code.UI
                 ShowStatus(_lblPlayStatus, "Ese código no funciona: la sala no existe o ya se cerró. Revisalo e intentá de nuevo.");
                 SetButtonsInteractable(true);
             }
+            finally
+            {
+                _isConnecting = false;
+            }
         }
 
         // ─────────────────────── Lobby screen ─────────────────────────────
@@ -239,6 +314,10 @@ namespace Code.UI
             if (_lblRoomCode  != null) _lblRoomCode.text  = $"CÓDIGO: {code}";
             if (_btnLobbyStart != null) _btnLobbyStart.style.display = isHost ? DisplayStyle.Flex : DisplayStyle.None;
             if (_btnLobbyReady != null) _btnLobbyReady.style.display = isHost ? DisplayStyle.None : DisplayStyle.Flex;
+
+            // Intercambio de jugadores entre equipos: decisión exclusiva del host.
+            if (_btnSwapRow1 != null) _btnSwapRow1.style.display = isHost ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_btnSwapRow2 != null) _btnSwapRow2.style.display = isHost ? DisplayStyle.Flex : DisplayStyle.None;
 
             // Only the host decides the match settings
             var dropdown = _root.Q<DropdownField>("dropdown-points");
@@ -264,11 +343,18 @@ namespace Code.UI
         {
             var team1 = new List<string>();
             var team2 = new List<string>();
+            int localTeam = -1;
 
-            foreach (var sync in FindObjectsByType<PlayerNetworkSync>(FindObjectsSortMode.None))
+            // Orden estable por netId (orden de ingreso a la sala): así todas las
+            // máquinas ven las mismas filas y el swap del host afecta a quien se ve.
+            foreach (var sync in FindObjectsByType<PlayerNetworkSync>(FindObjectsSortMode.None).OrderBy(s => s.netId))
             {
                 string displayName = string.IsNullOrEmpty(sync.playerName) ? "Jugador" : sync.playerName;
-                if (sync.isLocalPlayer) displayName += " (Tú)";
+                if (sync.isLocalPlayer)
+                {
+                    displayName += " (Tú)";
+                    localTeam = Mathf.Clamp(sync.teamIndex, 0, 1);
+                }
                 if (sync.teamIndex == 1) team2.Add(displayName);
                 else team1.Add(displayName);
             }
@@ -277,6 +363,10 @@ namespace Code.UI
             SetPlayerSlot(_lblT1P2, team1, 1);
             SetPlayerSlot(_lblT2P1, team2, 0);
             SetPlayerSlot(_lblT2P2, team2, 1);
+
+            // Sólo se puede renombrar el equipo propio
+            for (int i = 0; i < 2; i++)
+                _teamNameFields[i]?.SetEnabled(i == localTeam);
         }
 
         private static void SetPlayerSlot(Label lbl, List<string> names, int idx)
@@ -285,26 +375,43 @@ namespace Code.UI
             lbl.text = idx < names.Count ? names[idx] : "Esperando...";
         }
 
-        private void HandleSwitchTeam()
+        /// <summary>Mandar el rename al server si el jugador local pertenece a ese equipo.</summary>
+        private void SendTeamRename(int teamIdx)
         {
+            var field = _teamNameFields[teamIdx];
+            if (field == null) return;
+
             var localPlayer = NetworkClient.localPlayer;
             var sync = localPlayer != null ? localPlayer.GetComponent<PlayerNetworkSync>() : null;
-            if (sync == null)
-            {
-                ShowStatus(_lblLobbyStatus, "Todavía no estás conectado a la sala.");
-                return;
-            }
+            if (sync == null || Mathf.Clamp(sync.teamIndex, 0, 1) != teamIdx) return;
 
-            int target = sync.teamIndex == 0 ? 1 : 0;
-            int occupied = FindObjectsByType<PlayerNetworkSync>(FindObjectsSortMode.None)
-                .Count(s => s != sync && s.teamIndex == target);
-            if (occupied >= 2)
-            {
-                ShowStatus(_lblLobbyStatus, $"El Equipo {target + 1} está completo.");
-                return;
-            }
+            sync.CmdSetTeamName(field.value);
+        }
 
-            sync.CmdSwitchTeam();
+        /// <summary>Llamado por RpcSyncTeamNames: refresca los campos sin pisar
+        /// lo que el jugador esté escribiendo en ese momento.</summary>
+        public void ApplyTeamNames(string team1, string team2)
+        {
+            var names = new[] { team1, team2 };
+            for (int i = 0; i < 2; i++)
+            {
+                var field = _teamNameFields[i];
+                if (field == null || string.IsNullOrEmpty(names[i])) continue;
+                // El foco lo tiene el TextElement interno, no el TextField en sí
+                var focused = field.focusController?.focusedElement as VisualElement;
+                if (focused != null && (focused == field || field.Contains(focused))) continue;
+                field.SetValueWithoutNotify(names[i]);
+            }
+        }
+
+        /// <summary>Host only: swaps the two players shown on the given lobby row
+        /// (one per team). With a single player on the row it just moves them across.</summary>
+        private void HandleSwapRow(int row)
+        {
+            if (!NetworkServer.active) return;
+
+            var netMgr = NetworkManager.singleton as MyNetworkingManager;
+            netMgr?.SwapLobbyRow(row);
         }
 
 #if UNITY_WEBGL && !UNITY_EDITOR

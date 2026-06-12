@@ -16,6 +16,10 @@ public class MyNetworkingManager : NetworkManager
     public override void OnStartHost()
     {
         base.OnStartHost();
+        // Each room starts with the default team names (the manager is DDOL,
+        // so names from a previous room would leak into the new one).
+        _lobbyTeamNames[0] = "EQUIPO 1";
+        _lobbyTeamNames[1] = "EQUIPO 2";
         Debug.Log("[MyNetworkingManager] Host started.");
     }
 
@@ -77,6 +81,10 @@ public class MyNetworkingManager : NetworkManager
         var hud = PlayerHUD.Instance;
         if (hud != null) Destroy(hud.gameObject);
 
+        // DebugCommands is DontDestroyOnLoad too — it must not leak into the menu.
+        var debugCommands = FindAnyObjectByType<DebugCommands>();
+        if (debugCommands != null) Destroy(debugCommands.gameObject);
+
         // Leave the lobby too, so the player can host/join a fresh room right away.
         UnityServicesManager.Instance?.LeaveLobby();
 
@@ -121,6 +129,35 @@ public class MyNetworkingManager : NetworkManager
             if (netSync.teamIndex < 0)
                 netSync.teamIndex = GetBalancedTeamIndex(netSync);
         }
+
+        // The newcomer needs the current team names (it missed earlier renames).
+        BroadcastTeamNames(_lobbyTeamNames[0], _lobbyTeamNames[1]);
+    }
+
+    /// <summary>Host only: swaps the two lobby players shown on the same row (one per
+    /// team). Row order matches the lobby UI: players sorted by netId (join order)
+    /// within each team. With only one player on the row, that player just moves to
+    /// the other team. This replaces the old self-service team switch, which couldn't
+    /// work with a full 2v2 room (both teams full = nobody could move).</summary>
+    [Server]
+    public void SwapLobbyRow(int row)
+    {
+        if (row < 0 || row > 1) return;
+
+        var team0 = new List<PlayerNetworkSync>();
+        var team1 = new List<PlayerNetworkSync>();
+        foreach (var sync in FindObjectsByType<PlayerNetworkSync>(FindObjectsSortMode.None).OrderBy(s => s.netId))
+        {
+            if (sync.teamIndex == 1) team1.Add(sync);
+            else team0.Add(sync);
+        }
+
+        var left  = row < team0.Count ? team0[row] : null;
+        var right = row < team1.Count ? team1[row] : null;
+        if (left == null && right == null) return;
+
+        if (left  != null) left.teamIndex  = 1;
+        if (right != null) right.teamIndex = 0;
     }
 
     /// <summary>Team with fewer lobby players; ties go to team 0.</summary>
@@ -198,6 +235,8 @@ public class MyNetworkingManager : NetworkManager
             seatMgr.RequestSeat(conn.identity.gameObject, seatMgr.allChairs[seat]);
             netSync.seatIndex = seat;
         }
+
+        ApplyTeamNamesForMatch(oneVsOne);
 
         gameMgr.StartMultiplayerMatch();
     }
@@ -303,5 +342,79 @@ public class MyNetworkingManager : NetworkManager
     public void BroadcastTrucoState(int lastTrucoTeamIndex, int trucoLevel, bool trucoCalled)
     {
         AnyPlayerSync()?.RpcSyncTrucoState(lastTrucoTeamIndex, trucoLevel, trucoCalled);
+    }
+
+    /// <summary>Match over: every pure client shows the rematch/exit modal.</summary>
+    public void BroadcastMatchEnded(string winnerText)
+    {
+        AnyPlayerSync()?.RpcMatchEnded(winnerText);
+    }
+
+    /// <summary>Host only: reloads GameScene for everyone. The scene objects
+    /// (GameManager, SeatManager, deck) come back fresh — scores reset — while the
+    /// Mirror player objects persist and get re-seated by SetupMultiplayerMatch.</summary>
+    [Server]
+    public void RestartMatch()
+    {
+        // Si el rival ya abandonó, no hay revancha posible.
+        int connected = NetworkServer.connections.Values.Count(c => c.identity != null);
+        if (connected < 2)
+        {
+            PlayerHUD.Instance?.NotifyEvent("NO HAY RIVALES PARA LA REVANCHA", 4f);
+            return;
+        }
+
+        ServerChangeScene("GameScene");
+    }
+
+    // ─────────────────────── Team names ───────────────────────────────────
+
+    /// <summary>Lobby team names, editable from the lobby (2v2). Server-authoritative;
+    /// in 1v1 the players' nicknames override them when the match starts.</summary>
+    private readonly string[] _lobbyTeamNames = { "EQUIPO 1", "EQUIPO 2" };
+
+    /// <summary>Server: validates and stores a lobby team rename, then mirrors it.</summary>
+    [Server]
+    public void SetTeamName(int teamIdx, string name)
+    {
+        if (teamIdx < 0 || teamIdx > 1) return;
+
+        name = string.IsNullOrWhiteSpace(name) ? $"EQUIPO {teamIdx + 1}" : name.Trim();
+        if (name.Length > 16) name = name.Substring(0, 16);
+
+        _lobbyTeamNames[teamIdx] = name;
+        BroadcastTeamNames(_lobbyTeamNames[0], _lobbyTeamNames[1]);
+    }
+
+    public void BroadcastTeamNames(string team1, string team2)
+    {
+        AnyPlayerSync()?.RpcSyncTeamNames(team1, team2);
+    }
+
+    /// <summary>Server: resolves the names used during the match (player nicknames in
+    /// 1v1, lobby names otherwise), applies them to GameManager and mirrors them.</summary>
+    private void ApplyTeamNamesForMatch(bool oneVsOne)
+    {
+        string[] names = { _lobbyTeamNames[0], _lobbyTeamNames[1] };
+
+        if (oneVsOne)
+        {
+            foreach (var conn in NetworkServer.connections.Values)
+            {
+                var sync = conn.identity != null ? conn.identity.GetComponent<PlayerNetworkSync>() : null;
+                if (sync == null || string.IsNullOrWhiteSpace(sync.playerName)) continue;
+                names[Mathf.Clamp(sync.teamIndex, 0, 1)] = sync.playerName;
+            }
+        }
+
+        var gameMgr = GameManager.Instance;
+        if (gameMgr != null && gameMgr.teams.Count >= 2)
+        {
+            gameMgr.teams[0].teamName = names[0];
+            gameMgr.teams[1].teamName = names[1];
+        }
+
+        BroadcastTeamNames(names[0], names[1]);
+        PlayerHUD.Instance?.RefreshTeamLabel();
     }
 }

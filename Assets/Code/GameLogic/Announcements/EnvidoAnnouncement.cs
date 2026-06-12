@@ -47,7 +47,10 @@ namespace Code.GameLogic.Announcement
             // Calculate scores for everyone
             int bestScoreTeam1 = -1;
             int bestScoreTeam2 = -1;
-            
+
+            var gm = GameManager.Instance;
+            if (gm == null || gm.teams.Count < 2) return;
+
             // Get all players and NPCs
             var allPlayers = FindObjectsByType<Code.Player.Player>(FindObjectsSortMode.None);
             var allNpcs = FindObjectsByType<NPCPlayer>(FindObjectsSortMode.None);
@@ -57,11 +60,31 @@ namespace Code.GameLogic.Announcement
                 int score = 0;
                 var cardsHandler = p.GetComponent<CardsHandler>();
                 if (cardsHandler == null) cardsHandler = p.GetComponentInChildren<CardsHandler>();
-                
+
                 if (cardsHandler != null)
                 {
-                    score = TrucoRules.CalculateEnvidoScore(cardsHandler.InitialHand, vira);
+                    // Una flor quemada (cantó envido teniéndola) no anula el envido:
+                    // esas cartas tantean normal.
+                    score = TrucoRules.CalculateEnvidoScore(cardsHandler.InitialHand, vira, p.florBurned);
                 }
+
+                // Si alguien tiene Flor (viva), el Envido se anula automáticamente
+                if (score == -1)
+                {
+                    return;
+                }
+
+                // Por índice de equipo y no por nombre: en multiplayer los equipos se
+                // renombran desde el lobby y "Team 1"/"Team 2" no matcheaba nunca
+                // (ambos puntajes quedaban en -1 y el ganador no cobraba).
+                int teamIdx = gm.GetTeamIndex(p.team);
+                if (teamIdx == 0) bestScoreTeam1 = Mathf.Max(bestScoreTeam1, score);
+                else if (teamIdx == 1) bestScoreTeam2 = Mathf.Max(bestScoreTeam2, score);
+            }
+
+            foreach (var npc in allNpcs)
+            {
+                int score = TrucoRules.CalculateEnvidoScore(npc.initialHand, vira);
 
                 // Si alguien tiene Flor, el Envido se anula automáticamente
                 if (score == -1)
@@ -69,33 +92,19 @@ namespace Code.GameLogic.Announcement
                     return;
                 }
 
-                if (p.team != null && p.team.teamName == "Team 1") bestScoreTeam1 = Mathf.Max(bestScoreTeam1, score);
-                else if (p.team != null && p.team.teamName == "Team 2") bestScoreTeam2 = Mathf.Max(bestScoreTeam2, score);
-            }
-
-            foreach (var npc in allNpcs)
-            {
-                int score = TrucoRules.CalculateEnvidoScore(npc.initialHand, vira);
-                
-                // Si alguien tiene Flor, el Envido se anula automáticamente
-                if (score == -1) 
-                {
-                    return; 
-                }
-
-                if (npc.team != null && npc.team.teamName == "Team 1") bestScoreTeam1 = Mathf.Max(bestScoreTeam1, score);
-                else if (npc.team != null && npc.team.teamName == "Team 2") bestScoreTeam2 = Mathf.Max(bestScoreTeam2, score);
+                int teamIdx = gm.GetTeamIndex(npc.team);
+                if (teamIdx == 0) bestScoreTeam1 = Mathf.Max(bestScoreTeam1, score);
+                else if (teamIdx == 1) bestScoreTeam2 = Mathf.Max(bestScoreTeam2, score);
             }
 
 
-            string winnerTeam = "";
-            if (bestScoreTeam1 > bestScoreTeam2) winnerTeam = "Team 1";
-            else if (bestScoreTeam2 > bestScoreTeam1) winnerTeam = "Team 2";
+            string winnerTeam;
+            if (bestScoreTeam1 > bestScoreTeam2) winnerTeam = gm.teams[0].teamName;
+            else if (bestScoreTeam2 > bestScoreTeam1) winnerTeam = gm.teams[1].teamName;
             else
             {
                 // Tie: Mano wins.
-                int manoTeamIndex = GameManager.Instance.ManoTeamIndex; // 1 or 2
-                winnerTeam = "Team " + manoTeamIndex;
+                winnerTeam = gm.teams[Mathf.Clamp(gm.ManoTeamIndex - 1, 0, 1)].teamName;
             }
 
             // GUARDAR EL RESULTADO PENDIENTE EN EL GAMEMANAGER EN LUGAR DE RESOLVERLO AHORA

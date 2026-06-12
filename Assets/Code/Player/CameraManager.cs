@@ -74,6 +74,17 @@ namespace Code.Player
             }
         }
 
+        /// <summary>Estado actual de la vista (true = mirando las cartas).</summary>
+        public bool IsLookingAtHand => _isLookingAtHand;
+
+        /// <summary>Equivalente táctil de las teclas W/S: alterna entre mirar la mesa
+        /// y mirar las propias cartas. Usado por el botón del HUD en móvil.</summary>
+        public void ToggleHandView()
+        {
+            if (!isLocalPlayer) return;
+            TransitionToView(!_isLookingAtHand);
+        }
+
         private void TransitionToView(bool lookAtHand)
         {
             _isLookingAtHand = lookAtHand;

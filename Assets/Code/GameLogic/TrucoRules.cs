@@ -53,13 +53,14 @@ namespace Code.GameLogic
             return 0; // Default
         }
 
-        public static int CalculateEnvidoScore(List<Card> hand, Card vira)
+        public static int CalculateEnvidoScore(List<Card> hand, Card vira, bool ignoreFlor = false)
         {
             if (hand == null || hand.Count < 3) return 0;
 
             // Check if player has Flor (3 of same suit OR 2 pieces OR 1 piece + 2 same suit)
             // Note: In most rules, if you have Flor, Envido is invalid.
-            if (IsFlor(hand, vira)) return -1; 
+            // ignoreFlor: una flor quemada (cantó envido teniéndola) tantea normal.
+            if (!ignoreFlor && IsFlor(hand, vira)) return -1;
 
             int maxScore = 0;
             int pericoTarget = (vira.value == 11) ? 12 : 11;
@@ -76,8 +77,13 @@ namespace Code.GameLogic
                 else normalCards.Add(card);
             }
 
+            // Case 0: Perico + Perica (siempre es flor; solo se llega con ignoreFlor)
+            if (perico != null && perica != null)
+            {
+                maxScore = 30 + 29;
+            }
             // Case 1: Perico alone
-            if (perico != null && perica == null)
+            else if (perico != null && perica == null)
             {
                 // Piece + highest normal card
                 int highestNormal = 0;

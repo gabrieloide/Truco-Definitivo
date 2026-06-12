@@ -322,9 +322,9 @@
 }
 
 .vs-badge {
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
-    width: 60px;
+    width: 80px;
 }
 
 .vs-text {
@@ -332,6 +332,23 @@
     font-size: 32px;
     -unity-font-style: bold;
     text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+    margin-top: 16px;
+    margin-bottom: 22px;
+}
+
+/* Botones de intercambio de jugadores (solo los ve el host).
+   Cada uno queda a la altura de su fila de jugadores. */
+.swap-btn {
+    width: 60px;
+    height: 46px;
+    padding: 0;
+    margin: 0 0 12px 0;
+    display: none;
+}
+
+.swap-btn__text {
+    font-size: 28px;
+    letter-spacing: 0;
 }
 
 .team-title {
@@ -376,4 +393,32 @@
 
 .row-buttons > .menu-btn > .menu-btn__text {
     font-size: 20px; /* Slightly smaller text for row buttons */
+}
+
+/* =========================================================
+   TEAM NAME INPUT (lobby): se ve como el título de equipo,
+   pero editable por los miembros de ese equipo.
+   ========================================================= */
+.team-name-input {
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.team-name-input > .unity-base-text-field__input {
+    background-color: transparent;
+    border-width: 0;
+    border-bottom-width: 4px;
+    border-color: #6BB962;
+    border-radius: 0;
+    padding: 0 0 10px 0;
+    font-size: 28px;
+    color: #6BB962;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+/* El nombre del equipo rival no es editable pero debe leerse bien */
+.team-name-input.unity-disabled,
+.team-name-input:disabled {
+    opacity: 0.85;
 }
