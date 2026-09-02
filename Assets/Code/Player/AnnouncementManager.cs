@@ -200,6 +200,10 @@ namespace Code.Player
                 (NetworkManager.singleton as MyNetworkingManager)?.BroadcastEnvidoStake(points, visible);
         }
 
+        /// <summary>El envido quedó anulado por una flor viva: apaga el indicador de
+        /// "envido en juego" acá y en todos los clientes.</summary>
+        public void CancelEnvidoStakeForFlor() => UpdateEnvidoStakeUI(0, false);
+
         public bool WasAnnouncementCalledThisHand(AnnounceState state)
         {
             if (_announcementsCalledThisHand.TryGetValue(state, out bool called)) return called;
@@ -219,28 +223,83 @@ namespace Code.Player
             return fallback;
         }
 
-        private void GetOpponentPlayer(out GameObject opponentPlayer)
+        private static Team TeamOf(GameObject obj)
         {
-            var playerLocal = FindAnyObjectByType<PlayerLocal>();
-            if (playerLocal == null || playerLocal.player == null)
+            if (obj == null) return null;
+            var p = obj.GetComponent<Code.Player.Player>();
+            if (p != null && p.team != null) return p.team;
+            var npc = obj.GetComponent<NPCPlayer>();
+            return npc != null ? npc.team : null;
+        }
+
+        /// <summary>Silla del rival que tiene que contestar el canto: el primer ocupante
+        /// del equipo contrario a la DERECHA del cantor (silla siguiente en el orden de
+        /// turnos). Es la única regla válida con 4 jugadores — antes se elegía "el
+        /// primer NPC rival que aparezca" o directamente el host, así que en 2v2
+        /// contestaba cualquiera menos el que correspondía. -1 si no hay rival.</summary>
+        private int GetResponderSeat(Team announcerTeam)
+        {
+            var seatMgr = SeatManager.Instance;
+            var gm = GameManager.Instance;
+            if (seatMgr == null || gm == null || announcerTeam == null) return -1;
+
+            int count = seatMgr.allChairs.Count;
+            if (count == 0) return -1;
+
+            int announcerTeamIdx = gm.GetTeamIndex(announcerTeam);
+            int start = currentAnnouncerSeat >= 0 ? currentAnnouncerSeat : 0;
+
+            for (int step = 1; step <= count; step++)
             {
-                opponentPlayer = null;
+                int seat = (start + step) % count;
+                var occupant = seatMgr.allChairs[seat].occupant;
+                if (occupant == null) continue;
+
+                var team = TeamOf(occupant);
+                if (team == null) continue;
+                if (gm.GetTeamIndex(team) == announcerTeamIdx) continue;
+
+                return seat;
+            }
+            return -1;
+        }
+
+        /// <summary>Abre la respuesta (Quiero / No quiero / subir) en el rival que
+        /// corresponde, sea NPC, el jugador de esta máquina o un cliente remoto.
+        /// Si no hay nadie, libera el bloqueo para no trabar la mano.</summary>
+        private void RouteAnnouncementToResponder(Team announcerTeam)
+        {
+            int seat = GetResponderSeat(announcerTeam);
+            if (seat < 0)
+            {
+                if (GameManager.Instance != null) GameManager.Instance.isAnnouncementPending = false;
                 return;
             }
 
-            var myTeam = playerLocal.player.team;
-            var allNpcs = GameManager.Instance.npcs;
+            var occupant = SeatManager.Instance.allChairs[seat].occupant;
 
-            foreach (var npc in allNpcs)
+            var npc = occupant.GetComponent<NPCPlayer>();
+            if (npc != null)
             {
-                if (npc.team != myTeam)
+                npc.HandleOpponentAnnounce(_announceState, gameObject);
+                return;
+            }
+
+            var netSync = occupant.GetComponent<PlayerNetworkSync>();
+            if (NetworkServer.active && netSync != null && ShowResponseTo(netSync)) return;
+
+            // Singleplayer: el rival humano es el de esta misma máquina.
+            if (!NetworkServer.active)
+            {
+                var pl = occupant.GetComponent<PlayerLocal>();
+                if (pl != null && pl.isLocalPlayer)
                 {
-                    opponentPlayer = npc.gameObject;
+                    ShowRespondButtons();
                     return;
                 }
             }
 
-            opponentPlayer = null;
+            if (GameManager.Instance != null) GameManager.Instance.isAnnouncementPending = false;
         }
 
         public void SendAnnounceToClient(string ButtonName)
@@ -442,21 +501,10 @@ namespace Code.Player
             float waitTime = (targetState == AnnounceState.ALey || targetState == AnnounceState.Flor) ? 2.5f : 4.5f;
             yield return new WaitForSeconds(waitTime);
 
-            GetOpponentPlayer(out var opponent);
-            if (opponent != null)
+            // Flor y A Ley son informativos: no piden Quiero/No Quiero a nadie.
+            if (targetState == AnnounceState.Envido || targetState == AnnounceState.Truco)
             {
-                var npc = opponent.GetComponent<NPCPlayer>();
-                // El NPC aún puede reaccionar (ej: cantar su propia Flor) pero no con Quiero/No Quiero
-                if (npc != null) npc.HandleOpponentAnnounce(targetState, gameObject);
-            }
-            else if (targetState == AnnounceState.Envido || targetState == AnnounceState.Truco)
-            {
-                // Multiplayer: el oponente es humano — mostrarle los botones de respuesta.
-                // Si no hay nadie (no debería pasar), liberamos el bloqueo para no trabar la mano.
-                if (!TryShowResponseToHumanOpponent(currentAnnouncerTeam))
-                {
-                    GameManager.Instance.isAnnouncementPending = false;
-                }
+                RouteAnnouncementToResponder(currentAnnouncerTeam);
             }
 
             // Si era informativo, nos aseguramos de que el estado vuelva a None tras la notificación
@@ -479,6 +527,17 @@ namespace Code.Player
         /// </summary>
         public void ReceiveAnnounceFromHumanPlayer(AnnounceState state, GameObject playerObj)
         {
+            // Un canto por vez. Con 4 jugadores dos pueden apretar el botón casi
+            // simultáneamente: el segundo pisaba currentAnnouncerTeam/currentAnnouncerSeat
+            // del primero y la respuesta terminaba apuntando al rival equivocado (o el
+            // "No quiero" pagándole al equipo que no era). Se exceptúan los cantos que
+            // SON una respuesta: A Ley, y la Flor que anula un Envido en curso.
+            if (GameManager.Instance != null && GameManager.Instance.isAnnouncementPending)
+            {
+                bool isFlorOverEnvido = state == AnnounceState.Flor && _announceState == AnnounceState.Envido;
+                if (state != AnnounceState.ALey && !isFlorOverEnvido) return;
+            }
+
             // Flor: validación autoritativa contra la mano repartida (haveFlower solo
             // existe en la máquina del dueño) y un solo canto de flor por jugador.
             string announcerName = playerObj.GetComponent<PlayerLocal>()?.player?.playerName ?? playerObj.name;
@@ -603,56 +662,30 @@ namespace Code.Player
                 yield break;
             }
 
-            var playerLocal = GetLocalPlayerLocal();
-            bool humanIsOpponent = playerLocal != null && playerLocal.player != null && playerLocal.player.team != npcTeam;
-
-            if (humanIsOpponent)
-            {
-                ShowRespondButtons();
-            }
-            else
-            {
-                GetOpponentPlayerForNPC(npcObj, out var actualOpponent);
-                if (actualOpponent != null)
-                {
-                    var opponentNpc = actualOpponent.GetComponent<NPCPlayer>();
-                    if (opponentNpc != null) opponentNpc.HandleOpponentAnnounce(state, npcObj);
-                }
-                else if (!TryShowResponseToHumanOpponent(npcTeam))
-                {
-                    GameManager.Instance.isAnnouncementPending = false;
-                }
-            }
-        }
-
-        private void GetOpponentPlayerForNPC(GameObject npcObject, out GameObject opponentPlayer)
-        {
-            var npcComp = npcObject.GetComponent<NPCPlayer>();
-            var team = npcComp != null ? npcComp.team : null;
-            
-            var allNpcs = GameManager.Instance.npcs;
-            foreach (var n in allNpcs)
-            {
-                if (n.gameObject != npcObject && n.team != team)
-                {
-                    opponentPlayer = n.gameObject;
-                    return;
-                }
-            }
-            
-            // Si no hay NPCs oponentes, quizás el oponente es el humano (ya chequeado arriba, pero por seguridad)
-            opponentPlayer = null;
+            // Contesta SIEMPRE el rival a la derecha del cantor. Antes el host se
+            // adjudicaba la respuesta con solo ser del equipo contrario, así que en 2v2
+            // el jugador que tenía que contestar nunca veía los botones.
+            RouteAnnouncementToResponder(npcTeam);
         }
 
         // Métodos auxiliares para respuestas de NPC
+        // npcObj.name es el nombre del GameObject ("NPC (1)"), no el del jugador: con ese
+        // string fallaban GetTeamNameByPlayerName y FindTeamByPlayerName, así que el
+        // cartel decía "NPC (1) QUIERE" y el dueño del truco quedaba sin resolver.
+        private static string NpcDisplayName(GameObject npcObj)
+        {
+            var npc = npcObj != null ? npcObj.GetComponent<NPCPlayer>() : null;
+            return (npc != null && !string.IsNullOrEmpty(npc.playerName)) ? npc.playerName : npcObj.name;
+        }
+
         public void AcceptFromNPC(GameObject npcObj)
         {
-            StartCoroutine(AcceptAnnounceCoroutine(npcObj.name, false));
+            StartCoroutine(AcceptAnnounceCoroutine(NpcDisplayName(npcObj), false));
         }
 
         public void DeclineFromNPC(GameObject npcObj)
         {
-            StartCoroutine(DeclineAnnounceCoroutine(npcObj.name, false, _announceState, currentAnnouncerTeam));
+            StartCoroutine(DeclineAnnounceCoroutine(NpcDisplayName(npcObj), false, _announceState, currentAnnouncerTeam));
         }
 
         private void ShowRespondButtons()
@@ -810,7 +843,13 @@ namespace Code.Player
         {
             var pl = playerObj.GetComponent<PlayerLocal>();
             string playerName = pl?.player?.playerName ?? playerObj.name;
-            bool hasFlor = pl?.player?.haveFlower ?? false;
+
+            // haveFlower solo se setea en la máquina dueña de la mano, así que en el
+            // server vale false para los 3 jugadores remotos: sus respuestas con flor
+            // ("A LEY (FLOR)", "CON FLOR QUIERO") se procesaban como si no la tuvieran.
+            // PlayerHandHasFlor la recalcula desde la mano repartida (y respeta la flor
+            // quemada), que es la única fuente autoritativa acá.
+            bool hasFlor = PlayerHandHasFlor(playerObj);
             ButtonInteract(buttonName, null, playerName, hasFlor, extraStones);
         }
 
@@ -822,45 +861,6 @@ namespace Code.Player
             currentAnnouncerName = announcerName;
             if (state != AnnounceState.None) _announcementsCalledThisHand[state] = true;
             ShowRespondButtons();
-        }
-
-        /// <summary>Server-side: shows the response UI to the opponent at the announcer's
-        /// RIGHT — the next occupied seat in turn order (host UI directly, remote client
-        /// via TargetRpc). Falls back to the first connected opponent when the announcer's
-        /// seat is unknown. Returns false when no human opponent exists.</summary>
-        private bool TryShowResponseToHumanOpponent(Team announcerTeam)
-        {
-            if (!NetworkServer.active || announcerTeam == null) return false;
-
-            var seatMgr = SeatManager.Instance;
-            if (currentAnnouncerSeat >= 0 && seatMgr != null && seatMgr.allChairs.Count > 0)
-            {
-                int count = seatMgr.allChairs.Count;
-                for (int step = 1; step <= count; step++)
-                {
-                    var occupant = seatMgr.allChairs[(currentAnnouncerSeat + step) % count].occupant;
-                    if (occupant == null) continue;
-
-                    var p = occupant.GetComponent<Code.Player.Player>();
-                    if (p == null || p.team == null || p.team.teamName == announcerTeam.teamName) continue;
-
-                    var netSync = occupant.GetComponent<PlayerNetworkSync>();
-                    if (netSync != null && ShowResponseTo(netSync)) return true;
-                }
-            }
-
-            foreach (var conn in NetworkServer.connections.Values)
-            {
-                var identity = conn.identity;
-                if (identity == null) continue;
-
-                var p = identity.GetComponent<Code.Player.Player>();
-                if (p == null || p.team == null || p.team.teamName == announcerTeam.teamName) continue;
-
-                var netSync = identity.GetComponent<PlayerNetworkSync>();
-                if (netSync != null && ShowResponseTo(netSync)) return true;
-            }
-            return false;
         }
 
         /// <summary>Server-side: opens the response bar on this player's machine.</summary>
@@ -981,15 +981,13 @@ namespace Code.Player
                     UpdateEnvidoStakeUI(ProspectiveEnvidoStake(), true);
             }
 
-            // El emisor del re-envido es el jugador que presionó el botón (el humano)
+            // El emisor del re-envido es el jugador que presionó el botón. El equipo sale
+            // de ÉL, no de un PlayerLocal cualquiera: con 4 jugadores FindAnyObjectByType
+            // devolvía casi siempre a otro y el cartel anunciaba el equipo equivocado.
             currentAnnouncerName = playerName;
             currentAnnouncerSeat = FindSeatByPlayerName(playerName);
-            string teamSuffix = "";
-            var playerLocal = FindAnyObjectByType<PlayerLocal>();
-            if (playerLocal != null && playerLocal.player != null && playerLocal.player.team != null)
-            {
-                teamSuffix = $" ({playerLocal.player.team.teamName})";
-            }
+            var raiserTeamForLabel = FindTeamByPlayerName(playerName);
+            string teamSuffix = raiserTeamForLabel != null ? $" ({raiserTeamForLabel.teamName})" : "";
 
             string actionText = "RE-ENVIDA";
             if (_announceState == AnnounceState.Truco)
@@ -1021,17 +1019,8 @@ namespace Code.Player
             var raiserTeam = FindTeamByPlayerName(playerName);
             if (raiserTeam != null) currentAnnouncerTeam = raiserTeam;
 
-            // Notificar al oponente (NPC en singleplayer, humano en multiplayer)
-            GetOpponentPlayer(out var opponent);
-            if (opponent != null)
-            {
-                var npc = opponent.GetComponent<NPCPlayer>();
-                if (npc != null) npc.HandleOpponentAnnounce(_announceState, gameObject);
-            }
-            else if (!TryShowResponseToHumanOpponent(currentAnnouncerTeam))
-            {
-                GameManager.Instance.isAnnouncementPending = false;
-            }
+            // Notificar al rival a la derecha del que subió la apuesta.
+            RouteAnnouncementToResponder(currentAnnouncerTeam);
         }
 
         private static int FindSeatByPlayerName(string playerName)
@@ -1052,6 +1041,18 @@ namespace Code.Player
 
         private Team FindTeamByPlayerName(string playerName)
         {
+            if (string.IsNullOrEmpty(playerName)) return null;
+
+            // Las sillas primero: son la fuente autoritativa. GameManager.allPlayers se
+            // llena una sola vez al arrancar la partida y con 4 jugadores puede quedar
+            // desactualizada (reconexiones, revancha), y ahí el equipo salía null.
+            int seat = FindSeatByPlayerName(playerName);
+            if (seat >= 0 && SeatManager.Instance != null)
+            {
+                var team = TeamOf(SeatManager.Instance.allChairs[seat].occupant);
+                if (team != null) return team;
+            }
+
             if (GameManager.Instance == null) return null;
             foreach (var p in GameManager.Instance.allPlayers)
                 if (p != null && p.playerName == playerName) return p.team;
@@ -1093,26 +1094,21 @@ namespace Code.Player
             {
                 if (current is TrucoAnnouncement)
                 {
-                    // El equipo "dueño" del truco aceptado es siempre el del anunciante vigente
-                    if (currentAnnouncerTeam != null)
+                    // El equipo "dueño" del truco aceptado es siempre el del anunciante
+                    // vigente. Se resuelve por GetTeamIndex (compara también por nombre):
+                    // en multiplayer los equipos se renombran desde el lobby y un
+                    // IndexOf por referencia devolvía -1 → dueño 0 = "nadie tiene el
+                    // truco", y los dos equipos podían seguir subiendo la apuesta.
+                    int ownerIdx = GameManager.Instance.GetTeamIndex(currentAnnouncerTeam);
+
+                    if (ownerIdx < 0)
                     {
-                        GameManager.Instance.lastTrucoTeamIndex = GameManager.Instance.teams.IndexOf(currentAnnouncerTeam) + 1;
+                        // Fallback: el dueño es el equipo contrario al que acaba de querer.
+                        int accepterIdx = GameManager.Instance.GetTeamIndex(FindTeamByPlayerName(playerName));
+                        if (accepterIdx >= 0) ownerIdx = 1 - accepterIdx;
                     }
-                    else
-                    {
-                        var playerLocal = GetLocalPlayerLocal();
-                        if (playerName == playerLocal?.player?.playerName)
-                        {
-                            GetOpponentPlayer(out var opponent);
-                            var npc = opponent?.GetComponent<NPCPlayer>();
-                            if (npc != null && npc.team != null)
-                                GameManager.Instance.lastTrucoTeamIndex = GameManager.Instance.teams.IndexOf(npc.team) + 1;
-                        }
-                        else if (playerLocal?.player?.team != null)
-                        {
-                            GameManager.Instance.lastTrucoTeamIndex = GameManager.Instance.teams.IndexOf(playerLocal.player.team) + 1;
-                        }
-                    }
+
+                    if (ownerIdx >= 0) GameManager.Instance.lastTrucoTeamIndex = ownerIdx + 1;
                 }
 
                 current.IncreaseAcceptAmount();

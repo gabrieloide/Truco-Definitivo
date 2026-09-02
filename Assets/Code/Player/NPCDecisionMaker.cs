@@ -53,7 +53,39 @@ namespace Code.Player
             }
         }
 
-        public static Card SelectCardToPlay(List<Card> hand, List<Card> cardsOnTable, Card vira)
+        /// <summary>Índice de equipo (0/1) del dueño de una carta ya jugada, o -1.</summary>
+        private static int TeamIndexOfCard(Card card)
+        {
+            if (card == null || card.ownerObj == null || GameManager.Instance == null) return -1;
+
+            var p = card.ownerObj.GetComponent<Player>();
+            if (p != null && p.team != null) return GameManager.Instance.GetTeamIndex(p.team);
+
+            var npc = card.ownerObj.GetComponent<NPCPlayer>();
+            if (npc != null && npc.team != null) return GameManager.Instance.GetTeamIndex(npc.team);
+
+            return -1;
+        }
+
+        /// <summary>Índice de equipo (0/1) de un jugador sentado, o -1.</summary>
+        private static int TeamIndexOf(GameObject who)
+        {
+            if (who == null || GameManager.Instance == null) return -1;
+
+            var p = who.GetComponent<Player>();
+            if (p != null && p.team != null) return GameManager.Instance.GetTeamIndex(p.team);
+
+            var npc = who.GetComponent<NPCPlayer>();
+            if (npc != null && npc.team != null) return GameManager.Instance.GetTeamIndex(npc.team);
+
+            return -1;
+        }
+
+        /// <param name="self">GameObject del NPC que juega. Sin esto la IA no sabe de
+        /// quién es la carta más alta de la mesa: en 2v2 le mataba la carta al propio
+        /// compañero y quemaba el 1 de espada cuando la baza ya estaba ganada. Con 2
+        /// jugadores el problema no existe, por eso el parámetro es opcional.</param>
+        public static Card SelectCardToPlay(List<Card> hand, List<Card> cardsOnTable, Card vira, GameObject self = null)
         {
             if (hand == null || hand.Count == 0) return null;
             if (hand.Count == 1) return hand[0];
@@ -75,12 +107,27 @@ namespace Code.Player
                 return sortedHand[middleIndex];
             }
 
-            // Encontrar el valor real más alto actualmente en la mesa
+            // Encontrar el valor real más alto actualmente en la mesa y de quién es
             int highestTableValue = -1;
+            Card highestTableCard = null;
             foreach (var tableCard in cardsOnTable)
             {
                 int val = TrucoRules.GetCardRealValue(tableCard, vira);
-                if (val > highestTableValue) highestTableValue = val;
+                if (val > highestTableValue)
+                {
+                    highestTableValue = val;
+                    highestTableCard = tableCard;
+                }
+            }
+
+            // La baza la está ganando un compañero: no se le mata la carta, se descarta
+            // la más baja y se guardan las buenas para las bazas siguientes.
+            int myTeam = TeamIndexOf(self);
+            if (myTeam >= 0 && highestTableCard != null)
+            {
+                int leaderTeam = TeamIndexOfCard(highestTableCard);
+                bool leaderIsPartner = leaderTeam == myTeam && highestTableCard.ownerObj != self;
+                if (leaderIsPartner) return sortedHand[0];
             }
 
             // Encontrar la menor carta en nuestra mano que pueda ganarle al valor de la mesa

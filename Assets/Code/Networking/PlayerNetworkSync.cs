@@ -228,6 +228,20 @@ namespace Code.Networking
             PlayerHUD.Instance?.NotifyEventLocal(message, duration);
         }
 
+        /// <summary>Server→clients: baza actual. El HUD del cliente la necesita para
+        /// ocultar Envido/Flor fuera de la primera baza (antes su round quedaba en 0).</summary>
+        [ClientRpc]
+        public void RpcSyncRound(int round)
+        {
+            if (NetworkServer.active) return; // el host ya la tiene
+            if (GameManager.Instance == null) return;
+            GameManager.Instance.round = round;
+
+            var pl = _playerLocal;
+            if (isLocalPlayer && pl != null && pl.player != null)
+                PlayerHUD.Instance?.RefreshActionButtons(pl.player.canPlayCard);
+        }
+
         /// <summary>Server→clients: new hand started — reset local announcement state
         /// (called-this-hand flags, truco level) so HUD buttons reappear.</summary>
         [ClientRpc]

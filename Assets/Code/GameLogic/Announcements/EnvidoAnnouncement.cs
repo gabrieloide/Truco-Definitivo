@@ -48,6 +48,12 @@ namespace Code.GameLogic.Announcement
             int bestScoreTeam1 = -1;
             int bestScoreTeam2 = -1;
 
+            // Alguien tiene flor viva → el envido queda anulado. Antes se salía con un
+            // return seco en mitad del recuento: nadie cobraba, pendingEnvidoResolution
+            // quedaba en false y el cartel "ENVIDO EN JUEGO: N" se quedaba pegado toda
+            // la mano. Con 4 manos repartidas la flor aparece el doble de seguido.
+            bool florAnnulsEnvido = false;
+
             var gm = GameManager.Instance;
             if (gm == null || gm.teams.Count < 2) return;
 
@@ -71,7 +77,8 @@ namespace Code.GameLogic.Announcement
                 // Si alguien tiene Flor (viva), el Envido se anula automáticamente
                 if (score == -1)
                 {
-                    return;
+                    florAnnulsEnvido = true;
+                    continue;
                 }
 
                 // Por índice de equipo y no por nombre: en multiplayer los equipos se
@@ -89,7 +96,8 @@ namespace Code.GameLogic.Announcement
                 // Si alguien tiene Flor, el Envido se anula automáticamente
                 if (score == -1)
                 {
-                    return;
+                    florAnnulsEnvido = true;
+                    continue;
                 }
 
                 int teamIdx = gm.GetTeamIndex(npc.team);
@@ -97,6 +105,11 @@ namespace Code.GameLogic.Announcement
                 else if (teamIdx == 1) bestScoreTeam2 = Mathf.Max(bestScoreTeam2, score);
             }
 
+            if (florAnnulsEnvido)
+            {
+                AnnulEnvidoForFlor();
+                return;
+            }
 
             string winnerTeam;
             if (bestScoreTeam1 > bestScoreTeam2) winnerTeam = gm.teams[0].teamName;
@@ -119,6 +132,27 @@ namespace Code.GameLogic.Announcement
             {
                 PlayerHUD.Instance.NotifyEvent("ENVIDO ACEPTADO (Se resuelve al final de la mano)", 2.0f);
             }
+        }
+
+        /// <summary>Cierra el envido sin puntos porque hay flor viva en la mesa: limpia
+        /// la resolución pendiente, apaga el indicador de piedras en juego (local y en
+        /// todos los clientes) y avisa por qué no se cobró.</summary>
+        private void AnnulEnvidoForFlor()
+        {
+            var gm = GameManager.Instance;
+            if (gm != null)
+            {
+                gm.pendingEnvidoResolution = false;
+                gm.pendingEnvidoWinnerTeam = "";
+                gm.pendingEnvidoPoints = 0;
+                gm.pendingEnvidoScoreTeam1 = 0;
+                gm.pendingEnvidoScoreTeam2 = 0;
+            }
+
+            FindAnyObjectByType<AnnouncementManager>()?.CancelEnvidoStakeForFlor();
+
+            if (PlayerHUD.Instance != null)
+                PlayerHUD.Instance.NotifyEvent("EL ENVIDO SE ANULA POR FLOR", 3f);
         }
 
         Card[] TestingEnvido(PlayerLocal[] local)

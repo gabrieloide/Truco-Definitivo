@@ -376,7 +376,11 @@ namespace Code.GameLogic
             if (playerLocal != null && playerLocal.player != null)
             {
                 playerLocal.player.canPlayCard = false;
-                if (global::Code.Player.PlayerHUD.Instance != null)
+
+                // Solo el HUD de ESTA máquina. PlayerHUD.Instance es el del host, así que
+                // sin el chequeo de isLocalPlayer la carta de cualquiera de los otros 3
+                // jugadores le apagaba al host su cartel de turno y sus botones de canto.
+                if (playerLocal.isLocalPlayer && global::Code.Player.PlayerHUD.Instance != null)
                 {
                     global::Code.Player.PlayerHUD.Instance.UpdateTurnState(false, playerLocal.player.playerName);
                 }
@@ -394,6 +398,22 @@ namespace Code.GameLogic
             var pNpc = card.ownerObj.GetComponent<Code.Player.NPCPlayer>();
             if (pNpc != null) return pNpc.playerName;
             return card.ownerObj.name;
+        }
+
+        /// <summary>Índice de equipo (0/1) del dueño de la carta, o -1 si no se puede
+        /// resolver. Comparar por índice y no por nombre evita que dos dueños
+        /// desconocidos ("Unknown Team") pasen por compañeros.</summary>
+        private int GetTeamIndexOf(Card card)
+        {
+            if (card == null || card.ownerObj == null || GameManager.Instance == null) return -1;
+
+            var pComp = card.ownerObj.GetComponent<Code.Player.Player>();
+            if (pComp != null && pComp.team != null) return GameManager.Instance.GetTeamIndex(pComp.team);
+
+            var npc = card.ownerObj.GetComponent<Code.Player.NPCPlayer>();
+            if (npc != null && npc.team != null) return GameManager.Instance.GetTeamIndex(npc.team);
+
+            return -1;
         }
 
         private string GetTeamName(Card card)
@@ -414,7 +434,7 @@ namespace Code.GameLogic
                 return;
             }
 
-            int highestValue = -1;
+            int highestValue = int.MinValue;
             List<Card> highestCards = new List<Card>();
 
             foreach (var card in CardsInTable)
@@ -431,14 +451,21 @@ namespace Code.GameLogic
                 }
             }
 
+            if (highestCards.Count == 0) return;
+
             if (highestCards.Count > 1)
             {
-                // Verify if the highest cards belong to different teams
-                string firstTeam = GetTeamName(highestCards[0]);
+                // Parda solo si las cartas más altas son de EQUIPOS distintos. Con 4
+                // jugadores es normal que empaten dos del MISMO equipo (ahí gana el que
+                // la tiró primero, que es highestCards[0]). Se compara por índice de
+                // equipo y no por nombre: un dueño que no se pueda resolver cuenta como
+                // equipo desconocido (-1) y no se fusiona con otro desconocido.
+                int firstTeam = GetTeamIndexOf(highestCards[0]);
                 bool differentTeams = false;
-                foreach(var c in highestCards)
+                foreach (var c in highestCards)
                 {
-                    if (GetTeamName(c) != firstTeam)
+                    int t = GetTeamIndexOf(c);
+                    if (t < 0 || firstTeam < 0 || t != firstTeam)
                     {
                         differentTeams = true;
                         break;
@@ -453,7 +480,7 @@ namespace Code.GameLogic
                     return;
                 }
             }
-            
+
             Card winningCard = highestCards[0];
             
             GameManager.Instance.HandleTrickResult(winningCard.ownerObj);

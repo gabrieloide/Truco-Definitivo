@@ -229,7 +229,7 @@ namespace Code.Player
                     yield break;
                 }
 
-                Card cardToPlay = NPCDecisionMaker.SelectCardToPlay(hand, TableManager.Instance.CardsInTable, DeckCreator.Instance.cardVira);
+                Card cardToPlay = NPCDecisionMaker.SelectCardToPlay(hand, TableManager.Instance.CardsInTable, DeckCreator.Instance.cardVira, gameObject);
                 if (cardToPlay == null) cardToPlay = hand[0];
                 
                 hand.Remove(cardToPlay);

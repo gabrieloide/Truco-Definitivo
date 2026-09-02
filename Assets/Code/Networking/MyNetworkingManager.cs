@@ -326,6 +326,14 @@ public class MyNetworkingManager : NetworkManager
         AnyPlayerSync()?.RpcEnvidoStake(points, visible);
     }
 
+    /// <summary>Baza actual (0/1/2) a todos los clientes: el HUD la usa para el
+    /// "solo se canta en la primera". Sin esto el cliente creía estar siempre en la
+    /// primera baza y dejaba cantar Envido/Flor en la segunda y la tercera.</summary>
+    public void BroadcastRound(int round)
+    {
+        AnyPlayerSync()?.RpcSyncRound(round);
+    }
+
     /// <summary>New hand: resets every client's local announcement state.</summary>
     public void BroadcastResetAnnouncements()
     {

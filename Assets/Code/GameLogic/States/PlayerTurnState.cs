@@ -27,7 +27,8 @@ namespace Code.GameLogic.States
 
         private System.Collections.IEnumerator DelayedEndTurn()
         {
-            yield return new WaitForSeconds(2.5f);
+            // El GameManager escala la espera según cuánta gente hay en la mesa.
+            yield return new WaitForSeconds(GameManager.Instance.TurnDelay);
             // Delega a GameManager para chequear si la baza terminó
             GameManager.Instance.EndTurn();
         }

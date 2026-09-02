@@ -50,7 +50,23 @@ namespace Code.GameLogic
         public int currentPlayerTurn = 0;
         public int playerCount;
         public bool deckIsLocked;
-        public int round;
+
+        // Baza actual (0, 1, 2). Es autoritativa del server y los clientes la necesitan
+        // para el HUD: "solo se canta en la primera" se evaluaba contra un round que en
+        // el cliente valía 0 para siempre, así que Envido/Flor seguían clickeables en la
+        // segunda y tercera baza. Se difunde en cada cambio.
+        [SerializeField] private int _round;
+        public int round
+        {
+            get => _round;
+            set
+            {
+                if (_round == value) return;
+                _round = value;
+                if (NetworkServer.active)
+                    (NetworkManager.singleton as MyNetworkingManager)?.BroadcastRound(_round);
+            }
+        }
         public int dealerIndex = 0; // The seat index of the player who is dealing
         public bool devMode;
         public bool isHandResolved = false; // Flag to stop trick resolution if hand already ended
@@ -149,6 +165,20 @@ namespace Code.GameLogic
                 Debug.LogError($"[GameManager] Error al cambiar música de escena: {ex.Message}");
             }
         }
+
+        [Header("Pacing")]
+        [Tooltip("Espera tras cada carta antes de pasar el turno, en mesa de 2.")]
+        public float turnDelaySeconds = 2.5f;
+        [Tooltip("La misma espera en mesa de 4: una baza tiene el doble de cartas, así que con 2.5s una mano entera se iba a ~40 segundos.")]
+        public float turnDelaySeconds4P = 1.2f;
+        [Tooltip("Espera tras resolver la baza para leer quién ganó, en mesa de 2.")]
+        public float trickResultDelaySeconds = 2.2f;
+        [Tooltip("La misma espera en mesa de 4.")]
+        public float trickResultDelaySeconds4P = 1.6f;
+
+        private bool IsFullTable => _totalPlayersCount >= 4;
+        public float TurnDelay => IsFullTable ? turnDelaySeconds4P : turnDelaySeconds;
+        public float TrickResultDelay => IsFullTable ? trickResultDelaySeconds4P : trickResultDelaySeconds;
 
         [Header("Match Settings")]
         public int maxPoints = 15; // Límite de puntos para ganar la partida
@@ -442,6 +472,7 @@ namespace Code.GameLogic
                     currentManoSeatIndex = (currentManoSeatIndex + 1) % SeatManager.Instance.allChairs.Count;
                 }
                 currentTrickStartSeatIndex = currentManoSeatIndex;
+                UpdateManoTeamIndex(currentManoSeatIndex);
 
 
                 // Start the State Machine directly with DealingState!
@@ -541,6 +572,7 @@ namespace Code.GameLogic
             while (seatMgr.allChairs[currentManoSeatIndex].occupant == null)
                 currentManoSeatIndex = (currentManoSeatIndex + 1) % seatMgr.allChairs.Count;
             currentTrickStartSeatIndex = currentManoSeatIndex;
+            UpdateManoTeamIndex(currentManoSeatIndex);
 
             // Send each remote client its name + team index
             foreach (var conn in NetworkServer.connections.Values)
@@ -689,8 +721,8 @@ namespace Code.GameLogic
             // Determinar el ganador de la baza (esto dispara HandleTrickResult)
             TableManager.Instance.DetermineHighestCard();
 
-            // Esperar 2.2 segundos para asimilar quién ganó y ver las cartas en mesa
-            yield return new WaitForSeconds(2.2f);
+            // Esperar para asimilar quién ganó y ver las cartas en mesa
+            yield return new WaitForSeconds(TrickResultDelay);
 
             // Si la mano ya fue resuelta (alguien ganó), abortamos la transición
             if (isHandResolved)
@@ -718,6 +750,27 @@ namespace Code.GameLogic
         public List<int> trickWinners = new List<int>(); // 0 = Tie, 1 = Team 1, 2 = Team 2
         private int _manoTeamIndex = 1; // Team index (1 or 2) that is "Mano" in current hand
         public int ManoTeamIndex => _manoTeamIndex;
+
+        /// <summary>Fija qué EQUIPO es Mano a partir de la silla que abre la mano.
+        /// Desempata pardas y envidos empatados, así que tiene que estar bien desde la
+        /// PRIMERA mano: antes solo se calculaba en StartNewHand y la mano inicial
+        /// asumía siempre "Team 1", que con 4 jugadores (y en 1v1 cruzado) es falso.</summary>
+        private void UpdateManoTeamIndex(int manoSeatIndex)
+        {
+            _manoTeamIndex = 1;
+            if (SeatManager.Instance == null) return;
+            if (manoSeatIndex < 0 || manoSeatIndex >= SeatManager.Instance.allChairs.Count) return;
+
+            var occupant = SeatManager.Instance.allChairs[manoSeatIndex].occupant;
+            if (occupant == null) return;
+
+            var pComp = occupant.GetComponent<Code.Player.Player>();
+            var npcComp = occupant.GetComponent<NPCPlayer>();
+            Team manoTeam = (pComp != null && pComp.team != null) ? pComp.team : (npcComp != null ? npcComp.team : null);
+
+            int idx = GetTeamIndex(manoTeam);
+            if (idx >= 0) _manoTeamIndex = idx + 1;
+        }
         public int currentHandValue = 1; // Points for the winner of the hand (Truco, Retruco, etc)
         public int lastTrucoTeamIndex = 0; // The team that made the last accepted challenge (1 or 2)
 
@@ -1111,12 +1164,9 @@ namespace Code.GameLogic
             } while (SeatManager.Instance.allChairs[manoSeatIndex].occupant == null && manoSeatIndex != dealerIndex);
 
             // Determinar el equipo basándose en el ocupante de la silla
-            var occupant = SeatManager.Instance.allChairs[manoSeatIndex].occupant;
-            var playerComp = occupant != null ? occupant.GetComponent<Code.Player.Player>() : null;
-            var npcComp = occupant != null ? occupant.GetComponent<NPCPlayer>() : null;
-            Team manoTeam = playerComp != null ? playerComp.team : (npcComp != null ? npcComp.team : null);
-            _manoTeamIndex = manoTeam != null ? teams.IndexOf(manoTeam) + 1 : 1;
+            UpdateManoTeamIndex(manoSeatIndex);
 
+            currentManoSeatIndex = manoSeatIndex;
             currentTrickStartSeatIndex = manoSeatIndex;
             
             
