@@ -2,8 +2,6 @@
 
 A robust multiplayer implementation of the traditional Venezuelan card game **Truco**, built from scratch in Unity. This project focuses on a decoupled, state-driven backend architecture capable of handling turn-based synchronization, state validation, and dynamic card interaction systems.
 
-🚀 **Play it on itch.io:** [Play Truco Definitivo](https://gabrieloide.itch.io/) *(Replace with your exact itch.io game link)*
-
 ---
 
 ## 🛠 Features & Technical Highlights
