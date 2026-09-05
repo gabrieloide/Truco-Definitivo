@@ -1,4 +1,4 @@
-const cacheName = "DefaultCompany-Truco Definitivo-0.0.56";
+const cacheName = "DefaultCompany-Truco Definitivo-0.0.57";
 const contentToCache = [
     "Build/WebGL.loader.js",
     "Build/WebGL.framework.js.br",
