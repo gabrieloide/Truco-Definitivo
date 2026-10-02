@@ -64,7 +64,9 @@ namespace Proxima
     {
         public static List<GameObject> FindGameObjects(string name)
         {
-            #if UNITY_2023_1_OR_NEWER
+            #if UNITY_6000_5_OR_NEWER
+                var allGameObjects = GameObject.FindObjectsByType<GameObject>(FindObjectsInactive.Include);
+            #elif UNITY_2023_1_OR_NEWER
                 var allGameObjects = GameObject.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             #elif UNITY_2020_1_OR_NEWER
                 var allGameObjects = GameObject.FindObjectsOfType<GameObject>(true);
@@ -80,7 +82,11 @@ namespace Proxima
             {
                 foreach (var o in allGameObjects)
                 {
+                    #if UNITY_6000_5_OR_NEWER
+                    if (unchecked((int)EntityId.ToULong(o.GetEntityId())) == id)
+                    #else
                     if (o.GetInstanceID() == id)
+                    #endif
                     {
                         objects.Add(o);
                         break;
@@ -174,7 +180,11 @@ namespace Proxima
 
         private static List<PropertyOrField> FindGameObjectProperties(GameObject obj, string pattern)
         {
+            #if UNITY_6000_5_OR_NEWER
+            var descriptor = obj.name + " [" + unchecked((int)EntityId.ToULong(obj.GetEntityId())) + "]";
+            #else
             var descriptor = obj.name + " [" + obj.GetInstanceID() + "]";
+            #endif
             var result = new List<PropertyOrField>();
             if (TryAddObjectProperty(result, descriptor, obj, pattern))
             {

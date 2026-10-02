@@ -280,13 +280,17 @@ namespace Proxima
 
                 _stack.Clear();
 
+                #if UNITY_6000_5_OR_NEWER
+                var id = unchecked((int)EntityId.ToULong(component.GetEntityId()));
+                #else
                 var id = component.GetInstanceID();
+                #endif
                 if (!_idToComponentInfo.TryGetValue(id, out var ci))
                 {
                     ci = GetFromPool(id, component.GetType().Name, component, false);
                     ci.Order = order;
                     _componentList.Comps.Add(ci);
-                    _idToComponentInfo.Add(component.GetInstanceID(), ci);
+                    _idToComponentInfo.Add(id, ci);
                     CreateComponentProperties(component, ci);
                     ProHook_CreateComponentButtons?.Invoke(component, ci);
                     _changeList.Comps.Add(ci);

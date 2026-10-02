@@ -207,34 +207,31 @@ namespace Code.GameLogic
                 if (isPiece) piecesCount++;
             }
 
-            Debug.Log($"[IsFlor] Vira: {vira.value} of {vira.suit}. Hand: {hand[0].value} of {hand[0].suit}, {hand[1].value} of {hand[1].suit}, {hand[2].value} of {hand[2].suit}. Pieces count: {piecesCount}");
-
             // 2 pieces always make a Flor (Perico + Perica + anything)
             if (piecesCount >= 2) 
             {
-                Debug.Log("[IsFlor] Result: TRUE (2 or more pieces)");
                 return true;
             }
 
             // 1 piece + 2 cards of same suit
             if (piecesCount == 1)
             {
-                List<Card> normals = new List<Card>();
+                Card firstNormal = null;
+                Card secondNormal = null;
                 foreach (var card in hand)
                 {
                     bool isPiece = (card.suit == vira.suit && (card.value == pericoTarget || card.value == pericaTarget));
-                    if (!isPiece) normals.Add(card);
+                    if (!isPiece)
+                    {
+                        if (firstNormal == null) firstNormal = card;
+                        else secondNormal = card;
+                    }
                 }
-                
-                bool result = normals[0].suit == normals[1].suit;
-                Debug.Log($"[IsFlor] 1 Piece detected. Normals: {normals[0].value} of {normals[0].suit}, {normals[1].value} of {normals[1].suit}. Result: {result}");
-                return result;
+                return firstNormal != null && secondNormal != null && firstNormal.suit == secondNormal.suit;
             }
 
             // 0 pieces: 3 cards of same suit
-            bool noPiecesResult = (hand[0].suit == hand[1].suit && hand[1].suit == hand[2].suit);
-            Debug.Log($"[IsFlor] 0 Pieces. Result: {noPiecesResult}");
-            return noPiecesResult;
+            return hand[0].suit == hand[1].suit && hand[1].suit == hand[2].suit;
         }
 
         private static int GetEnvidoValue(Card card, bool isPerico, bool isPerica)

@@ -469,8 +469,13 @@ namespace Proxima
 
         private static void UpdateGameObjectInfo(GameObject go)
         {
+            #if UNITY_6000_5_OR_NEWER
+            var id = unchecked((int)EntityId.ToULong(go.GetEntityId()));
+            var parentId = go.transform.parent ? unchecked((int)EntityId.ToULong(go.transform.parent.gameObject.GetEntityId())) : 0;
+            #else
             var id = go.GetInstanceID();
             var parentId = go.transform.parent ? go.transform.parent.gameObject.GetInstanceID() : 0;
+            #endif
             var siblingIndex = go.transform.GetSiblingIndex();
 
             int depth = 0;
