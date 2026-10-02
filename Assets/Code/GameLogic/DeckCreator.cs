@@ -5,6 +5,8 @@ using Code.Player;
 using Mirror;
 using UnityEngine;
 using Code.Scripts.Audio;
+using Code.Cards;
+using Code.Domain;
 using Random = UnityEngine.Random;
 
 namespace Code.GameLogic
@@ -138,6 +140,17 @@ namespace Code.GameLogic
         public int dbId; // Referencia al ID del ScriptableObject en la base de datos
         public bool isBurned = false;
 
+        public CardSuit Suit
+        {
+            get
+            {
+                if (System.Enum.TryParse<CardSuit>(suit, true, out var result))
+                    return result;
+                return CardSuit.Gold;
+            }
+            set => suit = value.ToString();
+        }
+
         public Card() { }
 
         public Card(int v, string s, PlayerLocal owner = null, GameObject ownerObj = null)
@@ -146,6 +159,11 @@ namespace Code.GameLogic
             suit = s;
             cardOwner = owner;
             this.ownerObj = ownerObj ?? (owner != null ? owner.gameObject : null);
+        }
+
+        public Card(int v, CardSuit s, PlayerLocal owner = null, GameObject ownerObj = null)
+            : this(v, s.ToString(), owner, ownerObj)
+        {
         }
         
         // Formatted display name, e.g., "Gold #7"

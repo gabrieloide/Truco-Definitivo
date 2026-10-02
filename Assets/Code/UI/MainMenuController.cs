@@ -6,6 +6,7 @@ using Code.Networking;
 using Mirror;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Code.Scripts.Audio;
 
 namespace Code.UI
 {
@@ -189,7 +190,20 @@ namespace Code.UI
         private void Bind(string name, Action callback)
         {
             var btn = _root.Q<Button>(name);
-            if (btn != null) btn.clicked += callback;
+            if (btn != null)
+            {
+                btn.clicked += () =>
+                {
+                    if (AudioManager.Instance != null)
+                        AudioManager.Instance.PlaySFX("ui_button_click_press");
+                    callback?.Invoke();
+                };
+                btn.RegisterCallback<PointerEnterEvent>(_ =>
+                {
+                    if (AudioManager.Instance != null)
+                        AudioManager.Instance.PlaySFX("ui_button_hover_pop");
+                });
+            }
         }
 
         private void ShowScreen(VisualElement target)

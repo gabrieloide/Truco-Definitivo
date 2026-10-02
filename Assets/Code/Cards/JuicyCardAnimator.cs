@@ -199,7 +199,7 @@ namespace Code.Cards
         /// <summary>
         /// Anima el lanzamiento de la carta hacia la mesa usando un arco parabólico y rebote (Squash & Stretch) al caer.
         /// </summary>
-        public void AnimatePlayToTable(Vector3 targetPos, Quaternion targetRot, float duration, Action onImpact, Action onComplete = null)
+        public void AnimatePlayToTable(Vector3 targetPos, Quaternion targetRot, float duration, Action onImpact, Action onComplete = null, bool isMegaSlam = false)
         {
             KillAllTweens();
 
@@ -208,16 +208,24 @@ namespace Code.Cards
                 AudioManager.Instance.PlaySFX("card_fly_whistle");
             }
 
-            // Lanzar usando DOMove para ir directo a la mesa
-            _moveTween = transform.DOMove(targetPos, duration)
-                .SetEase(Ease.OutQuad);
+            if (isMegaSlam)
+            {
+                // Lanzamiento agresivo en arco con aceleración hacia el impacto
+                _moveTween = transform.DOJump(targetPos, 0.32f, 1, duration)
+                    .SetEase(Ease.InQuad);
+            }
+            else
+            {
+                // Lanzamiento normal usando DOMove directo a la mesa
+                _moveTween = transform.DOMove(targetPos, duration)
+                    .SetEase(Ease.OutQuad);
+            }
 
             // Rotar en el aire (voltear a posición de mesa + giro adicional de 360 grados para espectacularidad)
             Vector3 rotTarget = targetRot.eulerAngles;
-            // Añadir un giro de 360 en el aire para dinamismo
             transform.localRotation = transform.rotation;
             _rotateTween = transform.DORotate(new Vector3(rotTarget.x + 360f, rotTarget.y, rotTarget.z), duration, RotateMode.FastBeyond360)
-                .SetEase(Ease.OutQuad);
+                .SetEase(isMegaSlam ? Ease.InQuad : Ease.OutQuad);
 
             _moveTween.OnComplete(() =>
             {
@@ -227,14 +235,20 @@ namespace Code.Cards
                 // Animación de Squash & Stretch (rebote elástico)
                 _squashSequence = DOTween.Sequence();
                 
-                // Aplastamiento inicial (Y se achica, XZ se expanden)
-                _squashSequence.Append(transform.DOScale(new Vector3(_originalScale.x * 1.25f, _originalScale.y * 0.4f, _originalScale.z * 1.25f), 0.08f).SetEase(Ease.OutQuad));
-                
-                // Rebote hacia arriba (Y se estira, XZ se achican)
-                _squashSequence.Append(transform.DOScale(new Vector3(_originalScale.x * 0.85f, _originalScale.y * 1.15f, _originalScale.z * 0.85f), 0.08f).SetEase(Ease.InOutQuad));
-                
-                // Retorno al tamaño normal
-                _squashSequence.Append(transform.DOScale(_originalScale, 0.1f).SetEase(Ease.OutQuad));
+                if (isMegaSlam)
+                {
+                    // Aplastamiento contundente (golpe seco contra la madera)
+                    _squashSequence.Append(transform.DOScale(new Vector3(_originalScale.x * 1.4f, _originalScale.y * 0.22f, _originalScale.z * 1.4f), 0.05f).SetEase(Ease.OutQuad));
+                    _squashSequence.Append(transform.DOScale(new Vector3(_originalScale.x * 0.82f, _originalScale.y * 1.25f, _originalScale.z * 0.82f), 0.07f).SetEase(Ease.InOutQuad));
+                    _squashSequence.Append(transform.DOScale(_originalScale, 0.1f).SetEase(Ease.OutQuad));
+                }
+                else
+                {
+                    // Aplastamiento estándar
+                    _squashSequence.Append(transform.DOScale(new Vector3(_originalScale.x * 1.25f, _originalScale.y * 0.4f, _originalScale.z * 1.25f), 0.08f).SetEase(Ease.OutQuad));
+                    _squashSequence.Append(transform.DOScale(new Vector3(_originalScale.x * 0.85f, _originalScale.y * 1.15f, _originalScale.z * 0.85f), 0.08f).SetEase(Ease.InOutQuad));
+                    _squashSequence.Append(transform.DOScale(_originalScale, 0.1f).SetEase(Ease.OutQuad));
+                }
 
                 _squashSequence.OnComplete(() => onComplete?.Invoke());
             });

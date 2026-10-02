@@ -8,6 +8,7 @@
         <!-- ============================================== -->
         <engine:VisualElement name="screen-main" class="screen-container main-layout">
             <engine:Label text="TRUCO DEFINITIVO" class="title-text title-main" />
+            <engine:Label text="JUEGO DE CARTAS TRADICIONAL" class="main-subtitle" />
             
             <engine:VisualElement class="main-buttons-container">
                 <engine:Button name="btn-main-singleplayer" class="menu-btn menu-btn--primary btn-large">

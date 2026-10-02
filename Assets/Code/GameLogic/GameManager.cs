@@ -10,6 +10,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.Serialization;
 using Code.Scripts.Audio;
+using Code.Domain;
 
 namespace Code.GameLogic
 {
@@ -646,6 +647,7 @@ namespace Code.GameLogic
             }
 
             OnTurnStarted?.Invoke(currentPlayerTurn, occupant);
+            TrucoEvents.EmitTurnChanged(currentPlayerTurn, occupant);
         }
 
         // [ClientRpc]
@@ -1203,6 +1205,8 @@ namespace Code.GameLogic
 
             if (PlayerHUD.Instance != null)
                 PlayerHUD.Instance.UpdateScore(scoreTeam1, scoreTeam2, roundsTeam1, roundsTeam2);
+
+            TrucoEvents.EmitScoresUpdated(scoreTeam1, scoreTeam2, roundsTeam1, roundsTeam2);
 
             // Broadcast to all clients in multiplayer
             if (NetworkServer.active)

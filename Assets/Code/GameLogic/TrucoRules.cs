@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Code.Cards;
 using Code.GameLogic;
 using UnityEngine;
 
@@ -7,12 +8,14 @@ namespace Code.GameLogic
 {
     public static class TrucoRules
     {
-        // Suits: "Gold", "Cup", "Sword", "Cudgel"
+        // Suits: "Gold", "Cup", "Sword", "Cudgel" (CardSuit enum)
 
         public static int GetCardRealValue(Card card, Card vira)
         {
+            if (card == null || vira == null) return 0;
+
             // Determine if the card is a special piece (Perico / Perica)
-            bool isViraSuit = (card.suit == vira.suit);
+            bool isViraSuit = (card.Suit == vira.Suit || card.suit == vira.suit);
             
             // Adjust Perico/Perica values if the vira itself is an 11 or 10
             int pericoValueTarget = (vira.value == 11) ? 12 : 11;
@@ -22,13 +25,13 @@ namespace Code.GameLogic
             if (isViraSuit && card.value == pericaValueTarget) return 99;  // Perica (Second Highest)
 
             // Espadilla (1 de Espadas)
-            if (card.suit == "Sword" && card.value == 1) return 20;
+            if (card.Suit == CardSuit.Sword && card.value == 1) return 20;
             // Bastillo (1 de Bastos)
-            if (card.suit == "Cudgel" && card.value == 1) return 19;
+            if (card.Suit == CardSuit.Cudgel && card.value == 1) return 19;
             // 7 de Espadas
-            if (card.suit == "Sword" && card.value == 7) return 18;
+            if (card.Suit == CardSuit.Sword && card.value == 7) return 18;
             // 7 de Oros
-            if (card.suit == "Gold" && card.value == 7) return 17;
+            if (card.Suit == CardSuit.Gold && card.value == 7) return 17;
 
             // Resto de las cartas en orden
             if (card.value == 3) return 16;
@@ -194,17 +197,10 @@ namespace Code.GameLogic
         {
             if (hand == null || hand.Count < 3) return false;
 
-            int pericoTarget = (vira.value == 11) ? 12 : 11;
-            int pericaTarget = (vira.value == 10) ? 12 : 10;
-
             int piecesCount = 0;
-            string firstNormalSuit = "";
-            int sameSuitCount = 0;
-
             foreach (var card in hand)
             {
-                bool isPiece = (card.suit == vira.suit && (card.value == pericoTarget || card.value == pericaTarget));
-                if (isPiece) piecesCount++;
+                if (IsPiece(card, vira)) piecesCount++;
             }
 
             // 2 pieces always make a Flor (Perico + Perica + anything)
@@ -220,18 +216,32 @@ namespace Code.GameLogic
                 Card secondNormal = null;
                 foreach (var card in hand)
                 {
-                    bool isPiece = (card.suit == vira.suit && (card.value == pericoTarget || card.value == pericaTarget));
-                    if (!isPiece)
+                    if (!IsPiece(card, vira))
                     {
                         if (firstNormal == null) firstNormal = card;
                         else secondNormal = card;
                     }
                 }
-                return firstNormal != null && secondNormal != null && firstNormal.suit == secondNormal.suit;
+                return firstNormal != null && secondNormal != null && IsSameSuit(firstNormal, secondNormal);
             }
 
             // 0 pieces: 3 cards of same suit
-            return hand[0].suit == hand[1].suit && hand[1].suit == hand[2].suit;
+            return IsSameSuit(hand[0], hand[1]) && IsSameSuit(hand[1], hand[2]);
+        }
+
+        public static bool IsSameSuit(Card a, Card b)
+        {
+            if (a == null || b == null) return false;
+            return a.Suit == b.Suit || a.suit == b.suit;
+        }
+
+        public static bool IsPiece(Card card, Card vira)
+        {
+            if (card == null || vira == null) return false;
+            if (!IsSameSuit(card, vira)) return false;
+            int pericoTarget = (vira.value == 11) ? 12 : 11;
+            int pericaTarget = (vira.value == 10) ? 12 : 10;
+            return card.value == pericoTarget || card.value == pericaTarget;
         }
 
         private static int GetEnvidoValue(Card card, bool isPerico, bool isPerica)

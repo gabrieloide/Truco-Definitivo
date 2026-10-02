@@ -10,6 +10,7 @@ using UnityEngine.UI;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
 using Code.Scripts.Audio;
+using Code.Domain;
 
 namespace Code.Player
 {
@@ -96,6 +97,8 @@ namespace Code.Player
 
             GameManager.OnTurnStarted += HandleTurnStarted;
             GameManager.OnScoreChanged += UpdateScore;
+            TrucoEvents.OnNotificationMessage += NotifyEvent;
+            TrucoEvents.OnScoresUpdated += UpdateScore;
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
@@ -234,22 +237,7 @@ namespace Code.Player
             _envidoStakeLabel = new Label();
             _envidoStakeLabel.name = "envido-stake-label";
             _envidoStakeLabel.pickingMode = PickingMode.Ignore;
-            _envidoStakeLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-            _envidoStakeLabel.style.fontSize = 22;
-            _envidoStakeLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            _envidoStakeLabel.style.color = new StyleColor(new Color(1f, 0.85f, 0.2f));
-            // Fondo + outline para que se lea sobre cualquier escena
-            _envidoStakeLabel.style.backgroundColor = new StyleColor(new Color(0f, 0f, 0f, 0.65f));
-            _envidoStakeLabel.style.unityTextOutlineWidth = 1.5f;
-            _envidoStakeLabel.style.unityTextOutlineColor = new StyleColor(Color.black);
-            _envidoStakeLabel.style.paddingTop = 6;
-            _envidoStakeLabel.style.paddingBottom = 6;
-            _envidoStakeLabel.style.paddingLeft = 18;
-            _envidoStakeLabel.style.paddingRight = 18;
-            _envidoStakeLabel.style.borderTopLeftRadius = 10;
-            _envidoStakeLabel.style.borderTopRightRadius = 10;
-            _envidoStakeLabel.style.borderBottomLeftRadius = 10;
-            _envidoStakeLabel.style.borderBottomRightRadius = 10;
+            _envidoStakeLabel.AddToClassList("envido-stake-chip");
             _envidoStakeLabel.style.display = DisplayStyle.None;
 
             envidoStakeRow.Add(_envidoStakeLabel);
@@ -398,6 +386,8 @@ namespace Code.Player
 
             GameManager.OnTurnStarted -= HandleTurnStarted;
             GameManager.OnScoreChanged -= UpdateScore;
+            TrucoEvents.OnNotificationMessage -= NotifyEvent;
+            TrucoEvents.OnScoresUpdated -= UpdateScore;
             SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
@@ -473,7 +463,6 @@ namespace Code.Player
                 if (isYourTurn)
                 {
                     _turnLabel.text = "¡TU TURNO!";
-                    _turnLabel.style.color = new StyleColor(Color.green);
                 }
             }
 

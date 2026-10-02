@@ -1,151 +1,194 @@
 /* =========================================================
-   PLAYER HUD STYLES (FLAT 2.0 / MODERN)
+   TRUCO DEFINITIVO - PLAYER HUD STYLES
+   Game Aesthetic: Bold, Tactile, Minimalist & Cohesive
    ========================================================= */
 
+/* --- ROOT HUD CONTAINER --- */
 .hud-container {
     flex-grow: 1;
     width: 100%;
     height: 100%;
-    justify-content: space-between; /* Pushes top-bar to the top, bottom-area to the bottom */
-    padding: 30px;
+    justify-content: space-between;
+    padding: 0;
 }
 
 /* =========================================================
-   TOP BAR PANELS (Cream & Paper Style)
+   TOP BAR (HEROIC SCOREBOARD PLAQUE & UTILITY BUTTONS)
    ========================================================= */
 .hud-top-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
     flex-direction: row;
-    justify-content: flex-start; /* Mover el banner a la esquina superior izquierda */
+    justify-content: center;
     align-items: flex-start;
-    width: 100%;
 }
 
+/* --- TANTEADOR DE TRUCO (Central Scoreboard Plaque) --- */
 .central-banner {
-    background-color: #242933; /* Pizarra oscura */
-    border-radius: 20px;
-    padding: 10px 20px; /* Padding mucho más pequeño */
-    border-width: 6px;
-    border-color: #E6C875; /* Borde dorado */
-    border-bottom-width: 8px; /* Sombra reducida */
-    border-bottom-color: #A38543; 
+    background-color: rgba(14, 18, 26, 0.96);
+    border-bottom-left-radius: 18px;
+    border-bottom-right-radius: 18px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    padding: 10px 28px 14px 28px;
+    border-top-width: 0;
+    border-bottom-width: 4.5px;
+    border-bottom-color: rgba(0, 0, 0, 0.75);
+    border-left-width: 1.5px;
+    border-left-color: rgba(232, 211, 158, 0.35);
+    border-right-width: 1.5px;
+    border-right-color: rgba(232, 211, 158, 0.35);
     align-items: center;
-    min-width: 250px;
-    width: auto; /* Permite que el contenedor crezca si los puntos necesitan espacio */
+    min-width: 320px;
+    width: auto;
     max-width: 90%;
-    margin-left: 10px; /* Pequeño margen para no pegar a la pared */
-    margin-top: 10px;
+}
+
+.hud-team__text {
+    color: #BAC7D5;
+    font-size: 13px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    letter-spacing: 2px;
+    margin-bottom: 2px;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
 }
 
 .central-banner .hud-score__text {
-    font-size: 32px; /* Puntaje más pequeño (antes 50px) */
+    color: #FFFFFF;
+    font-size: 38px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    letter-spacing: 3px;
+    text-shadow: 0 3px 12px rgba(0, 0, 0, 0.95);
+    margin-top: -2px;
+    margin-bottom: 2px;
 }
 
-.hud-team__text { color: #FFF2C8; font-size: 18px; -unity-font-style: bold; -unity-text-align: middle-center; letter-spacing: 1.5px; }
-.hud-score__text, .hud-tricks__text { color: #E6C875; font-size: 28px; -unity-font-style: bold; -unity-text-align: middle-center; -unity-text-outline-width: 1px; -unity-text-outline-color: #A38543; text-shadow: 0px 3px 0px rgba(0,0,0,0.6); }
-.hud-turn__text { color: #FFF2C8; font-size: 24px; -unity-font-style: bold; -unity-text-align: middle-center; -unity-text-outline-width: 1px; -unity-text-outline-color: #A38543; text-shadow: 0px 3px 0px rgba(0,0,0,0.6); }
+/* --- TURN INDICATOR BANNER --- */
+.hud-turn-indicator {
+    margin-top: 8px;
+    align-items: center;
+}
 
-/* DOTS BAZAS (FIGHTING GAME STYLE) */
+.hud-turn__text {
+    color: #FFF1C5;
+    font-size: 15px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    letter-spacing: 2.5px;
+    background-color: rgba(232, 211, 158, 0.2);
+    border-radius: 12px;
+    border-top-width: 1px;
+    border-top-color: #FFF4D1;
+    border-bottom-width: 3px;
+    border-bottom-color: rgba(160, 125, 55, 0.8);
+    border-left-width: 1px;
+    border-left-color: #E8D39E;
+    border-right-width: 1px;
+    border-right-color: #E8D39E;
+    padding: 5px 22px;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+}
+
+/* --- TRICKS DOTS (BAZAS PIPS / GEMSTONES) --- */
 .tricks-dots-container {
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    margin-top: 15px;
+    margin-top: 6px;
     width: 100%;
 }
 
 .team-dots {
     flex-direction: row;
     align-items: center;
-    margin: 0 5px; /* Reducido para evitar desbordamientos */
+    margin: 0 4px;
 }
 
 .trick-dot {
-    width: 16px;
-    height: 16px;
-    min-width: 16px;
-    min-height: 16px;
-    max-width: 16px;
-    max-height: 16px;
-    flex-shrink: 0; /* Evita que el contenedor los aplaste convirtiéndolos en óvalos */
-    border-radius: 50%;
-    background-color: #1A1E24; /* Vacío */
-    border-width: 2px;
-    border-color: #A38543;
-    margin: 0 3px; /* Reducido para que quepan bien */
-    transition-property: background-color, border-color, width, height, min-width, min-height, max-width, max-height;
+    width: 14px;
+    height: 14px;
+    min-width: 14px;
+    min-height: 14px;
+    max-width: 14px;
+    max-height: 14px;
+    flex-shrink: 0;
+    border-radius: 7px;
+    background-color: rgba(0, 0, 0, 0.65);
+    border-width: 1.5px;
+    border-color: rgba(255, 255, 255, 0.22);
+    margin: 0 4px;
+    transition-property: background-color, border-color, scale;
     transition-duration: 0.15s;
 }
 
 .trick-dot.filled {
-    background-color: #FFF2C8; /* Lleno */
-    border-color: #FFF2C8;
-    width: 20px;
-    height: 20px;
-    min-width: 20px;
-    min-height: 20px;
-    max-width: 20px;
-    max-height: 20px;
+    background-color: #FFC83B;
+    border-color: #FFF6C4;
+    scale: 1.25;
 }
 
-/* TOP RIGHT ICON BUTTONS */
+.dots-separator {
+    width: 16px;
+}
+
+/* --- TOP RIGHT CORNER HUD BUTTONS (Tactile Squircle Plaques) --- */
 .hud-btn-icon {
     position: absolute;
-    top: 0;
-    background-color: #E6C875;
-    border-radius: 20px;
-    width: 80px; /* Aumentado de 60px a 80px */
-    height: 80px; /* Aumentado de 60px a 80px */
+    top: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
     justify-content: center;
     align-items: center;
-    border-width: 4px;
-    border-bottom-width: 8px;
-    border-color: #FFF2C8;
-    border-bottom-color: #A38543;
-    transition-property: scale, translate, border-bottom-width, background-color;
-    transition-duration: 0.1s;
-    transition-timing-function: ease-out-bounce;
+    border-top-width: 1.5px;
+    border-top-color: rgba(255, 255, 255, 0.35);
+    border-bottom-width: 4px;
+    border-bottom-color: rgba(0, 0, 0, 0.65);
+    border-left-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.1);
+    border-right-width: 1px;
+    border-right-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(22, 28, 38, 0.94);
+    transition-property: scale, translate, background-color, border-color;
+    transition-duration: 0.12s;
+    transition-timing-function: ease-out;
 }
 
-.hud-btn-pause { right: 0; }
-.hud-btn-info { right: 95px; background-color: #37474F; border-color: #546E7A; border-bottom-color: #263238; }
-.hud-btn-camera { right: 190px; background-color: #512DA8; border-color: #673AB7; border-bottom-color: #311B92; }
+.hud-btn-pause  { right: 18px; }
+.hud-btn-info   { right: 74px; }
+.hud-btn-camera { right: 130px; }
+.hud-btn-look   { right: 186px; }
 
-.hud-btn-icon:hover { scale: 1.05; }
-.hud-btn-pause:hover { background-color: #FFF2C8; }
-.hud-btn-info:hover { background-color: #455A64; }
-.hud-btn-camera:hover { background-color: #673AB7; }
-
-.hud-btn-icon:active { translate: 0px 4px; border-bottom-width: 4px; scale: 1; }
-
-.hud-btn-icon__text { font-size: 36px; -unity-font-style: bold; } /* Texto más grande */
-.hud-btn-pause .hud-btn-icon__text { color: #242933; }
-.hud-btn-info .hud-btn-icon__text { color: #ffffff; }
-.hud-btn-camera .hud-btn-icon__text { color: #ffffff; }
-
-/* TURN INDICATOR (BOTTOM) */
-.bottom-turn-indicator {
-    position: absolute;
-    bottom: 25%; /* Aparece justo encima de las cartas */
-    left: 0;
-    right: 0;
-    align-items: center;
-    justify-content: center;
-    background-color: transparent;
-    border-width: 0;
-    pointer-events: none;
+.hud-btn-icon:hover {
+    scale: 1.05;
+    translate: 0 -2px;
+    background-color: rgba(36, 46, 62, 0.98);
+    border-top-color: rgba(255, 255, 255, 0.6);
 }
 
-.bottom-turn-indicator .hud-turn__text {
-    font-size: 32px;
-    text-shadow: 0px 4px 0px rgba(0,0,0,0.8);
+.hud-btn-icon:active {
+    scale: 0.95;
+    translate: 0 3px;
+    border-bottom-width: 1.5px;
+}
+
+.hud-btn-icon__text {
+    font-size: 18px;
+    -unity-font-style: bold;
+    color: #F0F4F8;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 /* =========================================================
-   EVENT OVERLAY (NOTIFICATIONS)
+   EVENT OVERLAY (ANNOUNCEMENT / CANTO HERO BANNER)
    ========================================================= */
 .hud-event-overlay {
     position: absolute;
-    top: 35%;
+    top: 32%;
     left: 0;
     right: 0;
     align-items: center;
@@ -155,26 +198,27 @@
 #notification-label {
     display: flex;
     opacity: 0;
-    scale: 0.5;
-    background-color: #242933;
-    color: #FFF2C8;
-    font-size: 64px;
+    scale: 0.8;
+    background-color: rgba(14, 18, 26, 0.97);
+    color: #FFDF80;
+    font-size: 46px;
     -unity-font-style: bold;
-    padding: 30px 60px;
-    border-radius: 20px;
-    border-width: 6px;
-    border-color: #E6C875;
-    border-bottom-width: 14px;
-    border-bottom-color: #A38543;
+    letter-spacing: 4px;
+    padding: 18px 52px;
+    border-radius: 16px;
+    border-top-width: 2px;
+    border-top-color: #E8D39E;
+    border-bottom-width: 5px;
+    border-bottom-color: rgba(0, 0, 0, 0.8);
+    border-left-width: 1.5px;
+    border-left-color: rgba(232, 211, 158, 0.4);
+    border-right-width: 1.5px;
+    border-right-color: rgba(232, 211, 158, 0.4);
     -unity-text-align: middle-center;
-    rotate: -3deg; 
-    -unity-text-outline-width: 2px;
-    -unity-text-outline-color: #A38543;
-    text-shadow: 0px 6px 0px rgba(0,0,0,0.6);
-    
+    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.95);
     transition-property: opacity, scale;
-    transition-duration: 0.25s;
-    transition-timing-function: ease-out-back;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-out;
 }
 
 #notification-label.visible {
@@ -183,261 +227,275 @@
 }
 
 /* =========================================================
-   BOTTOM AREA (Structural Flex Layout)
+   BOTTOM AREA (CANTOS: TRUCO, ENVIDO, FLOR, A LEY)
    ========================================================= */
 .hud-bottom-area {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
     flex-direction: column;
-    justify-content: flex-end; /* Everything stays at the bottom */
-    align-items: flex-start; /* Everything anchors to the left */
-    width: 100%;
+    justify-content: flex-end;
+    align-items: flex-start;
+}
+
+#hud-action-bar {
+    flex-direction: row;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    width: 370px;
+    max-width: 370px;
+}
+
+#hud-action-bar .hud-btn {
+    width: 172px;
+    height: 56px;
+    min-height: 56px;
+    margin: 6px;
 }
 
 /* =========================================================
-   RIGHT AREA (Response Buttons)
+   RIGHT AREA (RESPONSES: QUIERO, NO QUIERO, RE-ENVIDAR)
    ========================================================= */
 .hud-right-area {
     position: absolute;
     top: 0;
     bottom: 0;
-    right: 30px;
-    justify-content: center; /* Center vertically */
-    align-items: flex-end; /* Anchor to the right */
-    pointer-events: none; /* Let clicks pass through the invisible container */
+    right: 28px;
+    justify-content: center;
+    align-items: flex-end;
 }
 
-.hud-right-area > * {
-    pointer-events: auto; /* Re-enable clicks for actual buttons */
-}
-
-/* Response Bar: Vertical Stack */
 #hud-response-bar {
     flex-direction: column;
-    align-items: center; /* Center buttons within their column */
+    align-items: center;
+    background-color: rgba(14, 18, 26, 0.96);
+    border-radius: 16px;
+    border-top-width: 1.5px;
+    border-top-color: rgba(232, 211, 158, 0.4);
+    border-bottom-width: 5px;
+    border-bottom-color: rgba(0, 0, 0, 0.7);
+    border-left-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.1);
+    border-right-width: 1px;
+    border-right-color: rgba(255, 255, 255, 0.1);
+    padding: 22px 24px;
+    width: 250px;
 }
 
-/* Action Bar (Cantos): 2x2 Grid using flex-wrap and max-width */
-#hud-action-bar {
-    flex-direction: row;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    width: 350px; /* Force explicit width to ensure 2x2 wrapping */
-    max-width: 350px;
-}
-
-#hud-action-bar .hud-btn {
-    width: 160px;
-}
-
-/* =========================================================
-   BUTTONS (FLAT 2.0)
-   ========================================================= */
-.hud-btn {
-    border-radius: 12px;
-    padding: 14px 30px;
-    margin: 6px;
-    border-width: 4px;
-    border-bottom-width: 8px;
-    transition-property: scale, translate, border-bottom-width, background-color;
-    transition-duration: 0.1s;
-    transition-timing-function: ease-out-bounce;
-}
-
-.hud-btn:hover { scale: 1.05; }
-.hud-btn:active { translate: 0px 4px; border-bottom-width: 4px; scale: 1; }
-
-.hud-btn__text {
-    font-size: 22px;
+.hud-response-title__text {
+    color: #E8D39E;
+    font-size: 16px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
-    letter-spacing: 1px;
-    color: #ffffff;
-    -unity-text-outline-width: 1px;
-    -unity-text-outline-color: rgba(0,0,0,0.8);
-    text-shadow: 0px 2px 0px rgba(0,0,0,0.5);
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+    width: 100%;
+    white-space: normal;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
 }
 
-/* --- COLOR VARIANTS --- */
-.hud-btn--accept { background-color: #D32F2F; border-color: #F44336; border-bottom-color: #9A0007; }
-.hud-btn--accept:hover { background-color: #F44336; }
-
-.hud-btn--decline { background-color: #E64A19; border-color: #FF5722; border-bottom-color: #BF360C; }
-.hud-btn--decline:hover { background-color: #FF5722; }
-
-.hud-btn--more { background-color: #E6C875; border-color: #FFF2C8; border-bottom-color: #A38543; }
-.hud-btn--more:hover { background-color: #FFF2C8; }
-.hud-btn--more > .hud-btn__text { color: #242933; text-shadow: none; -unity-text-outline-width: 0px; }
-
-.hud-btn--aley { background-color: #512DA8; border-color: #673AB7; border-bottom-color: #311B92; }
-.hud-btn--aley:hover { background-color: #673AB7; }
-
-.hud-btn--envido { background-color: #37474F; border-color: #546E7A; border-bottom-color: #263238; }
-.hud-btn--envido:hover { background-color: #455A64; }
-
-.hud-btn--truco { background-color: #388E3C; border-color: #4CAF50; border-bottom-color: #1B5E20; }
-.hud-btn--truco:hover { background-color: #4CAF50; }
-
-.hud-btn--flor { background-color: #C2185B; border-color: #E91E63; border-bottom-color: #880E4F; }
-.hud-btn--flor:hover { background-color: #E91E63; }
-
 /* =========================================================
-   SLIDER
+   SLIDER (STONES / ENVIDO POINTS)
    ========================================================= */
 .hud-slider-container {
     flex-direction: column;
     align-items: center;
-    background-color: #242933;
-    padding: 15px 25px;
-    border-radius: 20px;
-    margin: 6px; 
-    margin-bottom: 20px;
-    border-width: 6px;
-    border-color: #E6C875;
-    border-bottom-width: 10px;
-    border-bottom-color: #A38543;
+    background-color: rgba(0, 0, 0, 0.45);
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin: 10px 0;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.08);
+    width: 100%;
 }
 
 .hud-slider__label {
-    color: #E6C875;
-    font-size: 20px;
+    color: #E8D39E;
+    font-size: 14px;
     -unity-font-style: bold;
-    margin-bottom: 8px;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
 }
 
 .hud-slider {
-    width: 200px;
+    width: 190px;
 }
 
 .hud-slider .unity-base-slider__tracker {
-    background-color: #1A1E24;
-    height: 14px;
-    border-radius: 7px;
+    background-color: rgba(255, 255, 255, 0.15);
+    height: 6px;
+    border-radius: 3px;
     border-width: 0;
-    margin-top: -7px;
+    margin-top: -3px;
 }
 
 .hud-slider .unity-base-slider__dragger {
-    background-color: #E6C875;
-    width: 36px;
-    height: 36px;
-    border-radius: 18px;
-    border-width: 6px;
-    border-color: #FFF2C8;
-    margin-top: -18px;
+    background-color: #FFD56B;
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    border-width: 2px;
+    border-color: #FFF3C4;
+    margin-top: -10px;
+    transition-property: scale;
+    transition-duration: 0.1s;
+}
+
+.hud-slider .unity-base-slider__dragger:hover {
+    scale: 1.25;
 }
 
 /* =========================================================
-   HIERARCHY MODAL (ESCALERA)
+   HUD BUTTONS (TACTILE 3D BEVEL & HIGH GAME IMPACT)
    ========================================================= */
-.hierarchy-modal-overlay {
-    display: none;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(10, 14, 20, 0.9); /* Dark overlay */
-    justify-content: center;
+.hud-btn {
+    border-radius: 12px;
+    height: 52px;
+    min-height: 52px;
+    padding: 0 18px;
     align-items: center;
-    opacity: 0;
-    pointer-events: none;
-    transition-property: opacity;
-    transition-duration: 0.2s;
+    justify-content: center;
+    border-top-width: 1.5px;
+    border-top-color: rgba(255, 255, 255, 0.35);
+    border-bottom-width: 4.5px;
+    border-bottom-color: rgba(0, 0, 0, 0.65);
+    border-left-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.1);
+    border-right-width: 1px;
+    border-right-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(28, 36, 48, 0.95);
+    transition-property: scale, translate, background-color, border-color;
+    transition-duration: 0.12s;
     transition-timing-function: ease-out;
 }
 
-.hierarchy-modal-overlay.visible {
-    display: flex;
-    opacity: 1;
-    pointer-events: auto;
+.hud-btn:hover {
+    scale: 1.03;
+    translate: 0 -2px;
+    border-top-color: rgba(255, 255, 255, 0.6);
 }
 
-.hierarchy-panel {
-    background-color: #242933; /* Dark slate */
-    border-radius: 20px;
-    padding: 30px 40px;
-    border-width: 6px;
-    border-color: #E6C875; /* Gold */
-    border-bottom-width: 12px;
-    border-bottom-color: #A38543;
-    width: 600px;
-    max-width: 90%;
-    max-height: 80%;
-    flex-direction: column;
-    
-    scale: 0.8;
-    transition-property: scale;
-    transition-duration: 0.2s;
-    transition-timing-function: ease-out-back;
+.hud-btn:active {
+    scale: 0.98;
+    translate: 0 4px;
+    border-bottom-width: 1.5px;
 }
 
-.hierarchy-modal-overlay.visible .hierarchy-panel {
-    scale: 1;
-}
-
-.hierarchy-title {
-    color: #E6C875;
-    font-size: 26px;
+.hud-btn__text {
+    font-size: 19px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
-    margin-bottom: 20px;
-    -unity-text-outline-width: 1px;
-    -unity-text-outline-color: #A38543;
-    text-shadow: 0px 3px 0px rgba(0,0,0,0.6);
-    white-space: normal;
+    letter-spacing: 2px;
+    color: #FFFFFF;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
 }
 
-.hierarchy-scroll {
-    flex-grow: 1;
-    background-color: #1A1E24; /* Even darker inset */
-    border-radius: 10px;
-    padding: 15px;
-    border-width: 4px;
-    border-color: #37474F;
-    margin-bottom: 15px;
+/* Color Variants */
+.hud-btn--accept {
+    background-color: #1E824C;
+    border-top-color: rgba(130, 240, 160, 0.6);
+    border-bottom-color: #0A3D20;
+    width: 100%;
+    height: 54px;
+    min-height: 54px;
 }
 
-.hierarchy-item {
-    font-size: 24px;
-    -unity-font-style: bold;
-    padding: 8px 15px;
-    margin: 4px 0;
-    border-radius: 8px;
-    -unity-text-align: middle-left;
+.hud-btn--accept:hover {
+    background-color: #259E5D;
+    border-top-color: rgba(170, 255, 190, 0.8);
 }
 
-.hierarchy-item--high { background-color: #4CAF50; color: #ffffff; }
-.hierarchy-item--mid { background-color: #FF9A55; color: #ffffff; }
-.hierarchy-item--low { background-color: #546E7A; color: #ffffff; }
-.hierarchy-item--lowest { background-color: #37474F; color: #B0BEC5; }
-
-/* RESPONSE TITLE (TE CANTARON ENVIDO/TRUCO/ETC) */
-.hud-response-title__text {
-    color: #FFF2C8;
-    font-size: 16px;
-    -unity-font-style: bold;
-    -unity-text-align: middle-center;
-    background-color: #242933;
-    padding: 8px 16px;
-    border-radius: 10px;
-    border-width: 4px;
-    border-color: #E6C875;
-    border-bottom-width: 6px;
-    border-bottom-color: #A38543;
-    margin: 6px;
-    margin-bottom: 12px;
-    width: 200px;
-    white-space: normal;
-    text-shadow: 0px 2px 0px rgba(0,0,0,0.5);
-    -unity-text-outline-width: 1px;
-    -unity-text-outline-color: rgba(0,0,0,0.8);
+.hud-btn--decline {
+    background-color: #7A2424;
+    border-top-color: rgba(255, 140, 140, 0.45);
+    border-bottom-color: #380C0C;
+    width: 100%;
+    height: 48px;
+    min-height: 48px;
+    margin-top: 8px;
 }
+
+.hud-btn--decline:hover {
+    background-color: #962E2E;
+    border-top-color: rgba(255, 180, 180, 0.7);
+}
+
+.hud-btn--decline .hud-btn__text {
+    font-size: 17px;
+    color: #FFCCCC;
+}
+
+.hud-btn--more {
+    background-color: #B57E1E;
+    border-top-color: rgba(255, 220, 140, 0.6);
+    border-bottom-color: #543605;
+    width: 100%;
+    height: 48px;
+    min-height: 48px;
+    margin-top: 8px;
+}
+
+.hud-btn--more:hover {
+    background-color: #D19424;
+    border-top-color: rgba(255, 240, 180, 0.8);
+}
+
+.hud-btn--more .hud-btn__text {
+    font-size: 17px;
+    color: #FFF6DD;
+}
+
+/* Action Variants (Cantos) */
+.hud-btn--truco {
+    background-color: #A92D2D;
+    border-top-color: rgba(255, 160, 160, 0.6);
+    border-bottom-color: #4A0D0D;
+}
+
+.hud-btn--truco:hover {
+    background-color: #C73636;
+    border-top-color: rgba(255, 200, 200, 0.8);
+}
+
+.hud-btn--envido {
+    background-color: #C2821A;
+    border-top-color: rgba(255, 220, 140, 0.6);
+    border-bottom-color: #573705;
+}
+
+.hud-btn--envido:hover {
+    background-color: #DB9522;
+    border-top-color: rgba(255, 240, 180, 0.8);
+}
+
+.hud-btn--flor {
+    background-color: #7B2CBF;
+    border-top-color: rgba(220, 150, 255, 0.6);
+    border-bottom-color: #370F59;
+}
+
+.hud-btn--flor:hover {
+    background-color: #9239E0;
+    border-top-color: rgba(240, 190, 255, 0.8);
+}
+
+.hud-btn--aley {
+    background-color: #1E5AA8;
+    border-top-color: rgba(140, 190, 255, 0.6);
+    border-bottom-color: #0B254A;
+}
+
+.hud-btn--aley:hover {
+    background-color: #2874D4;
+    border-top-color: rgba(180, 220, 255, 0.8);
+}
+
 /* =========================================================
-   CARD ACTION MENU (móvil): chico y centrado encima de las cartas,
-   sin ocupar todo el ancho de abajo.
+   CARD ACTION MENU (JUGAR / QUEMAR)
    ========================================================= */
 .card-action-menu {
     position: absolute;
-    bottom: 25%;
+    bottom: 22%;
     left: 0;
     right: 0;
     flex-direction: row;
@@ -446,15 +504,160 @@
 }
 
 .card-action-menu .hud-btn {
-    padding: 8px 18px;
-    margin: 4px;
+    height: 50px;
+    min-height: 50px;
+    padding: 0 28px;
+    margin: 0 8px;
+    width: auto;
+    min-width: 140px;
 }
 
 .card-action-menu .hud-btn__text {
     font-size: 18px;
+    letter-spacing: 2px;
 }
 
-/* Botón "mirar las cartas" (sólo móvil; en PC son las teclas W/S) */
-.hud-btn-look { right: 285px; background-color: #00695C; border-color: #26A69A; border-bottom-color: #004D40; }
-.hud-btn-look:hover { background-color: #00897B; }
-.hud-btn-look .hud-btn-icon__text { color: #ffffff; }
+/* =========================================================
+   ENVIDO STAKE INDICATOR (PIEDRAS EN JUEGO)
+   ========================================================= */
+.envido-stake-chip {
+    font-size: 18px;
+    -unity-font-style: bold;
+    color: #FFDF80;
+    background-color: rgba(14, 18, 26, 0.95);
+    border-width: 1.5px;
+    border-color: #E8D39E;
+    border-bottom-width: 3.5px;
+    border-bottom-color: rgba(0, 0, 0, 0.7);
+    border-radius: 14px;
+    padding: 8px 24px;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+}
+
+/* =========================================================
+   MODALS (ESCALERA, PAUSE, MATCH END, QUIT CONFIRM)
+   ========================================================= */
+.hierarchy-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(6, 8, 12, 0.85);
+    align-items: center;
+    justify-content: center;
+    display: none;
+}
+
+.hierarchy-modal-overlay.visible {
+    display: flex;
+}
+
+.hierarchy-panel {
+    background-color: rgba(15, 19, 27, 0.97);
+    border-radius: 18px;
+    border-top-width: 2px;
+    border-top-color: rgba(232, 211, 158, 0.45);
+    border-bottom-width: 5px;
+    border-bottom-color: rgba(0, 0, 0, 0.75);
+    border-left-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.1);
+    border-right-width: 1px;
+    border-right-color: rgba(255, 255, 255, 0.1);
+    padding: 32px 38px;
+    width: 480px;
+    max-width: 90%;
+    align-items: center;
+}
+
+.modal-panel--compact {
+    width: 420px;
+    padding: 32px 36px;
+}
+
+.hierarchy-title {
+    color: #E8D39E;
+    font-size: 24px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    letter-spacing: 2px;
+    margin-bottom: 22px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.hierarchy-scroll {
+    width: 100%;
+    height: 340px;
+    margin-bottom: 22px;
+    background-color: rgba(8, 11, 16, 0.6);
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.08);
+    padding: 8px 12px;
+}
+
+.hierarchy-item {
+    font-size: 15px;
+    -unity-font-style: bold;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.hierarchy-item--high {
+    color: #FFD56B;
+    background-color: rgba(255, 213, 107, 0.08);
+}
+
+.hierarchy-item--mid {
+    color: #FFFFFF;
+}
+
+.hierarchy-item--low {
+    color: #A0B0C2;
+}
+
+.hierarchy-item--lowest {
+    color: #6E7D8F;
+}
+
+.modal-vertical-btns {
+    width: 100%;
+    align-items: stretch;
+}
+
+.modal-btn-row {
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 12px;
+}
+
+.modal-btn {
+    width: 100%;
+    height: 52px;
+    min-height: 52px;
+    margin: 6px 0;
+}
+
+.modal-btn-row > .modal-btn {
+    width: 48%;
+    margin: 0;
+}
+
+.modal-close-btn {
+    width: 60%;
+    height: 48px;
+    min-height: 48px;
+}
+
+.match-end-subtitle {
+    color: #BAC7D5;
+    font-size: 17px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+}

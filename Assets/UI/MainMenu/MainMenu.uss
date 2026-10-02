@@ -1,189 +1,269 @@
 /* =========================================================
-   MAIN MENU STYLES (FLAT 2.0 / MODERN)
+   TRUCO DEFINITIVO - MAIN MENU STYLES
+   Game Aesthetic: Bold, Tactile, Minimalist & Cohesive
    ========================================================= */
 
+/* --- ROOT CONTAINER --- */
 .menu-root {
     flex-grow: 1;
     width: 100%;
     height: 100%;
-    /* Fondo oscuro rollo tapete de casino / taberna nocturna */
-    background-color: rgba(20, 26, 31, 0.85); 
+    background-color: rgba(10, 13, 18, 0.94);
 }
 
-/* =========================================================
-   SCREEN CONTAINERS
-   ========================================================= */
+/* --- SCREEN CONTAINERS --- */
 .screen-container {
     position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     align-items: center;
     justify-content: center;
+    transition-property: opacity;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-out;
 }
 
-/* New Left Layout for Main Menu */
+/* --- MAIN MENU HERO LAYOUT (Centered Game Title Screen) --- */
 .main-layout {
     flex-direction: column;
-    align-items: flex-start; /* Mueve el contenedor de botones a la izquierda */
+    align-items: center;
     justify-content: center;
-    padding: 5% 8%; /* Un poco más de margen lateral para que no pegue al borde */
+    padding: 40px;
 }
 
 .main-buttons-container {
-    width: 400px;
+    width: 380px;
     max-width: 90%;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
 }
 
-/* =========================================================
-   PANELS (Cream & Paper Style)
-   ========================================================= */
-.panel-container {
-    background-color: #242933;
-    border-radius: 20px;
-    padding: 5%;
-    width: 600px;
-    max-width: 100%;
-    border-width: 6px;
-    border-color: #E6C875;
-    border-bottom-width: 14px;
-    border-bottom-color: #A38543;
-    align-items: center;
-}
-
-.lobby-panel {
-    width: 900px; /* Wider for the side-by-side lobby cards */
-    max-width: 100%;
-    padding: 5%;
-}
-
-/* =========================================================
-   TYPOGRAPHY
-   ========================================================= */
+/* --- TYPOGRAPHY --- */
 .title-text {
-    color: #FFF2C8; /* Oro muy claro brillante */
-    font-size: 40px;
+    color: #E8D39E;
+    font-size: 34px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
-    margin-bottom: 20px;
-    letter-spacing: 2px;
-    -unity-text-outline-width: 2px;
-    -unity-text-outline-color: #A38543;
-    text-shadow: 0px 6px 0px rgba(0,0,0,0.6); 
+    letter-spacing: 3px;
+    margin-bottom: 24px;
+    text-shadow: 0 3px 12px rgba(0, 0, 0, 0.9);
 }
 
 .title-main {
     -unity-text-align: middle-center;
-    font-size: 70px;
-    margin-bottom: 60px;
+    font-size: 58px;
+    letter-spacing: 6px;
+    color: #FFFFFF;
+    margin-bottom: 6px;
     width: 100%;
     white-space: normal;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.95);
+}
+
+.main-subtitle {
+    font-size: 13px;
+    letter-spacing: 5px;
+    color: #E8D39E;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    margin-bottom: 38px;
+    padding: 5px 20px;
+    border-radius: 12px;
+    background-color: rgba(232, 211, 158, 0.1);
+    border-width: 1px;
+    border-color: rgba(232, 211, 158, 0.3);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
 }
 
 .subtitle-text {
-    color: #E27B58;
-    font-size: 28px;
+    color: #E8D39E;
+    font-size: 22px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
-    margin-bottom: 20px;
+    letter-spacing: 2px;
+    margin-bottom: 18px;
 }
 
 .status-text {
-    color: #C0392B;
-    font-size: 22px;
+    color: #FF7D7D;
+    font-size: 16px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
-    margin-top: 8px;
-    margin-bottom: 8px;
+    margin-top: 12px;
+    margin-bottom: 12px;
     white-space: normal;
+    letter-spacing: 0.5px;
 }
 
 .credits-text {
-    color: #5C4E3A;
-    font-size: 24px;
-    -unity-font-style: bold;
-    -unity-text-align: middle-center;
-    margin-bottom: 10px;
-}
-
-/* =========================================================
-   BUTTONS (FLAT 2.0)
-   ========================================================= */
-.menu-btn {
-    border-radius: 12px; /* Más cuadrado/tangible */
-    padding: 14px 30px;
-    margin: 8px 0;
-    width: 100%;
-    border-width: 4px;
-    border-bottom-width: 8px; /* Reducido para no ocupar tanto espacio */
-    transition-property: scale, translate, border-bottom-width, background-color;
-    transition-duration: 0.1s;
-    transition-timing-function: ease-out-bounce;
-}
-
-.menu-btn:hover { 
-    scale: 1.05; 
-}
-.menu-btn:active { 
-    translate: 0px 4px; /* Movimiento físico brusco hacia abajo */
-    border-bottom-width: 4px; /* Se consume el borde inferior */
-    scale: 1;
-}
-
-.btn-large {
-    padding: 18px 30px;
-    border-radius: 15px;
-    border-bottom-width: 10px;
-    margin-bottom: 15px;
-}
-.btn-large:active {
-    translate: 0px 6px; 
-    border-bottom-width: 4px; 
-}
-
-.menu-btn__text {
-    font-size: 22px;
-    -unity-font-style: bold;
+    color: #B2C4D8;
+    font-size: 17px;
+    -unity-font-style: normal;
     -unity-text-align: middle-center;
     letter-spacing: 1px;
-    color: #ffffff;
-    -unity-text-outline-width: 1px;
-    -unity-text-outline-color: rgba(0,0,0,0.8);
-    text-shadow: 0px 2px 0px rgba(0,0,0,0.5);
-}
-.btn-large__text {
-    font-size: 28px;
-    -unity-text-outline-width: 2px;
+    margin-bottom: 12px;
 }
 
-/* Color Variants: Premium Dark Theme */
-.menu-btn--primary { background-color: #D32F2F; border-color: #F44336; border-bottom-color: #9A0007; } /* Rojo Casino */
-.menu-btn--primary:hover { background-color: #F44336; }
-
-.menu-btn--secondary { background-color: #37474F; border-color: #546E7A; border-bottom-color: #263238; } /* Gris/Azul Pizarra */
-.menu-btn--secondary:hover { background-color: #455A64; }
-
-.menu-btn--danger { background-color: #E64A19; border-color: #FF5722; border-bottom-color: #BF360C; } /* Naranja/Rojo Salir */
-.menu-btn--danger:hover { background-color: #FF5722; }
-
-.menu-btn--back { background-color: #E6C875; border-color: #FFF2C8; border-bottom-color: #A38543; width: 60%; }
-.menu-btn--back:hover { background-color: #FFF2C8; }
-.menu-btn--back > .menu-btn__text { color: #242933; text-shadow: none; -unity-text-outline-width: 0px; } /* Texto oscuro sin borde para oro */
-
-/* =========================================================
-   INPUTS & SETTINGS
-   ========================================================= */
-.input-group {
-    width: 90%;
-    margin-bottom: 15px;
+/* --- PANELS & CARDS (Tactile Game Plaque) --- */
+.panel-container {
+    background-color: rgba(15, 19, 27, 0.97);
+    border-radius: 18px;
+    padding: 38px 46px;
+    width: 540px;
+    max-width: 92%;
+    border-top-width: 1.5px;
+    border-top-color: rgba(232, 211, 158, 0.4);
+    border-bottom-width: 5px;
+    border-bottom-color: rgba(0, 0, 0, 0.7);
+    border-left-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.12);
+    border-right-width: 1px;
+    border-right-color: rgba(255, 255, 255, 0.12);
     align-items: center;
 }
 
-.input-label {
-    color: #E6C875;
-    font-size: 20px;
+.lobby-panel {
+    width: 900px;
+    max-width: 95%;
+    padding: 32px 42px;
+}
+
+/* --- GAME BUTTONS (Tactile 3D Bevel & Solid Weight) --- */
+.menu-btn {
+    border-radius: 12px;
+    height: 56px;
+    min-height: 56px;
+    padding: 0 24px;
+    margin: 8px 0;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    border-top-width: 1.5px;
+    border-top-color: rgba(255, 255, 255, 0.35);
+    border-bottom-width: 5px;
+    border-bottom-color: rgba(0, 0, 0, 0.65);
+    border-left-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.1);
+    border-right-width: 1px;
+    border-right-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(28, 36, 48, 0.95);
+    transition-property: scale, translate, background-color, border-color;
+    transition-duration: 0.12s;
+    transition-timing-function: ease-out;
+}
+
+.menu-btn:hover {
+    scale: 1.02;
+    translate: 0 -2px;
+    background-color: rgba(38, 48, 64, 0.98);
+    border-top-color: rgba(255, 255, 255, 0.6);
+}
+
+.menu-btn:active {
+    scale: 0.98;
+    translate: 0 4px;
+    border-bottom-width: 1.5px;
+}
+
+.btn-large {
+    height: 64px;
+    min-height: 64px;
+    margin-bottom: 14px;
+}
+
+.menu-btn__text {
+    font-size: 19px;
     -unity-font-style: bold;
-    margin-bottom: 5px;
+    -unity-text-align: middle-center;
+    letter-spacing: 2px;
+    color: #F0F4F8;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
+}
+
+.btn-large__text {
+    font-size: 22px;
+    letter-spacing: 2.5px;
+}
+
+/* Button Color Variants */
+.menu-btn--primary {
+    background-color: #A92D2D;
+    border-top-color: rgba(255, 170, 170, 0.6);
+    border-bottom-color: #4A0E0E;
+}
+
+.menu-btn--primary:hover {
+    background-color: #C23535;
+    border-top-color: rgba(255, 210, 210, 0.8);
+}
+
+.menu-btn--primary .menu-btn__text {
+    color: #FFFFFF;
+}
+
+.menu-btn--secondary {
+    background-color: rgba(32, 41, 55, 0.95);
+    border-top-color: rgba(255, 255, 255, 0.25);
+    border-bottom-color: rgba(12, 16, 22, 0.8);
+}
+
+.menu-btn--secondary:hover {
+    background-color: rgba(44, 56, 75, 0.98);
+    border-top-color: rgba(232, 211, 158, 0.7);
+    border-color: rgba(232, 211, 158, 0.4);
+}
+
+.menu-btn--danger {
+    background-color: rgba(90, 24, 24, 0.85);
+    border-top-color: rgba(255, 120, 120, 0.35);
+    border-bottom-color: rgba(35, 8, 8, 0.9);
+}
+
+.menu-btn--danger:hover {
+    background-color: rgba(120, 32, 32, 0.95);
+    border-top-color: rgba(255, 160, 160, 0.6);
+}
+
+.menu-btn--danger .menu-btn__text {
+    color: #FFAAA0;
+}
+
+.menu-btn--back {
+    background-color: rgba(24, 30, 42, 0.85);
+    border-top-color: rgba(232, 211, 158, 0.35);
+    border-bottom-color: rgba(10, 14, 20, 0.8);
+    width: 60%;
+    height: 50px;
+    min-height: 50px;
+}
+
+.menu-btn--back:hover {
+    background-color: rgba(35, 45, 62, 0.95);
+    border-color: #E8D39E;
+}
+
+.menu-btn--back .menu-btn__text {
+    color: #E8D39E;
+    font-size: 17px;
+}
+
+/* --- INPUTS & CONTROLS (Recessed Game Slots) --- */
+.input-group {
+    width: 100%;
+    margin-bottom: 20px;
+    align-items: stretch;
+}
+
+.input-label {
+    color: #E8D39E;
+    font-size: 14px;
+    -unity-font-style: bold;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 .menu-input {
@@ -191,113 +271,136 @@
 }
 
 .menu-input > .unity-base-text-field__input {
-    background-color: #1A1E24; /* Fondo input muy oscuro */
+    background-color: rgba(8, 11, 16, 0.88);
     border-radius: 10px;
-    border-width: 4px;
-    border-color: #37474F;
-    border-top-width: 8px; 
-    border-top-color: #111418; /* Sombra interior */
-    padding: 15px;
-    font-size: 22px;
-    color: #E6C875; /* Texto dorado */
+    border-top-width: 1px;
+    border-top-color: rgba(0, 0, 0, 0.6);
+    border-bottom-width: 2px;
+    border-bottom-color: rgba(232, 211, 158, 0.35);
+    border-left-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.1);
+    border-right-width: 1px;
+    border-right-color: rgba(255, 255, 255, 0.1);
+    padding: 13px 18px;
+    font-size: 18px;
+    color: #FFFFFF;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
+    letter-spacing: 1.5px;
+    transition-property: border-color;
+    transition-duration: 0.15s;
+}
+
+.menu-input > .unity-base-text-field__input:focus {
+    border-bottom-color: #E8D39E;
+    border-color: rgba(232, 211, 158, 0.7);
 }
 
 .divider {
-    height: 4px;
-    width: 80%;
-    background-color: #A38543;
-    border-bottom-width: 2px;
-    border-bottom-color: #E6C875;
-    margin: 20px 0;
-    border-radius: 2px;
+    height: 1px;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.1);
+    margin: 22px 0;
 }
 
-/* =========================================================
-   SETTINGS ELEMENTS (SLIDERS, DROPDOWNS, TOGGLES)
-   ========================================================= */
+/* --- SETTINGS GROUPS --- */
 .settings-group {
-    width: 90%;
-    background-color: rgba(212, 196, 168, 0.3);
-    border-radius: 20px;
-    padding: 20px;
-    margin-bottom: 15px;
+    width: 100%;
+    background-color: rgba(10, 13, 19, 0.6);
+    border-radius: 14px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.08);
+    padding: 22px;
+    margin-bottom: 20px;
 }
 
 .menu-slider Label, .menu-dropdown Label, .menu-toggle Label {
-    color: #5C4E3A;
-    font-size: 20px;
+    color: #BAC7D5;
+    font-size: 15px;
     -unity-font-style: bold;
-    min-width: 180px;
+    letter-spacing: 1px;
+    min-width: 160px;
 }
 
 .menu-slider .unity-base-slider__tracker {
-    background-color: #D4C4A8;
-    height: 12px;
-    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.15);
+    height: 6px;
+    border-radius: 3px;
     border-width: 0;
-    margin-top: -6px;
+    margin-top: -3px;
 }
 
 .menu-slider .unity-base-slider__dragger {
-    background-color: #82DA5C;
-    width: 28px;
-    height: 28px;
-    border-radius: 14px;
-    border-width: 4px;
-    border-color: #5B9C3F;
-    margin-top: -14px;
+    background-color: #E8D39E;
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    border-width: 2px;
+    border-color: #FFF2CE;
+    margin-top: -10px;
+    transition-property: scale;
+    transition-duration: 0.1s;
+}
+
+.menu-slider .unity-base-slider__dragger:hover {
+    scale: 1.25;
 }
 
 .menu-dropdown .unity-base-popup-field__input {
-    background-color: #ffffff;
-    border-radius: 10px;
-    border-width: 3px;
-    border-color: #D4C4A8;
-    padding: 5px 10px;
-    color: #5C4E3A;
+    background-color: rgba(8, 11, 16, 0.88);
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.15);
+    border-bottom-width: 2px;
+    border-bottom-color: rgba(232, 211, 158, 0.35);
+    padding: 8px 14px;
+    color: #FFFFFF;
     -unity-font-style: bold;
+    font-size: 15px;
 }
 
-.menu-toggle .unity-toggle__checkmark {
-    width: 30px;
-    height: 30px;
-    border-radius: 10px;
-    border-width: 3px;
-    border-color: #D4C4A8;
-    background-color: #ffffff;
-}
-
-/* =========================================================
-   LOBBY SPECIFICS (SIDE BY SIDE CARDS)
-   ========================================================= */
+/* --- LOBBY SCREEN SPECIFICS (Team Arenas & Versus Crest) --- */
 .room-code-row {
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
+    padding: 6px 18px;
+    background-color: rgba(8, 11, 16, 0.6);
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: rgba(232, 211, 158, 0.2);
 }
 
 .room-code-label {
     margin-bottom: 0;
+    font-size: 20px;
+    letter-spacing: 3px;
+    color: #E8D39E;
+    -unity-font-style: bold;
 }
 
-/* Botón compacto que hereda el look táctil de .menu-btn */
 .menu-btn--copy {
     width: auto;
+    height: 38px;
+    min-height: 38px;
     margin: 0 0 0 14px;
-    padding: 8px 18px;
-    border-bottom-width: 6px;
+    padding: 0 16px;
+    border-radius: 8px;
+    border-bottom-width: 3px;
+    background-color: rgba(232, 211, 158, 0.18);
+    border-color: rgba(232, 211, 158, 0.35);
 }
 
-.menu-btn--copy:active {
-    translate: 0px 3px;
-    border-bottom-width: 3px;
+.menu-btn--copy:hover {
+    background-color: rgba(232, 211, 158, 0.3);
+    border-color: #E8D39E;
 }
 
 .menu-btn--copy__text {
-    font-size: 16px;
+    font-size: 13px;
+    color: #FFF0C4;
+    letter-spacing: 1.5px;
 }
 
 .lobby-teams-container {
@@ -305,77 +408,82 @@
     justify-content: space-between;
     align-items: stretch;
     width: 100%;
-    margin-bottom: 30px;
+    margin-bottom: 24px;
 }
 
 .lobby-team-card {
     flex-grow: 1;
     align-items: stretch;
-    background-color: #ffffff;
-    border-radius: 25px;
-    border-width: 4px;
-    border-bottom-width: 8px;
-    border-color: #D4C4A8;
+    background-color: rgba(12, 16, 23, 0.85);
+    border-radius: 14px;
+    border-top-width: 3.5px;
+    border-top-color: #C23535;
+    border-bottom-width: 4px;
+    border-bottom-color: rgba(0, 0, 0, 0.6);
+    border-left-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.08);
+    border-right-width: 1px;
+    border-right-color: rgba(255, 255, 255, 0.08);
     padding: 20px;
     margin: 0 10px;
-    width: 40%;
+    width: 44%;
+}
+
+.lobby-team-card:last-child {
+    border-top-color: #1E66B8;
 }
 
 .vs-badge {
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
-    width: 80px;
+    width: 68px;
 }
 
 .vs-text {
-    color: #E27B58;
-    font-size: 32px;
+    color: #E8D39E;
+    font-size: 24px;
     -unity-font-style: bold;
-    text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
-    margin-top: 16px;
-    margin-bottom: 22px;
+    letter-spacing: 3px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    margin-bottom: 14px;
 }
 
-/* Botones de intercambio de jugadores (solo los ve el host).
-   Cada uno queda a la altura de su fila de jugadores. */
 .swap-btn {
-    width: 60px;
-    height: 46px;
+    width: 46px;
+    height: 40px;
+    min-height: 40px;
     padding: 0;
-    margin: 0 0 12px 0;
+    margin: 0 0 10px 0;
     display: none;
+    border-radius: 8px;
+    border-bottom-width: 3px;
+    background-color: rgba(30, 38, 52, 0.9);
+    border-color: rgba(255, 255, 255, 0.15);
 }
 
 .swap-btn__text {
-    font-size: 28px;
+    font-size: 20px;
     letter-spacing: 0;
-}
-
-.team-title {
-    color: #6BB962;
-    font-size: 28px;
-    -unity-font-style: bold;
-    margin-bottom: 20px;
-    border-bottom-width: 4px;
-    border-color: #6BB962;
-    padding-bottom: 10px;
-    -unity-text-align: middle-center;
+    color: #E8D39E;
 }
 
 .player-slot {
-    background-color: rgba(212, 196, 168, 0.2);
-    border-radius: 15px;
-    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.45);
+    border-radius: 8px;
+    padding: 12px 16px;
     margin-bottom: 10px;
-    border-width: 2px;
-    border-color: rgba(212, 196, 168, 0.5);
+    min-height: 48px;
+    justify-content: center;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.07);
 }
 
 .player-name {
-    color: #5C4E3A;
-    font-size: 22px;
+    color: #E2E8F0;
+    font-size: 16px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
+    letter-spacing: 1px;
 }
 
 .row-buttons {
@@ -386,39 +494,43 @@
 }
 
 .row-buttons > .menu-btn {
-    width: 31%; /* Fit 3 buttons in a row */
+    width: 31%;
     margin: 0;
-    padding: 20px 10px;
+    height: 52px;
+    min-height: 52px;
 }
 
 .row-buttons > .menu-btn > .menu-btn__text {
-    font-size: 20px; /* Slightly smaller text for row buttons */
+    font-size: 16px;
+    letter-spacing: 1.5px;
 }
 
-/* =========================================================
-   TEAM NAME INPUT (lobby): se ve como el título de equipo,
-   pero editable por los miembros de ese equipo.
-   ========================================================= */
+/* Team Name Input */
 .team-name-input {
-    margin-bottom: 20px;
+    margin-bottom: 18px;
     width: 100%;
 }
 
 .team-name-input > .unity-base-text-field__input {
     background-color: transparent;
     border-width: 0;
-    border-bottom-width: 4px;
-    border-color: #6BB962;
+    border-bottom-width: 2px;
+    border-color: rgba(232, 211, 158, 0.45);
     border-radius: 0;
-    padding: 0 0 10px 0;
-    font-size: 28px;
-    color: #6BB962;
+    padding: 0 0 8px 0;
+    font-size: 20px;
+    color: #E8D39E;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
 }
 
-/* El nombre del equipo rival no es editable pero debe leerse bien */
+.team-name-input:focus > .unity-base-text-field__input {
+    border-color: #E8D39E;
+}
+
 .team-name-input.unity-disabled,
 .team-name-input:disabled {
-    opacity: 0.85;
+    opacity: 0.8;
 }

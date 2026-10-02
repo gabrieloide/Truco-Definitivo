@@ -6,6 +6,7 @@ using Mirror;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Code.Scripts.Audio;
+using Code.Domain;
 
 namespace Code.GameLogic
 {
@@ -226,6 +227,9 @@ namespace Code.GameLogic
                 }
             }
             
+            bool isMega = isSpecialCard || CheckIsMegaSlam(card);
+            float duration = isMega ? 0.38f : 0.58f;
+
             // Animate card to table using JuicyCardAnimator
             var juicyAnimator = cardObj.GetComponent<Code.Cards.JuicyCardAnimator>();
             if (juicyAnimator == null)
@@ -236,25 +240,163 @@ namespace Code.GameLogic
             juicyAnimator.AnimatePlayToTable(
                 targetPos,
                 targetRot,
-                duration: 0.6f,
+                duration: duration,
                 onImpact: () =>
                 {
                     if (JuiceVFXManager.Instance != null)
                     {
-                        if (isSpecialCard)
-                            JuiceVFXManager.Instance.ShakeCamera(0.3f, 0.15f);
+                        if (isMega)
+                        {
+                            JuiceVFXManager.Instance.ShakeCamera(0.38f, 0.22f);
+                            JuiceVFXManager.Instance.PlayImpactParticles(targetPos, new Color(1f, 0.85f, 0.35f));
+                            TriggerTableSlamShockwave(targetPos, cardObj);
+                        }
                         else
+                        {
                             JuiceVFXManager.Instance.ShakeCamera(0.15f, 0.05f);
-                        JuiceVFXManager.Instance.PlayImpactParticles(targetPos);
+                            JuiceVFXManager.Instance.PlayImpactParticles(targetPos);
+                        }
                     }
+                    else if (isMega)
+                    {
+                        TriggerTableSlamShockwave(targetPos, cardObj);
+                    }
+
                     if (AudioManager.Instance != null)
                     {
                         AudioManager.Instance.PlaySFX("card_slam_thud");
+                        if (isMega)
+                        {
+                            AudioManager.Instance.PlaySFX("canto_envido_wood");
+                        }
                     }
-                }
+                },
+                onComplete: null,
+                isMegaSlam: isMega
             );
             
             _spawnedCards.Add(cardObj);
+        }
+
+        /// <summary>
+        /// Determina si una carta jugada debe generar un "Mega Slam" que sacuda la mesa:
+        /// 1. Piezas especiales o Cartas Bravas (Perico 100, Perica 99, 1 de Espada 20, 1 de Basto 19, 7 de Espada 18, 7 de Oro 17).
+        /// 2. Truco Caliente (Retruco o Vale Cuatro en juego, currentHandValue >= 3).
+        /// 3. Tercera Baza (ronda definitoria, round == 2).
+        /// 4. Matar la Baza (superar una carta alta rival ya presente en la mesa).
+        /// </summary>
+        public bool CheckIsMegaSlam(Card card)
+        {
+            if (card == null || card.isBurned) return false;
+
+            // Asegurar que el realValue esté calculado
+            if (card.realValue == 0 && DeckCreator.Instance != null && DeckCreator.Instance.cardVira != null)
+            {
+                card.realValue = TrucoRules.GetCardRealValue(card, DeckCreator.Instance.cardVira);
+            }
+
+            // 1. Cartas Bravas / Triunfos Legendarios
+            if (card.realValue >= 17)
+            {
+                return true;
+            }
+
+            // 2. Apuesta Fuerte (Retruco = 3, Vale Cuatro = 4)
+            if (GameManager.Instance != null && GameManager.Instance.currentHandValue >= 3)
+            {
+                return true;
+            }
+
+            // 3. Tercera Mano (Desempate de la ronda)
+            if (GameManager.Instance != null && GameManager.Instance.round == 2)
+            {
+                return true;
+            }
+
+            // 4. Matar la baza (superar una carta alta rival de valor >= 15 ya jugada en esta mano)
+            if (CardsInTable != null && CardsInTable.Count > 0)
+            {
+                int maxTableVal = 0;
+                foreach (var c in CardsInTable)
+                {
+                    if (c != card && !c.isBurned && c.realValue > maxTableVal)
+                    {
+                        maxTableVal = c.realValue;
+                    }
+                }
+                if (maxTableVal >= 15 && card.realValue > maxTableVal)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Efecto sísmico en la mesa: hace que las cartas ya jugadas, el mazo, la vira
+        /// y cualquier prop decorativo (latas, vasos, etc.) salten en el aire y vuelvan a caer.
+        /// </summary>
+        public void TriggerTableSlamShockwave(Vector3 impactPoint, GameObject impactCardObj)
+        {
+            // 1. Sacudir cartas ya jugadas en la mesa
+            foreach (var c in _spawnedCards)
+            {
+                if (c == null || c == impactCardObj) continue;
+
+                Vector3 curPos = c.transform.position;
+                float dist = Vector3.Distance(curPos, impactPoint);
+                float jumpHeight = Mathf.Clamp(0.075f - (dist * 0.02f), 0.035f, 0.075f);
+                float jumpDuration = UnityEngine.Random.Range(0.24f, 0.32f);
+
+                float rotY = UnityEngine.Random.Range(-7f, 7f);
+                float rotZ = UnityEngine.Random.Range(-3f, 3f);
+
+                c.transform.DOKill(false);
+                c.transform.DOJump(curPos, jumpHeight, 1, jumpDuration).SetEase(DG.Tweening.Ease.OutQuad);
+                c.transform.DORotate(c.transform.eulerAngles + new Vector3(0, rotY, rotZ), jumpDuration).SetEase(DG.Tweening.Ease.OutQuad);
+            }
+
+            // 2. Sacudir el Mazo
+            if (_currentDeckObj != null && _currentDeckObj != impactCardObj)
+            {
+                Vector3 deckPos = _currentDeckObj.transform.position;
+                _currentDeckObj.transform.DOKill(false);
+                _currentDeckObj.transform.DOJump(deckPos, 0.05f, 1, 0.25f).SetEase(DG.Tweening.Ease.OutQuad);
+                _currentDeckObj.transform.DORotate(_currentDeckObj.transform.eulerAngles + new Vector3(0, UnityEngine.Random.Range(-4f, 4f), 0), 0.25f).SetEase(DG.Tweening.Ease.OutQuad);
+            }
+
+            // 3. Sacudir la Vira
+            if (_currentViraObj != null && _currentViraObj != impactCardObj)
+            {
+                Vector3 viraPos = _currentViraObj.transform.position;
+                _currentViraObj.transform.DOKill(false);
+                _currentViraObj.transform.DOJump(viraPos, 0.045f, 1, 0.23f).SetEase(DG.Tweening.Ease.OutQuad);
+            }
+
+            // 4. Sacudir objetos decorativos de la mesa (latas de cerveza, etc.)
+            var untagged = GameObject.FindGameObjectsWithTag("Untagged");
+            foreach (var go in untagged)
+            {
+                if (go != null && go.name.StartsWith("BeerCan"))
+                {
+                    float dist = Vector3.Distance(go.transform.position, impactPoint);
+                    if (dist < 2.0f)
+                    {
+                        Vector3 canPos = go.transform.position;
+                        go.transform.DOKill(false);
+                        go.transform.DOJump(canPos, 0.035f, 1, 0.22f).SetEase(DG.Tweening.Ease.OutQuad);
+                        go.transform.DORotate(go.transform.eulerAngles + new Vector3(UnityEngine.Random.Range(-3f, 3f), UnityEngine.Random.Range(-5f, 5f), UnityEngine.Random.Range(-3f, 3f)), 0.22f).SetEase(DG.Tweening.Ease.OutQuad);
+                    }
+                }
+            }
+
+            // Si hay scripts TablePropBounce explícitos
+            var bounceProps = FindObjectsByType<TablePropBounce>(FindObjectsSortMode.None);
+            foreach (var bp in bounceProps)
+            {
+                if (bp != null) bp.Bounce(impactPoint);
+            }
         }
 
         public void AnimateCardsToDeck(System.Action onComplete = null)
@@ -349,10 +491,10 @@ namespace Code.GameLogic
             }
 
             CardsInTable.Add(card);
-            bool isPericoOrPerica = card.realValue == 100 || card.realValue == 99;
-            if (isPericoOrPerica) Debug.Log("[TableManager] ¡PIEZA ESPECIAL DETECTADA (Perico/Perica)!");
+            bool isMega = CheckIsMegaSlam(card);
+            if (isMega) Debug.Log($"[TableManager] ¡MEGA SLAM A LA MESA! {card.value} de {card.suit} (RealValue={card.realValue})");
 
-            SpawnCard3D(card, player, startPos, isPericoOrPerica);
+            SpawnCard3D(card, player, startPos, isMega);
 
             // On the host, a remote player's rendered hand must lose the played card.
             // No fallback: the local player's card was already removed by PlayCardToTable.
@@ -388,6 +530,8 @@ namespace Code.GameLogic
 
             // Disparar evento de dominio
             OnCardPlaced?.Invoke(card, player);
+            int placedSeatIdx = SeatManager.Instance != null ? SeatManager.Instance.GetPlayerSeatIndex(player) : -1;
+            TrucoEvents.EmitCardPlayed(placedSeatIdx, card);
         }
 
         private string GetPlayerName(Card card)

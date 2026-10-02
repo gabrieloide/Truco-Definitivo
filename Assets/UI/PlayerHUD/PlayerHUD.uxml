@@ -1,5 +1,5 @@
 <engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <Style src="project://database/Assets/UI/PlayerHUD/PlayerHUD.uss?fileID=7433441132597879392&amp;guid=39d14e2f5ac21234f8ccda13eb5e456b&amp;type=3#PlayerHUD" />
+    <Style src="project://database/Assets/UI/PlayerHUD/PlayerHUD.uss" />
     <engine:VisualElement class="hud-container" picking-mode="Ignore">
         <engine:VisualElement class="hud-top-bar" picking-mode="Ignore">
             <engine:VisualElement class="hud-score-panel central-banner">
@@ -13,7 +13,7 @@
                         <engine:VisualElement class="trick-dot" />
                     </engine:VisualElement>
                     
-                    <engine:VisualElement class="dots-separator" style="width: 20px;" />
+                    <engine:VisualElement class="dots-separator" />
 
                     <engine:VisualElement name="t2-dots" class="team-dots">
                         <engine:VisualElement class="trick-dot" />
@@ -22,8 +22,8 @@
                     </engine:VisualElement>
                 </engine:VisualElement>
 
-                <engine:VisualElement class="hud-turn-indicator" picking-mode="Ignore" style="margin-top: 6px; align-items: center;">
-                    <engine:Label name="turn-label" text="IT&apos;S YOUR TURN" class="hud-turn__text" style="background-color: rgba(0, 0, 0, 0.65); border-radius: 8px; padding: 4px 14px; -unity-font-style: bold;" />
+                <engine:VisualElement class="hud-turn-indicator" picking-mode="Ignore">
+                    <engine:Label name="turn-label" text="TU TURNO" class="hud-turn__text" />
                 </engine:VisualElement>
             </engine:VisualElement>
 
@@ -83,7 +83,7 @@
 
         <!-- CARD ACTION MENU -->
         <engine:VisualElement name="card-action-menu" class="card-action-menu" picking-mode="Ignore" style="display: none;">
-            <engine:Button name="card-play-btn" class="hud-btn hud-btn--accept" style="margin-right: 10px;">
+            <engine:Button name="card-play-btn" class="hud-btn hud-btn--accept">
                 <engine:Label text="JUGAR" class="hud-btn__text" />
             </engine:Button>
             <engine:Button name="card-burn-btn" class="hud-btn hud-btn--decline">
@@ -111,7 +111,7 @@
                     <engine:Label text="13. Los Cincos (5)" class="hierarchy-item hierarchy-item--lowest" />
                     <engine:Label text="14. Los Cuatros (4)" class="hierarchy-item hierarchy-item--lowest" />
                 </engine:ScrollView>
-                <engine:Button name="close-hierarchy-button" class="hud-btn hud-btn--decline" style="align-self: center; margin-top: 20px;">
+                <engine:Button name="close-hierarchy-button" class="hud-btn hud-btn--decline modal-close-btn">
                     <engine:Label text="CERRAR" class="hud-btn__text" />
                 </engine:Button>
             </engine:VisualElement>
@@ -119,27 +119,29 @@
 
         <!-- PAUSE MODAL -->
         <engine:VisualElement name="pause-modal" class="hierarchy-modal-overlay">
-            <engine:VisualElement class="hierarchy-panel">
+            <engine:VisualElement class="hierarchy-panel modal-panel--compact">
                 <engine:Label text="PAUSA" class="hierarchy-title" />
-                <engine:Button name="resume-button" class="hud-btn hud-btn--accept" style="align-self: center; margin-top: 20px; width: 200px;">
-                    <engine:Label text="REANUDAR" class="hud-btn__text" />
-                </engine:Button>
-                <engine:Button name="quit-button" class="hud-btn hud-btn--decline" style="align-self: center; margin-top: 20px; width: 200px;">
-                    <engine:Label text="SALIR AL MENÚ" class="hud-btn__text" />
-                </engine:Button>
+                <engine:VisualElement class="modal-vertical-btns">
+                    <engine:Button name="resume-button" class="hud-btn hud-btn--accept modal-btn">
+                        <engine:Label text="REANUDAR" class="hud-btn__text" />
+                    </engine:Button>
+                    <engine:Button name="quit-button" class="hud-btn hud-btn--decline modal-btn">
+                        <engine:Label text="SALIR AL MENÚ" class="hud-btn__text" />
+                    </engine:Button>
+                </engine:VisualElement>
             </engine:VisualElement>
         </engine:VisualElement>
 
         <!-- MATCH END MODAL (multiplayer: revancha o salir) -->
         <engine:VisualElement name="match-end-modal" class="hierarchy-modal-overlay">
-            <engine:VisualElement class="hierarchy-panel" style="width: 560px;">
-                <engine:Label name="match-end-title" text="FIN DE LA PARTIDA" class="hierarchy-title" style="white-space: normal; text-align: center;" />
-                <engine:Label name="match-end-status" text="" class="hierarchy-item" style="white-space: normal; -unity-text-align: middle-center; margin-top: 4px;" />
-                <engine:VisualElement style="flex-direction: row; justify-content: space-around; margin-top: 30px; width: 100%;">
-                    <engine:Button name="match-end-rematch-button" class="hud-btn hud-btn--truco" style="width: 210px;">
+            <engine:VisualElement class="hierarchy-panel">
+                <engine:Label name="match-end-title" text="FIN DE LA PARTIDA" class="hierarchy-title" />
+                <engine:Label name="match-end-status" text="" class="match-end-subtitle" />
+                <engine:VisualElement class="modal-btn-row">
+                    <engine:Button name="match-end-rematch-button" class="hud-btn hud-btn--truco modal-btn">
                         <engine:Label text="REVANCHA" class="hud-btn__text" />
                     </engine:Button>
-                    <engine:Button name="match-end-exit-button" class="hud-btn hud-btn--decline" style="width: 210px;">
+                    <engine:Button name="match-end-exit-button" class="hud-btn hud-btn--decline modal-btn">
                         <engine:Label text="SALIR AL MENÚ" class="hud-btn__text" />
                     </engine:Button>
                 </engine:VisualElement>
@@ -148,13 +150,13 @@
 
         <!-- QUIT CONFIRM MODAL -->
         <engine:VisualElement name="quit-confirm-modal" class="hierarchy-modal-overlay">
-            <engine:VisualElement class="hierarchy-panel" style="width: 500px;">
-                <engine:Label text="¿ESTÁS SEGURO DE QUE QUIERES SALIR?" class="hierarchy-title" style="white-space: normal; text-align: center;" />
-                <engine:VisualElement style="flex-direction: row; justify-content: space-around; margin-top: 30px; width: 100%;">
-                    <engine:Button name="confirm-yes-button" class="hud-btn hud-btn--decline" style="width: 180px;">
+            <engine:VisualElement class="hierarchy-panel modal-panel--compact">
+                <engine:Label text="¿ESTÁS SEGURO DE QUE QUIERES SALIR?" class="hierarchy-title" />
+                <engine:VisualElement class="modal-btn-row">
+                    <engine:Button name="confirm-yes-button" class="hud-btn hud-btn--decline modal-btn">
                         <engine:Label text="SÍ, SALIR" class="hud-btn__text" />
                     </engine:Button>
-                    <engine:Button name="confirm-no-button" class="hud-btn hud-btn--accept" style="width: 180px;">
+                    <engine:Button name="confirm-no-button" class="hud-btn hud-btn--accept modal-btn">
                         <engine:Label text="CANCELAR" class="hud-btn__text" />
                     </engine:Button>
                 </engine:VisualElement>

@@ -10,15 +10,7 @@ using UnityEngine.Serialization;
 using UnityEngine.UI;
 using TMPro;
 using Code.Scripts.Audio;
-
-public enum AnnounceState
-{
-    Envido,
-    Truco,
-    Flor,
-    ALey,
-    None
-}
+using Code.Domain;
 
 namespace Code.Player
 {
