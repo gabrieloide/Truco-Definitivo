@@ -269,6 +269,49 @@ namespace Code.Networking
             PlayerHUD.Instance?.ShowEnvidoStake(visible, points);
         }
 
+        /// <summary>Server→clients: sync who is thinking/responding to an announcement.</summary>
+        [ClientRpc]
+        public void RpcSyncWaitingResponse(int responderSeat, string responderName)
+        {
+            if (NetworkServer.active) return; // host already updated directly
+            if (PlayerHUD.Instance == null) return;
+
+            if (responderSeat < 0)
+            {
+                PlayerHUD.Instance.ShowWaitingResponse(false);
+                return;
+            }
+
+            var localPl = GameManager.Instance?.localPlayer;
+            int localSeat = (localPl != null && SeatManager.Instance != null)
+                ? SeatManager.Instance.GetPlayerSeatIndex(localPl.gameObject)
+                : -1;
+
+            if (localSeat == responderSeat)
+            {
+                PlayerHUD.Instance.ShowWaitingResponse(false);
+                return;
+            }
+
+            bool isTeammate = false;
+            if (SeatManager.Instance != null && responderSeat >= 0 && responderSeat < SeatManager.Instance.allChairs.Count)
+            {
+                var respOccupant = SeatManager.Instance.allChairs[responderSeat].occupant;
+                if (respOccupant != null && localPl != null && localPl.player != null && localPl.player.team != null && GameManager.Instance != null)
+                {
+                    var p = respOccupant.GetComponent<Code.Player.Player>();
+                    var npc = respOccupant.GetComponent<NPCPlayer>();
+                    var team = p != null ? p.team : npc?.team;
+                    if (team != null)
+                    {
+                        isTeammate = (GameManager.Instance.GetTeamIndex(team) == GameManager.Instance.GetTeamIndex(localPl.player.team));
+                    }
+                }
+            }
+
+            PlayerHUD.Instance.ShowWaitingResponse(true, responderName, isTeammate);
+        }
+
         /// <summary>Server→clients: end of hand — sweep table cards and vira into the deck.</summary>
         [ClientRpc]
         public void RpcAnimateCardsToDeck()

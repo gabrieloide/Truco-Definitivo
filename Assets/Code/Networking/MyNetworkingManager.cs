@@ -352,6 +352,12 @@ public class MyNetworkingManager : NetworkManager
         AnyPlayerSync()?.RpcSyncTrucoState(lastTrucoTeamIndex, trucoLevel, trucoCalled);
     }
 
+    /// <summary>An announcement is pending: mirrors who is currently thinking/responding to all clients.</summary>
+    public void BroadcastWaitingResponse(int responderSeat, string responderName)
+    {
+        AnyPlayerSync()?.RpcSyncWaitingResponse(responderSeat, responderName);
+    }
+
     /// <summary>Match over: every pure client shows the rematch/exit modal.</summary>
     public void BroadcastMatchEnded(string winnerText)
     {

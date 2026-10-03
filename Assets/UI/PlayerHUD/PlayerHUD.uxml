@@ -27,6 +27,10 @@
                 <engine:VisualElement name="hud-turn-indicator" class="hud-turn-indicator" picking-mode="Ignore">
                     <engine:Label name="turn-label" text="TU TURNO" class="hud-turn__text" />
                 </engine:VisualElement>
+
+                <engine:VisualElement name="hud-waiting-indicator" class="hud-waiting-indicator" picking-mode="Ignore" style="display: none;">
+                    <engine:Label name="waiting-label" text="ESPERANDO RESPUESTA..." class="hud-waiting__text" />
+                </engine:VisualElement>
             </engine:VisualElement>
 
             <engine:VisualElement class="hud-top-right-bar" picking-mode="Ignore">

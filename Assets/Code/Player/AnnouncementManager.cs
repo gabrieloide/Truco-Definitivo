@@ -130,7 +130,13 @@ namespace Code.Player
                 p.florBurned = false;
             UpdateEnvidoStakeUI(0, false);
             if (GameManager.Instance != null) GameManager.Instance.isAnnouncementPending = false;
-            if (PlayerHUD.Instance != null) PlayerHUD.Instance.ShowResponseButtons(false);
+            if (PlayerHUD.Instance != null)
+            {
+                PlayerHUD.Instance.ShowResponseButtons(false);
+                PlayerHUD.Instance.ShowWaitingResponse(false);
+            }
+            if (NetworkServer.active)
+                (NetworkManager.singleton as MyNetworkingManager)?.BroadcastWaitingResponse(-1, "");
             
             var announces = GetComponentsInChildren<Announce>();
             foreach (var a in announces)
@@ -265,10 +271,37 @@ namespace Code.Player
             if (seat < 0)
             {
                 if (GameManager.Instance != null) GameManager.Instance.isAnnouncementPending = false;
+                PlayerHUD.Instance?.ShowWaitingResponse(false);
+                if (NetworkServer.active)
+                    (NetworkManager.singleton as MyNetworkingManager)?.BroadcastWaitingResponse(-1, "");
                 return;
             }
 
             var occupant = SeatManager.Instance.allChairs[seat].occupant;
+            if (occupant == null)
+            {
+                if (GameManager.Instance != null) GameManager.Instance.isAnnouncementPending = false;
+                PlayerHUD.Instance?.ShowWaitingResponse(false);
+                if (NetworkServer.active)
+                    (NetworkManager.singleton as MyNetworkingManager)?.BroadcastWaitingResponse(-1, "");
+                return;
+            }
+
+            // Identificar nombre del que debe responder
+            string responderName = "";
+            var npcComp = occupant.GetComponent<NPCPlayer>();
+            var localComp = occupant.GetComponent<PlayerLocal>();
+            var playerComp = occupant.GetComponent<Code.Player.Player>();
+            var netSync = occupant.GetComponent<PlayerNetworkSync>();
+
+            if (npcComp != null) responderName = NpcDisplayName(occupant);
+            else if (localComp != null && localComp.player != null && !string.IsNullOrEmpty(localComp.player.playerName)) responderName = localComp.player.playerName;
+            else if (playerComp != null && !string.IsNullOrEmpty(playerComp.playerName)) responderName = playerComp.playerName;
+            else if (netSync != null && !string.IsNullOrEmpty(netSync.playerName)) responderName = netSync.playerName;
+            else responderName = occupant.name;
+
+            // Mostrar el aviso de espera / pensando local y en red
+            UpdateWaitingIndicatorForResponder(occupant, seat, responderName);
 
             var npc = occupant.GetComponent<NPCPlayer>();
             if (npc != null)
@@ -277,7 +310,6 @@ namespace Code.Player
                 return;
             }
 
-            var netSync = occupant.GetComponent<PlayerNetworkSync>();
             if (NetworkServer.active && netSync != null && ShowResponseTo(netSync)) return;
 
             // Singleplayer: el rival humano es el de esta misma máquina.
@@ -292,6 +324,43 @@ namespace Code.Player
             }
 
             if (GameManager.Instance != null) GameManager.Instance.isAnnouncementPending = false;
+            PlayerHUD.Instance?.ShowWaitingResponse(false);
+            if (NetworkServer.active)
+                (NetworkManager.singleton as MyNetworkingManager)?.BroadcastWaitingResponse(-1, "");
+        }
+
+        private void UpdateWaitingIndicatorForResponder(GameObject occupant, int responderSeat, string responderName)
+        {
+            var myLocalPlayer = GameManager.Instance?.localPlayer;
+            bool isMe = (myLocalPlayer != null && occupant == myLocalPlayer.gameObject);
+
+            if (PlayerHUD.Instance != null)
+            {
+                if (isMe)
+                {
+                    PlayerHUD.Instance.ShowWaitingResponse(false);
+                }
+                else
+                {
+                    bool isTeammate = false;
+                    if (myLocalPlayer != null && myLocalPlayer.player != null && myLocalPlayer.player.team != null && GameManager.Instance != null)
+                    {
+                        var responderTeam = TeamOf(occupant);
+                        if (responderTeam != null)
+                        {
+                            int myTeamIdx = GameManager.Instance.GetTeamIndex(myLocalPlayer.player.team);
+                            int respTeamIdx = GameManager.Instance.GetTeamIndex(responderTeam);
+                            isTeammate = (myTeamIdx == respTeamIdx);
+                        }
+                    }
+                    PlayerHUD.Instance.ShowWaitingResponse(true, responderName, isTeammate);
+                }
+            }
+
+            if (NetworkServer.active)
+            {
+                (NetworkManager.singleton as MyNetworkingManager)?.BroadcastWaitingResponse(responderSeat, responderName);
+            }
         }
 
         public void SendAnnounceToClient(string ButtonName)
@@ -489,9 +558,8 @@ namespace Code.Player
             RpcAnnounceToAllClients();
             if (PlayerHUD.Instance != null) PlayerHUD.Instance.RefreshActionButtons(true);
 
-            // Reducir espera para A Ley y Flor
-            float waitTime = (targetState == AnnounceState.ALey || targetState == AnnounceState.Flor) ? 2.5f : 4.5f;
-            yield return new WaitForSeconds(waitTime);
+            // 2.5s para coincidir con la duración de la notificación en pantalla
+            yield return new WaitForSeconds(2.5f);
 
             // Flor y A Ley son informativos: no piden Quiero/No Quiero a nadie.
             if (targetState == AnnounceState.Envido || targetState == AnnounceState.Truco)
@@ -644,8 +712,8 @@ namespace Code.Player
             if (state == AnnounceState.Envido)
                 UpdateEnvidoStakeUI(ProspectiveEnvidoStake(), true);
 
-            // 2.5s para que desaparezca el texto + 2s extra = 4.5s
-            yield return new WaitForSeconds(4.5f);
+            // 2.5s para coincidir con la duración de la notificación en pantalla
+            yield return new WaitForSeconds(2.5f);
 
             if (state == AnnounceState.Flor)
             {
@@ -757,7 +825,18 @@ namespace Code.Player
             {
                 bool showSlider = _announceState == AnnounceState.Envido && !disableAccept;
                 string announcerText = !string.IsNullOrEmpty(currentAnnouncerName) ? currentAnnouncerName : "TE";
-                string titleText = $"{announcerText.ToUpper()} CANTA {_announceState.ToString().ToUpper()}";
+                string announceLabel = _announceState switch
+                {
+                    AnnounceState.Truco => (GetCurrentAnnounce() is TrucoAnnouncement ta) ? ta.acceptAmount switch
+                    {
+                        1 => "RETRUCO",
+                        2 => "VALE 9",
+                        3 => "VALE PARTIDA",
+                        _ => "TRUCO"
+                    } : "TRUCO",
+                    _ => _announceState.ToString().ToUpper()
+                };
+                string titleText = $"{announcerText.ToUpper()}\nCANTA {announceLabel}";
                 
                 // CRITICAL: Pasar el moreText calculado (RETRUCO, VALE 9, etc) al PlayerHUD
                 PlayerHUD.Instance.ShowResponseButtons(true, acceptText, declineText, showMore, showSlider, titleText, disableAccept, showDecline, moreText);
@@ -1000,12 +1079,15 @@ namespace Code.Player
             {
                 PlayerHUD.Instance.NotifyEvent($"¡{playerName.ToUpper()}{teamSuffix.ToUpper()} {actionText.ToUpper()}!", 2.5f);
                 PlayerHUD.Instance.ShowResponseButtons(false); // Ocultar botones de respuesta para el humano
+                PlayerHUD.Instance.ShowWaitingResponse(false);
             }
+            if (NetworkServer.active)
+                (NetworkManager.singleton as MyNetworkingManager)?.BroadcastWaitingResponse(-1, "");
 
             GameManager.Instance.isAnnouncementPending = true;
 
             // Esperar a que la notificación de re-canto termine
-            yield return new WaitForSeconds(4.5f);
+            yield return new WaitForSeconds(2.5f);
 
             // El re-cantor pasa a ser el "anunciante" vigente (importante para resolver un No Quiero)
             var raiserTeam = FindTeamByPlayerName(playerName);
@@ -1125,6 +1207,9 @@ namespace Code.Player
 
             _announceState = AnnounceState.None;
             GameManager.Instance.isAnnouncementPending = false;
+            PlayerHUD.Instance?.ShowWaitingResponse(false);
+            if (NetworkServer.active)
+                (NetworkManager.singleton as MyNetworkingManager)?.BroadcastWaitingResponse(-1, "");
 
             // Restaurar permiso de juego a quien le toca (local y, en multiplayer, su cliente)
             RestoreTurnAfterAnnouncement();
@@ -1149,8 +1234,8 @@ namespace Code.Player
             if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(msg, 2.5f);
 
             
-            // 2.5s para que desaparezca el texto + 2s extra = 4.5s
-            yield return new WaitForSeconds(4.5f);
+            // 2.5s para coincidir con la duración de la notificación en pantalla
+            yield return new WaitForSeconds(2.5f);
             
             if (previousState == AnnounceState.ALey)
             {
@@ -1191,6 +1276,9 @@ namespace Code.Player
             }
             _announceState = AnnounceState.None;
             GameManager.Instance.isAnnouncementPending = false;
+            PlayerHUD.Instance?.ShowWaitingResponse(false);
+            if (NetworkServer.active)
+                (NetworkManager.singleton as MyNetworkingManager)?.BroadcastWaitingResponse(-1, "");
 
             // Restaurar permiso de juego a quien le toca (local y, en multiplayer, su cliente)
             RestoreTurnAfterAnnouncement();
@@ -1229,9 +1317,9 @@ namespace Code.Player
             {
                 bool showSlider = _announceState == AnnounceState.Envido;
                 string announcerText = !string.IsNullOrEmpty(currentAnnouncerName) ? currentAnnouncerName : "TE";
-                string titleText = $"{announcerText.ToUpper()} RE-ENVIDA";
-                if (_announceState == AnnounceState.Truco) titleText = $"{announcerText.ToUpper()} PIDE RETRUCO";
-                else if (_announceState == AnnounceState.Flor) titleText = $"{announcerText.ToUpper()} PIDE CONTRAFLOR";
+                string titleText = $"{announcerText.ToUpper()}\nRE-ENVIDA";
+                if (_announceState == AnnounceState.Truco) titleText = $"{announcerText.ToUpper()}\nPIDE RETRUCO";
+                else if (_announceState == AnnounceState.Flor) titleText = $"{announcerText.ToUpper()}\nPIDE CONTRAFLOR";
                 
                 PlayerHUD.Instance.ShowResponseButtons(true, "QUIERO", "NO QUIERO", true, showSlider, titleText);
             }

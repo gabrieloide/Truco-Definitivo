@@ -96,6 +96,34 @@
     border-bottom-color: rgba(140, 95, 17, 0.9);
     padding: 5px 22px;
     text-shadow: 0 2px 0 rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+}
+
+/* --- WAITING FOR RESPONSE / THINKING CHIP --- */
+.hud-waiting-indicator {
+    margin-top: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+.hud-waiting__text {
+    -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    color: #64D2FF;
+    font-size: 14px;
+    -unity-text-align: middle-center;
+    letter-spacing: 1.5px;
+    background-color: rgba(14, 32, 52, 0.92);
+    border-radius: 12px;
+    border-top-width: 1.5px;
+    border-top-color: rgba(100, 210, 255, 0.5);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 3px;
+    border-bottom-color: #0A4566;
+    padding: 5px 20px;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
 }
 
 /* --- TRICKS DOTS (BAZAS PIPS / GEMSTONES) --- */
@@ -205,9 +233,9 @@
     color: #FFDF80;
     -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
     -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
-    font-size: 26px;
-    letter-spacing: 1.5px;
-    padding: 12px 32px;
+    font-size: 24px;
+    letter-spacing: 1px;
+    padding: 10px 26px;
     border-radius: 14px;
     border-top-width: 1px;
     border-top-color: rgba(232, 211, 158, 0.4);
@@ -216,8 +244,8 @@
     border-bottom-width: 4px;
     border-bottom-color: #8C5F11;
     -unity-text-align: middle-center;
-    white-space: normal;
-    max-width: 80%;
+    white-space: nowrap;
+    max-width: 90%;
     text-shadow: 0 2px 0 #0A0F17;
     transition-property: opacity, scale;
     transition-duration: 0.2s;
@@ -281,18 +309,18 @@
     border-left-color: rgba(255, 255, 255, 0.1);
     border-right-width: 1px;
     border-right-color: rgba(255, 255, 255, 0.1);
-    padding: 18px 20px;
-    width: 264px;
+    padding: 16px 14px;
+    width: 280px;
 }
 
 .hud-response-title__text {
     -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
     -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
     color: #E8D39E;
-    font-size: 16px;
+    font-size: 15px;
     -unity-text-align: middle-center;
-    letter-spacing: 1px;
-    margin-bottom: 14px;
+    letter-spacing: 0.8px;
+    margin-bottom: 12px;
     width: 100%;
     white-space: normal;
     text-shadow: 0 2px 0 #0A0F17;
@@ -357,7 +385,7 @@
     border-radius: 12px;
     height: 52px;
     min-height: 52px;
-    padding: 0 18px;
+    padding: 0 10px;
     align-items: center;
     justify-content: center;
     border-top-width: 0;
@@ -385,15 +413,23 @@
     -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
     font-size: 18px;
     -unity-text-align: middle-center;
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
     color: #FFFFFF;
     text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
-    white-space: normal;
+    white-space: nowrap;
 }
 
 .hud-btn__text--small {
     font-size: 13px;
     letter-spacing: 0.5px;
+    -unity-text-align: middle-center;
+    white-space: nowrap;
+}
+
+.hud-btn__text--multiline {
+    white-space: normal;
+    font-size: 12px;
+    letter-spacing: 0.4px;
     -unity-text-align: middle-center;
 }
 
@@ -572,6 +608,7 @@
     text-shadow: 0 1px 0 #0A0F17;
     -unity-text-align: middle-center;
     align-self: center;
+    white-space: nowrap;
 }
 
 /* =========================================================

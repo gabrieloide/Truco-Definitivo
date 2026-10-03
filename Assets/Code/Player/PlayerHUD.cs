@@ -29,6 +29,8 @@ namespace Code.Player
         private Label _teamLabel;
         private Label _turnLabel;
         private Label _envidoStakeLabel;
+        private VisualElement _waitingIndicator;
+        private Label _waitingLabel;
         private VisualElement _t1DotsContainer;
         private VisualElement _t2DotsContainer;
         private Button _envidoButton;
@@ -239,6 +241,11 @@ namespace Code.Player
             // Indicador de puntos de envido en juego: integrado en el banner central
             _envidoStakeLabel = _root.Q<Label>("envido-stake-label");
             if (_envidoStakeLabel != null) _envidoStakeLabel.style.display = DisplayStyle.None;
+
+            // Indicador de "Esperando respuesta / Pensando" ante cantos
+            _waitingIndicator = _root.Q<VisualElement>("hud-waiting-indicator");
+            _waitingLabel = _root.Q<Label>("waiting-label");
+            if (_waitingIndicator != null) _waitingIndicator.style.display = DisplayStyle.None;
             
             // Tricks dots
             _t1DotsContainer = _root.Q<VisualElement>("t1-dots");
@@ -405,6 +412,7 @@ namespace Code.Player
             // isLocalPlayer, no la mera presencia del componente.
             bool isMyTurn = localPlayer != null && localPlayer.isLocalPlayer;
 
+            ShowWaitingResponse(false);
             UpdateTurnState(isMyTurn, playerName);
 
             // Mostrar aviso visual del turno
@@ -517,8 +525,16 @@ namespace Code.Player
                 if (envidoLabel != null)
                 {
                     envidoLabel.text = hasFlor ? "ENVIDO\n(QUEMAR FLOR)" : "ENVIDO";
-                    if (hasFlor) envidoLabel.AddToClassList("hud-btn__text--small");
-                    else envidoLabel.RemoveFromClassList("hud-btn__text--small");
+                    if (hasFlor)
+                    {
+                        envidoLabel.AddToClassList("hud-btn__text--small");
+                        envidoLabel.AddToClassList("hud-btn__text--multiline");
+                    }
+                    else
+                    {
+                        envidoLabel.RemoveFromClassList("hud-btn__text--small");
+                        envidoLabel.RemoveFromClassList("hud-btn__text--multiline");
+                    }
                 }
             }
 
@@ -571,8 +587,16 @@ namespace Code.Player
                 if (florLabel != null)
                 {
                     florLabel.text = florSungByRival ? "FLOR\n(ENVIDO)" : "FLOR";
-                    if (florSungByRival) florLabel.AddToClassList("hud-btn__text--small");
-                    else florLabel.RemoveFromClassList("hud-btn__text--small");
+                    if (florSungByRival)
+                    {
+                        florLabel.AddToClassList("hud-btn__text--small");
+                        florLabel.AddToClassList("hud-btn__text--multiline");
+                    }
+                    else
+                    {
+                        florLabel.RemoveFromClassList("hud-btn__text--small");
+                        florLabel.RemoveFromClassList("hud-btn__text--multiline");
+                    }
                 }
             }
 
@@ -589,6 +613,7 @@ namespace Code.Player
 
             if (visible)
             {
+                ShowWaitingResponse(false);
                 if (_acceptButton != null)
                 {
                     var acceptLabel = _acceptButton.Q<Label>();
@@ -660,6 +685,35 @@ namespace Code.Player
                     RefreshActionButtons(true);
                 }
             }
+        }
+
+        public void ShowWaitingResponse(bool visible, string responderName = "", bool isTeammate = false)
+        {
+            if (_waitingIndicator == null || _waitingLabel == null) return;
+
+            if (!visible)
+            {
+                _waitingIndicator.style.display = DisplayStyle.None;
+                return;
+            }
+
+            string text;
+            if (isTeammate)
+            {
+                text = string.IsNullOrEmpty(responderName)
+                    ? "TU COMPAÑERO ESTÁ PENSANDO..."
+                    : $"TU COMPAÑERO ({responderName.ToUpper()}) ESTÁ PENSANDO...";
+            }
+            else
+            {
+                text = string.IsNullOrEmpty(responderName)
+                    ? "ESPERANDO RESPUESTA..."
+                    : $"{responderName.ToUpper()} ESTÁ PENSANDO...";
+            }
+
+            _waitingLabel.text = text;
+            _waitingIndicator.style.display = DisplayStyle.Flex;
+            JuicyUIHelper.Bump(_waitingIndicator, 1.15f, 0.2f);
         }
 
         private void SetButtonVisible(Button button, bool visible)
