@@ -231,10 +231,68 @@
         </engine:VisualElement>
 
         <!-- ============================================== -->
-        <!-- SCREEN: AUTHENTICATION & CLOUD SAVE            -->
+        <!-- SCREEN: AUTHENTICATION & PROFILE               -->
         <!-- ============================================== -->
         <engine:VisualElement name="screen-auth" class="screen-container" style="display: none;">
-            <engine:VisualElement class="panel-container auth-panel">
+            
+            <!-- VIEW A: PROFILE & STATISTICS (WHEN LOGGED IN) -->
+            <engine:VisualElement name="panel-profile-view" class="panel-container profile-panel" style="display: none;">
+                <engine:Label text="MI PERFIL" class="title-text" />
+                
+                <engine:VisualElement class="profile-card-header">
+                    <engine:VisualElement class="profile-avatar--large">
+                        <engine:Label text="🂡" class="profile-avatar__icon--large" />
+                    </engine:VisualElement>
+                    <engine:VisualElement class="profile-card-details">
+                        <engine:Label name="lbl-card-username" text="Gaucho" class="profile-card-username" />
+                        <engine:Label name="lbl-card-email" text="usuario@trucodefinitivo.app" class="profile-card-email" />
+                        <engine:Label name="lbl-card-badge" text="EN LÍNEA (NUBE)" class="profile-status-badge profile-status--cloud" style="align-self: flex-start;" />
+                    </engine:VisualElement>
+                </engine:VisualElement>
+
+                <engine:VisualElement class="stats-grid">
+                    <engine:VisualElement class="stat-box">
+                        <engine:Label text="NIVEL &amp; XP" class="stat-box__title" />
+                        <engine:Label name="lbl-stat-level" text="NV. 1 (0 / 100)" class="stat-box__value" />
+                    </engine:VisualElement>
+
+                    <engine:VisualElement class="stat-box">
+                        <engine:Label text="FICHAS TOTALES" class="stat-box__title" />
+                        <engine:Label name="lbl-stat-coins" text="🪙 1.000" class="stat-box__value stat-box__value--gold" />
+                    </engine:VisualElement>
+
+                    <engine:VisualElement class="stat-box">
+                        <engine:Label text="PARTIDAS GANADAS" class="stat-box__title" />
+                        <engine:Label name="lbl-stat-wins" text="0" class="stat-box__value stat-box__value--green" />
+                    </engine:VisualElement>
+
+                    <engine:VisualElement class="stat-box">
+                        <engine:Label text="PARTIDAS PERDIDAS" class="stat-box__title" />
+                        <engine:Label name="lbl-stat-losses" text="0" class="stat-box__value" />
+                    </engine:VisualElement>
+
+                    <engine:VisualElement class="stat-box">
+                        <engine:Label text="PORCENTAJE VICTORIA" class="stat-box__title" />
+                        <engine:Label name="lbl-stat-winrate" text="0.0%" class="stat-box__value" />
+                    </engine:VisualElement>
+
+                    <engine:VisualElement class="stat-box">
+                        <engine:Label text="MEJOR ENVIDO" class="stat-box__title" />
+                        <engine:Label name="lbl-stat-envido" text="0 pts" class="stat-box__value stat-box__value--gold" />
+                    </engine:VisualElement>
+                </engine:VisualElement>
+
+                <engine:Button name="btn-profile-logout" class="menu-btn menu-btn--danger">
+                    <engine:Label text="CERRAR SESIÓN" class="menu-btn__text" />
+                </engine:Button>
+
+                <engine:Button name="btn-profile-back" class="menu-btn menu-btn--back" style="margin-top: 15px;">
+                    <engine:Label text="VOLVER" class="menu-btn__text" />
+                </engine:Button>
+            </engine:VisualElement>
+
+            <!-- VIEW B: LOGIN / REGISTER (WHEN GUEST) -->
+            <engine:VisualElement name="panel-login-view" class="panel-container auth-panel">
                 <engine:Label text="CUENTA Y NUBE" class="title-text" />
                 <engine:Label text="Guardá tus fichas, nivel y victorias en la nube o jugá como invitado local." class="auth-subtitle" />
                 
@@ -271,17 +329,14 @@
                 <engine:VisualElement class="divider" />
 
                 <engine:Button name="btn-auth-guest" class="menu-btn menu-btn--secondary">
-                    <engine:Label text="JUGAR COMO INVITADO (SIN CUENTA)" class="menu-btn__text" />
-                </engine:Button>
-
-                <engine:Button name="btn-auth-logout" class="menu-btn menu-btn--danger" style="display: none;">
-                    <engine:Label text="CERRAR SESIÓN" class="menu-btn__text" />
+                    <engine:Label text="CONTINUAR COMO INVITADO" class="menu-btn__text" />
                 </engine:Button>
 
                 <engine:Button name="btn-auth-back" class="menu-btn menu-btn--back" style="margin-top: 15px;">
                     <engine:Label text="VOLVER" class="menu-btn__text" />
                 </engine:Button>
             </engine:VisualElement>
+
         </engine:VisualElement>
 
     </engine:VisualElement>

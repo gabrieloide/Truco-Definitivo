@@ -850,3 +850,111 @@
     letter-spacing: 1px;
 }
 
+/* =========================================================
+   PROFILE DETAILS VIEW (WHEN LOGGED IN)
+   ========================================================= */
+.profile-panel {
+    width: 520px;
+    max-width: 94%;
+    padding: 32px 38px;
+}
+
+.profile-card-header {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 20px;
+    padding: 14px 18px;
+    background-color: rgba(10, 15, 22, 0.75);
+    border-radius: 14px;
+    border-width: 1px;
+    border-color: rgba(232, 211, 158, 0.2);
+}
+
+.profile-avatar--large {
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    background-color: #1F2E42;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+    border-width: 2px;
+    border-color: #E8D39E;
+}
+
+.profile-avatar__icon--large {
+    font-size: 28px;
+    color: #E8D39E;
+    -unity-text-align: middle-center;
+}
+
+.profile-card-details {
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.profile-card-username {
+    -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    font-size: 22px;
+    color: #FFFFFF;
+    letter-spacing: 1px;
+}
+
+.profile-card-email {
+    font-size: 13px;
+    color: #BAC7D5;
+    margin-bottom: 4px;
+}
+
+/* 2-Column Stats Grid */
+.stats-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.stat-box {
+    width: 48%;
+    background-color: rgba(14, 20, 29, 0.85);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    border-top-width: 1px;
+    border-top-color: rgba(232, 211, 158, 0.2);
+    border-bottom-width: 3px;
+    border-bottom-color: rgba(0, 0, 0, 0.6);
+    border-left-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.08);
+    border-right-width: 1px;
+    border-right-color: rgba(255, 255, 255, 0.08);
+}
+
+.stat-box__title {
+    font-size: 11px;
+    color: #BAC7D5;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    -unity-font-style: bold;
+}
+
+.stat-box__value {
+    -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    font-size: 18px;
+    color: #E8D39E;
+    letter-spacing: 1px;
+}
+
+.stat-box__value--gold {
+    color: #FFDE59;
+}
+
+.stat-box__value--green {
+    color: #5CE696;
+}
+
+

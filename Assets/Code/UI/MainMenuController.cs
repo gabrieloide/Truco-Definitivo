@@ -41,7 +41,18 @@ namespace Code.UI
         private Label _lblProfileWinrate;
         private Label _lblAuthBtnText;
 
-        // Auth Screen UI
+        // Auth & Profile Screen UI
+        private VisualElement _panelProfileView;
+        private VisualElement _panelLoginView;
+        private Label _lblCardUsername;
+        private Label _lblCardEmail;
+        private Label _lblStatLevel;
+        private Label _lblStatCoins;
+        private Label _lblStatWins;
+        private Label _lblStatLosses;
+        private Label _lblStatWinrate;
+        private Label _lblStatEnvido;
+
         private Button _btnTabLogin;
         private Button _btnTabRegister;
         private VisualElement _groupAuthDisplayName;
@@ -50,7 +61,6 @@ namespace Code.UI
         private TextField _inputAuthDisplayName;
         private Label _lblAuthSubmit;
         private Label _lblAuthStatus;
-        private Button _btnAuthLogout;
         private bool _isRegisterMode;
 
         // Lobby UI labels
@@ -107,6 +117,18 @@ namespace Code.UI
             _lblAuthBtnText    = _root.Q<Label>("lbl-auth-btn-text");
 
             // Auth Screen Elements
+            // Auth & Profile Screen Elements
+            _panelProfileView     = _root.Q<VisualElement>("panel-profile-view");
+            _panelLoginView       = _root.Q<VisualElement>("panel-login-view");
+            _lblCardUsername      = _root.Q<Label>("lbl-card-username");
+            _lblCardEmail         = _root.Q<Label>("lbl-card-email");
+            _lblStatLevel         = _root.Q<Label>("lbl-stat-level");
+            _lblStatCoins         = _root.Q<Label>("lbl-stat-coins");
+            _lblStatWins          = _root.Q<Label>("lbl-stat-wins");
+            _lblStatLosses        = _root.Q<Label>("lbl-stat-losses");
+            _lblStatWinrate       = _root.Q<Label>("lbl-stat-winrate");
+            _lblStatEnvido        = _root.Q<Label>("lbl-stat-envido");
+
             _btnTabLogin          = _root.Q<Button>("btn-tab-login");
             _btnTabRegister       = _root.Q<Button>("btn-tab-register");
             _groupAuthDisplayName = _root.Q<VisualElement>("group-auth-displayname");
@@ -115,7 +137,6 @@ namespace Code.UI
             _inputAuthDisplayName = _root.Q<TextField>("input-auth-displayname");
             _lblAuthSubmit        = _root.Q<Label>("lbl-auth-submit");
             _lblAuthStatus        = _root.Q<Label>("lbl-auth-status");
-            _btnAuthLogout        = _root.Q<Button>("btn-auth-logout");
 
             // Lobby labels
             _lblRoomCode  = _root.Q<Label>("lbl-room-code");
@@ -130,15 +151,16 @@ namespace Code.UI
             _lblPlayStatus  = _root.Q<Label>("lbl-play-status");
             _lblLobbyStatus = _root.Q<Label>("lbl-lobby-status");
 
-            // Profile & Auth
-            Bind("btn-open-auth", () => ShowScreen(_screenAuth));
-            Bind("btn-profile-info", () => ShowScreen(_screenAuth));
+            // Profile & Auth Bindings
+            Bind("btn-open-auth", OpenAuthOrProfileScreen);
+            Bind("btn-profile-info", OpenAuthOrProfileScreen);
+            Bind("btn-profile-logout", HandleAuthLogout);
+            Bind("btn-profile-back", () => ShowScreen(_screenMain));
             Bind("btn-auth-back", () => ShowScreen(_screenMain));
             Bind("btn-tab-login", () => SetAuthMode(false));
             Bind("btn-tab-register", () => SetAuthMode(true));
             Bind("btn-auth-submit", HandleAuthSubmit);
             Bind("btn-auth-guest", HandleAuthGuest);
-            Bind("btn-auth-logout", HandleAuthLogout);
 
             if (_inputAuthPass != null)
                 _inputAuthPass.isPasswordField = true;
@@ -650,6 +672,40 @@ namespace Code.UI
 
         // ─────────────────────── Profile & Cloud Auth ─────────────────────
 
+        private void OpenAuthOrProfileScreen()
+        {
+            bool isLoggedIn = CloudAuthManager.Instance != null && CloudAuthManager.Instance.IsLoggedIn;
+
+            if (isLoggedIn)
+            {
+                if (_panelProfileView != null) _panelProfileView.style.display = DisplayStyle.Flex;
+                if (_panelLoginView != null) _panelLoginView.style.display = DisplayStyle.None;
+                PopulateProfileView(CloudAuthManager.Instance.CurrentPlayer);
+            }
+            else
+            {
+                if (_panelProfileView != null) _panelProfileView.style.display = DisplayStyle.None;
+                if (_panelLoginView != null) _panelLoginView.style.display = DisplayStyle.Flex;
+                SetAuthMode(false);
+            }
+
+            ShowScreen(_screenAuth);
+        }
+
+        private void PopulateProfileView(PlayerData player)
+        {
+            if (player == null) return;
+
+            if (_lblCardUsername != null) _lblCardUsername.text = player.username;
+            if (_lblCardEmail != null) _lblCardEmail.text = string.IsNullOrEmpty(player.email) ? "Cuenta en la Nube" : player.email;
+            if (_lblStatLevel != null) _lblStatLevel.text = $"NV. {player.level} ({player.experience} / {player.ExperienceForNextLevel} XP)";
+            if (_lblStatCoins != null) _lblStatCoins.text = $"🪙 {player.coins:N0}";
+            if (_lblStatWins != null) _lblStatWins.text = $"{player.gamesWon}";
+            if (_lblStatLosses != null) _lblStatLosses.text = $"{player.gamesLost}";
+            if (_lblStatWinrate != null) _lblStatWinrate.text = $"{player.WinRate:F1}%";
+            if (_lblStatEnvido != null) _lblStatEnvido.text = $"{player.highestEnvido} pts";
+        }
+
         private void SetAuthMode(bool isRegister)
         {
             _isRegisterMode = isRegister;
@@ -695,7 +751,8 @@ namespace Code.UI
                 if (success)
                 {
                     ShowStatus(_lblAuthStatus, "¡Cuenta creada y guardada con éxito!");
-                    ShowScreen(_screenMain);
+                    UpdateProfileUI(CloudAuthManager.Instance.CurrentPlayer);
+                    OpenAuthOrProfileScreen();
                 }
                 else
                 {
@@ -708,7 +765,8 @@ namespace Code.UI
                 if (success)
                 {
                     ShowStatus(_lblAuthStatus, "¡Sesión iniciada con éxito!");
-                    ShowScreen(_screenMain);
+                    UpdateProfileUI(CloudAuthManager.Instance.CurrentPlayer);
+                    OpenAuthOrProfileScreen();
                 }
                 else
                 {
@@ -726,7 +784,7 @@ namespace Code.UI
 
         private void HandleAuthLogout()
         {
-            CloudAuthManager.Instance.Logout();
+            CloudAuthManager.Instance?.Logout();
             ShowStatus(_lblAuthStatus, "Sesión cerrada. Ahora estás jugando como invitado.");
             ShowScreen(_screenMain);
         }
@@ -759,10 +817,7 @@ namespace Code.UI
                 _lblAuthBtnText.text = player.isGuest ? "GUARDAR EN NUBE" : "MI PERFIL";
             }
 
-            if (_btnAuthLogout != null)
-            {
-                _btnAuthLogout.style.display = player.isGuest ? DisplayStyle.None : DisplayStyle.Flex;
-            }
+            PopulateProfileView(player);
 
             if (_lblProfileLevel != null)
                 _lblProfileLevel.text = $"NV. {player.level}";
