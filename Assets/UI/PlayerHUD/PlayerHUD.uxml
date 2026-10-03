@@ -22,14 +22,14 @@
                     </engine:VisualElement>
                 </engine:VisualElement>
 
-                <engine:Label name="envido-stake-label" text="ENVIDO EN JUEGO: 2 PIEDRAS" class="envido-stake-chip" style="display: none;" />
+                <engine:Label name="envido-stake-label" text="ENVIDO: 2 PTS" class="envido-stake-chip" style="display: none;" />
 
                 <engine:VisualElement name="hud-turn-indicator" class="hud-turn-indicator" picking-mode="Ignore">
                     <engine:Label name="turn-label" text="TU TURNO" class="hud-turn__text" />
                 </engine:VisualElement>
 
                 <engine:VisualElement name="hud-waiting-indicator" class="hud-waiting-indicator" picking-mode="Ignore" style="display: none;">
-                    <engine:Label name="waiting-label" text="ESPERANDO RESPUESTA..." class="hud-waiting__text" />
+                    <engine:Label name="waiting-label" text="ESPERANDO RIVAL..." class="hud-waiting__text" />
                 </engine:VisualElement>
             </engine:VisualElement>
 
@@ -38,7 +38,7 @@
                     <engine:Label name="look-button-label" text="V" class="hud-btn-icon__text" />
                 </engine:Button>
                 <engine:Button name="camera-button" class="hud-btn-icon hud-btn-camera">
-                    <engine:Label text="O" class="hud-btn-icon__text" />
+                    <engine:Label text="CAM" class="hud-btn-icon__text hud-btn-icon__text--small" />
                 </engine:Button>
                 <engine:Button name="info-button" class="hud-btn-icon hud-btn-info">
                     <engine:Label text="?" class="hud-btn-icon__text" />
@@ -105,7 +105,7 @@
         <!-- HIERARCHY MODAL -->
         <engine:VisualElement name="hierarchy-modal" class="hierarchy-modal-overlay">
             <engine:VisualElement class="hierarchy-panel">
-                <engine:Label text="JERARQUÍA DE CARTAS (ESCALERA)" class="hierarchy-title" />
+                <engine:Label text="ESCALERA DE CARTAS" class="hierarchy-title" />
                 <engine:ScrollView class="hierarchy-scroll">
                     <engine:Label text="1. As de Espada" class="hierarchy-item hierarchy-item--high" />
                     <engine:Label text="2. As de Basto" class="hierarchy-item hierarchy-item--high" />
@@ -162,7 +162,7 @@
         <!-- QUIT CONFIRM MODAL -->
         <engine:VisualElement name="quit-confirm-modal" class="hierarchy-modal-overlay">
             <engine:VisualElement class="hierarchy-panel modal-panel--compact">
-                <engine:Label text="¿ESTÁS SEGURO DE QUE QUIERES SALIR?" class="hierarchy-title" />
+                <engine:Label text="¿SALIR DE LA PARTIDA?" class="hierarchy-title" />
                 <engine:VisualElement class="modal-btn-row">
                     <engine:Button name="confirm-yes-button" class="hud-btn hud-btn--decline modal-btn">
                         <engine:Label text="SÍ, SALIR" class="hud-btn__text" />

@@ -418,11 +418,11 @@ namespace Code.Player
             // Mostrar aviso visual del turno
             if (isMyTurn)
             {
-                NotifyEvent("¡TU TURNO!", 1.5f);
+                NotifyEvent("¡TU TURNO!", 2.2f);
             }
             else
             {
-                NotifyEvent($"TURNO DE: {playerName.ToUpper()}", 1.5f);
+                NotifyEvent($"TURNO DE: {playerName.ToUpper()}", 2.2f);
             }
         }
 
@@ -463,7 +463,7 @@ namespace Code.Player
             _envidoStakeLabel.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             if (visible)
             {
-                _envidoStakeLabel.text = $"ENVIDO EN JUEGO: {points} {(points == 1 ? "PIEDRA" : "PIEDRAS")}";
+                _envidoStakeLabel.text = $"ENVIDO: {points} PTS";
                 JuicyUIHelper.Bump(_envidoStakeLabel, 1.25f, 0.24f);
             }
         }
@@ -474,6 +474,10 @@ namespace Code.Player
             if (turnIndicator != null)
             {
                 turnIndicator.style.display = isYourTurn ? DisplayStyle.Flex : DisplayStyle.None;
+                if (isYourTurn)
+                {
+                    JuicyUIHelper.Bump(turnIndicator, 1.15f, 0.22f);
+                }
             }
 
             if (_turnLabel != null)
@@ -524,7 +528,7 @@ namespace Code.Player
                 var envidoLabel = _envidoButton.Q<Label>();
                 if (envidoLabel != null)
                 {
-                    envidoLabel.text = hasFlor ? "ENVIDO\n(QUEMAR FLOR)" : "ENVIDO";
+                    envidoLabel.text = hasFlor ? "ENVIDO\n(QUEMAR)" : "ENVIDO";
                     if (hasFlor)
                     {
                         envidoLabel.AddToClassList("hud-btn__text--small");
@@ -609,7 +613,17 @@ namespace Code.Player
         public void ShowResponseButtons(bool visible, string acceptText = "QUIERO", string declineText = "NO QUIERO", bool showMore = false, bool showSlider = false, string title = "", bool disableAccept = false, bool showDecline = true, string moreText = "RE-ENVIDAR")
         {
             if (_responseBar != null)
-                _responseBar.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            {
+                if (visible)
+                {
+                    JuicyUIHelper.PopIn(_responseBar, 0.2f, 0.9f);
+                }
+                else
+                {
+                    JuicyUIHelper.KillTweens(_responseBar);
+                    _responseBar.style.display = DisplayStyle.None;
+                }
+            }
 
             if (visible)
             {
@@ -701,14 +715,14 @@ namespace Code.Player
             if (isTeammate)
             {
                 text = string.IsNullOrEmpty(responderName)
-                    ? "TU COMPAÑERO ESTÁ PENSANDO..."
-                    : $"TU COMPAÑERO ({responderName.ToUpper()}) ESTÁ PENSANDO...";
+                    ? "COMPAÑERO PENSANDO..."
+                    : $"{responderName.ToUpper()} PENSANDO...";
             }
             else
             {
                 text = string.IsNullOrEmpty(responderName)
-                    ? "ESPERANDO RESPUESTA..."
-                    : $"{responderName.ToUpper()} ESTÁ PENSANDO...";
+                    ? "ESPERANDO RIVAL..."
+                    : $"{responderName.ToUpper()} PENSANDO...";
             }
 
             _waitingLabel.text = text;

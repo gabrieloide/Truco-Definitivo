@@ -130,7 +130,7 @@ namespace Code.GameLogic.Announcement
             // Opcional: Podríamos mostrar un mensaje muy sutil de "Envido Aceptado" sin revelar los puntos aún
             if (PlayerHUD.Instance != null)
             {
-                PlayerHUD.Instance.NotifyEvent("ENVIDO ACEPTADO (Se resuelve al final de la mano)", 2.0f);
+                PlayerHUD.Instance.NotifyEvent("¡ENVIDO ACEPTADO!", 2.8f);
             }
         }
 
@@ -152,7 +152,7 @@ namespace Code.GameLogic.Announcement
             FindAnyObjectByType<AnnouncementManager>()?.CancelEnvidoStakeForFlor();
 
             if (PlayerHUD.Instance != null)
-                PlayerHUD.Instance.NotifyEvent("EL ENVIDO SE ANULA POR FLOR", 3f);
+                PlayerHUD.Instance.NotifyEvent("FLOR ANULA ENVIDO", 2.8f);
         }
 
         Card[] TestingEnvido(PlayerLocal[] local)

@@ -797,7 +797,7 @@ namespace Code.GameLogic
 
                 string teamNameResult = (team != null) ? team.teamName : (winnerObj != null ? winnerObj.name : "EQUIPO " + winnerTeam);
                 string resultMsg = (winnerTeam == 0) ? "¡EMPATE!" : $"GANADOR: {teamNameResult.ToUpper()}";
-                if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(resultMsg, 2f);
+                if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(resultMsg, 2.8f);
                 
 
                 if (AudioManager.Instance != null)
@@ -819,7 +819,7 @@ namespace Code.GameLogic
             else
             {
                 string resultMsg = "¡EMPATE!";
-                if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(resultMsg, 2f);
+                if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(resultMsg, 2.8f);
 
                 if (AudioManager.Instance != null)
                 {
@@ -833,7 +833,7 @@ namespace Code.GameLogic
             // sola carta y esa define la mano entera (la tercera no se juega).
             if (trickWinners.Count == 1 && winnerTeam == 0)
             {
-                const string suddenDeathMsg = "¡PARDA! MUERTE SÚBITA: ELEGÍ UNA CARTA, LA PRÓXIMA DEFINE LA MANO";
+                const string suddenDeathMsg = "¡PARDA! LA PRÓXIMA DEFINE LA MANO";
                 if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(suddenDeathMsg, 3.5f);
                 if (NetworkServer.active)
                     (NetworkManager.singleton as MyNetworkingManager)?.BroadcastHudEvent(suddenDeathMsg, 3.5f);
@@ -961,7 +961,7 @@ namespace Code.GameLogic
                 
                 if (PlayerHUD.Instance != null)
                 {
-                    PlayerHUD.Instance.NotifyEvent($"ENVIDO: {teams[0].teamName.ToUpper()} ({pendingEnvidoScoreTeam1}) VS {teams[1].teamName.ToUpper()} ({pendingEnvidoScoreTeam2})", 3.0f);
+                    PlayerHUD.Instance.NotifyEvent($"ENVIDO: {teams[0].teamName.ToUpper()} ({pendingEnvidoScoreTeam1}) vs {teams[1].teamName.ToUpper()} ({pendingEnvidoScoreTeam2})", 3.5f);
                 }
                 
                 foreach (var team in teams)
@@ -976,7 +976,7 @@ namespace Code.GameLogic
                 if (AudioManager.Instance != null) AudioManager.Instance.PlaySFX("score_add_chalk");
                 RpcUpdateScores(teams[0].teamScore, teams[1].teamScore, teams[0].roundsWon, teams[1].roundsWon);
                 
-                yield return new WaitForSeconds(3.0f); // Esperar a que se lea el resultado del envido
+                yield return new WaitForSeconds(3.5f); // Esperar a que se lea el resultado del envido
                 
                 // Chequear si el Envido terminó la partida antes de dar los puntos del Truco
                 if (CheckForMatchWinner()) yield break;
@@ -990,7 +990,7 @@ namespace Code.GameLogic
                 {
                     team.teamScore += points;
                     winningTeam = team;
-                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{teamName.ToUpper()} GANA LA MANO (+{points})!", 3.0f);
+                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{teamName.ToUpper()} GANA LA MANO (+{points})!", 3.2f);
                     break;
                 }
             }
@@ -1001,7 +1001,7 @@ namespace Code.GameLogic
             }
             RpcUpdateScores(teams[0].teamScore, teams[1].teamScore, teams[0].roundsWon, teams[1].roundsWon);
 
-            yield return new WaitForSeconds(2.0f); // Esperar para que se lea la victoria de la mano
+            yield return new WaitForSeconds(2.8f); // Esperar para que se lea la victoria de la mano
             
             // Check if game is over (score >= 30)
             if (CheckForMatchWinner()) yield break;

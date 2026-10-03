@@ -382,7 +382,7 @@ namespace Code.Player
             bool isALeyResponseCheck = ButtonName == "ALeyButton" && _announceState == AnnounceState.ALey;
             if (playerLocal != null && !playerLocal.player.canPlayCard && !isALeyResponseCheck && !isFlorOverEnvido)
             {
-                if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("NO ES TU TURNO", 1.5f);
+                if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("NO ES TU TURNO", 2.2f);
                 return;
             }
 
@@ -431,7 +431,7 @@ namespace Code.Player
 
                 if (anyNpcHasFlor || florAlreadySung)
                 {
-                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("NO SE PUEDE CANTAR ENVIDO CON FLOR EN JUEGO", 2f);
+                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("FLOR EN JUEGO (SIN ENVIDO)", 2.5f);
                     return;
                 }
 
@@ -443,7 +443,7 @@ namespace Code.Player
 
                 if (score <= 0)
                 {
-                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("NO TIENES ENVIDO", 1.5f);
+                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("NO TIENES ENVIDO", 2.2f);
                     return;
                 }
             }
@@ -455,7 +455,7 @@ namespace Code.Player
 
                 if (GameManager.Instance.lastTrucoTeamIndex != 0 && GameManager.Instance.lastTrucoTeamIndex == myTeamIndex)
                 {
-                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("TU EQUIPO TIENE EL TRUCO", 2f);
+                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("TU EQUIPO TIENE EL TRUCO", 2.2f);
                     return;
                 }
             }
@@ -497,7 +497,7 @@ namespace Code.Player
                 Debug.Log("[AnnouncementManager] FLOR anula ENVIDO (Jugador).");
                 if (PlayerHUD.Instance != null)
                 {
-                    PlayerHUD.Instance.NotifyEvent("FLOR ANULA ENVIDO", 2f);
+                    PlayerHUD.Instance.NotifyEvent("FLOR ANULA ENVIDO", 2.8f);
                     PlayerHUD.Instance.ShowResponseButtons(false); // cerrar la respuesta al envido
                 }
                 if (GameManager.Instance != null) GameManager.Instance.pendingEnvidoResolution = false;
@@ -543,7 +543,7 @@ namespace Code.Player
                     _ => "TRUCO"
                 };
             }
-            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{playerName.ToUpper()}{teamSuffix.ToUpper()} CANTA {announceLabel}!", 2.5f);
+            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{playerName.ToUpper()}{teamSuffix.ToUpper()} CANTA {announceLabel}!", 3.0f);
             
             // Si es "A Ley" o "Flor", no bloqueamos la partida, es solo informativo.
             if (targetState != AnnounceState.ALey && targetState != AnnounceState.Flor)
@@ -561,8 +561,8 @@ namespace Code.Player
             RpcAnnounceToAllClients();
             if (PlayerHUD.Instance != null) PlayerHUD.Instance.RefreshActionButtons(true);
 
-            // 2.5s para coincidir con la duración de la notificación en pantalla
-            yield return new WaitForSeconds(2.5f);
+            // 3.0s para coincidir con la duración de la notificación en pantalla
+            yield return new WaitForSeconds(3.0f);
 
             // Flor y A Ley son informativos: no piden Quiero/No Quiero a nadie.
             if (targetState == AnnounceState.Envido || targetState == AnnounceState.Truco)
@@ -631,7 +631,7 @@ namespace Code.Player
                     && !(rejectedSync.connectionToClient is LocalConnectionToClient))
                 {
                     rejectedSync.TargetHudNotify(rejectedSync.connectionToClient,
-                        "NO SE PUEDE CANTAR ENVIDO CON FLOR EN JUEGO", 2f);
+                        "FLOR EN JUEGO (SIN ENVIDO)", 2.5f);
                 }
                 return;
             }
@@ -686,7 +686,7 @@ namespace Code.Player
             if ((state == AnnounceState.Flor || state == AnnounceState.ALey) && _announceState == AnnounceState.Envido)
             {
                 Debug.Log("[AnnouncementManager] FLOR anula ENVIDO (NPC).");
-                if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("FLOR ANULA ENVIDO", 2f);
+                if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("FLOR ANULA ENVIDO", 2.8f);
                 if (GameManager.Instance != null) GameManager.Instance.pendingEnvidoResolution = false;
                 UpdateEnvidoStakeUI(0, false);
             }
@@ -706,7 +706,7 @@ namespace Code.Player
 
             currentAnnouncerTeam = npcTeam;
 
-            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{npcName.ToUpper()}{teamSuffix.ToUpper()} CANTA {state.ToString().ToUpper()}!", 2.5f);
+            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{npcName.ToUpper()}{teamSuffix.ToUpper()} CANTA {state.ToString().ToUpper()}!", 3.0f);
 
             PlayAnnounceSFX(state, 1);
 
@@ -726,8 +726,8 @@ namespace Code.Player
             if (state == AnnounceState.Envido)
                 UpdateEnvidoStakeUI(ProspectiveEnvidoStake(), true);
 
-            // 2.5s para coincidir con la duración de la notificación en pantalla
-            yield return new WaitForSeconds(2.5f);
+            // 3.0s para coincidir con la duración de la notificación en pantalla
+            yield return new WaitForSeconds(3.0f);
 
             if (isInformative)
             {
@@ -894,7 +894,7 @@ namespace Code.Player
                 }
                 if (score <= 0)
                 {
-                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("NO TIENES ENVIDO", 1.5f);
+                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("NO TIENES ENVIDO", 2.2f);
                     return;
                 }
             }
@@ -987,10 +987,10 @@ namespace Code.Player
 
         private System.Collections.IEnumerator NotifyBurnedFlor(string playerName)
         {
-            // Después del cartel "CANTA ENVIDO" (2.5s) para que no se pisen.
-            yield return new WaitForSeconds(2.6f);
+            // Después del cartel "CANTA ENVIDO" (3.0s) para que no se pisen.
+            yield return new WaitForSeconds(3.1f);
             if (PlayerHUD.Instance != null)
-                PlayerHUD.Instance.NotifyEvent($"¡{playerName.ToUpper()} QUEMA SU FLOR!", 2f);
+                PlayerHUD.Instance.NotifyEvent($"¡{playerName.ToUpper()} QUEMA SU FLOR!", 2.5f);
         }
 
         /// <summary>Server-side: re-enables the turn of whoever should be playing after an
@@ -1106,7 +1106,7 @@ namespace Code.Player
 
             if (PlayerHUD.Instance != null)
             {
-                PlayerHUD.Instance.NotifyEvent($"¡{playerName.ToUpper()}{teamSuffix.ToUpper()} {actionText.ToUpper()}!", 2.5f);
+                PlayerHUD.Instance.NotifyEvent($"¡{playerName.ToUpper()}{teamSuffix.ToUpper()} {actionText.ToUpper()}!", 2.8f);
                 PlayerHUD.Instance.ShowResponseButtons(false); // Ocultar botones de respuesta para el humano
                 PlayerHUD.Instance.ShowWaitingResponse(false);
             }
@@ -1116,7 +1116,7 @@ namespace Code.Player
             GameManager.Instance.isAnnouncementPending = true;
 
             // Esperar a que la notificación de re-canto termine
-            yield return new WaitForSeconds(2.5f);
+            yield return new WaitForSeconds(2.8f);
 
             // El re-cantor pasa a ser el "anunciante" vigente (importante para resolver un No Quiero)
             var raiserTeam = FindTeamByPlayerName(playerName);
@@ -1186,10 +1186,10 @@ namespace Code.Player
             string displayWinner = GetTeamNameByPlayerName(playerName);
             string msg = $"¡{displayWinner.ToUpper()} QUIERE!";
             if (_announceState == AnnounceState.ALey) msg = $"¡{displayWinner.ToUpper()} TIENE FLOR!";
-            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(msg, 2.5f);
+            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(msg, 2.8f);
 
             
-            // 2.5s para que desaparezca el texto + 2s extra = 4.5s
+            // 2.8s para que desaparezca el texto + 1.7s extra = 4.5s
             yield return new WaitForSeconds(4.5f);
             
             var current = GetCurrentAnnounce();
@@ -1260,11 +1260,11 @@ namespace Code.Player
             string displayWinner = GetTeamNameByPlayerName(playerName);
             string msg = $"¡{displayWinner.ToUpper()} NO QUIERO!";
             if (previousState == AnnounceState.ALey) msg = $"¡{displayWinner.ToUpper()} NO TIENE FLOR!";
-            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(msg, 2.5f);
+            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(msg, 2.8f);
 
             
-            // 2.5s para coincidir con la duración de la notificación en pantalla
-            yield return new WaitForSeconds(2.5f);
+            // 2.8s para coincidir con la duración de la notificación en pantalla
+            yield return new WaitForSeconds(2.8f);
             
             if (previousState == AnnounceState.ALey)
             {
