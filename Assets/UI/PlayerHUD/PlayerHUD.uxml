@@ -85,13 +85,16 @@
             </engine:VisualElement>
         </engine:VisualElement>
 
-        <!-- CARD ACTION MENU -->
+        <!-- CARD ACTION MENU (MOBILE: BOTTOM RIGHT) -->
         <engine:VisualElement name="card-action-menu" class="card-action-menu" picking-mode="Ignore" style="display: none;">
             <engine:Button name="card-play-btn" class="hud-btn hud-btn--accept">
                 <engine:Label text="JUGAR" class="hud-btn__text" />
             </engine:Button>
             <engine:Button name="card-burn-btn" class="hud-btn hud-btn--decline">
                 <engine:Label text="QUEMAR" class="hud-btn__text" />
+            </engine:Button>
+            <engine:Button name="card-cancel-btn" class="hud-btn hud-btn--cancel">
+                <engine:Label text="CANCELAR" class="hud-btn__text" />
             </engine:Button>
         </engine:VisualElement>
 

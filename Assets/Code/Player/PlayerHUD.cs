@@ -68,6 +68,7 @@ namespace Code.Player
         private VisualElement _cardActionMenu;
         private Button _cardPlayBtn;
         private Button _cardBurnBtn;
+        private Button _cardCancelBtn;
 
         // Botón "mirar las cartas" (sólo móvil; en PC son las teclas W/S)
         private Button _lookButton;
@@ -207,6 +208,17 @@ namespace Code.Player
             }
         }
 
+        private void OnCardCancelClicked()
+        {
+            var allPlayers = FindObjectsByType<PlayerLocal>(FindObjectsSortMode.None);
+            var playerLocal = allPlayers.FirstOrDefault(p => p.isLocalPlayer && p.gameObject.activeInHierarchy);
+            if (playerLocal != null && playerLocal.selectedCardInteraction != null)
+            {
+                playerLocal.selectedCardInteraction.Deselect();
+                playerLocal.selectedCardInteraction = null;
+            }
+        }
+
         private void InitializeUI()
         {
             _uiDocument = GetComponent<UIDocument>();
@@ -323,9 +335,11 @@ namespace Code.Player
             _cardActionMenu = _root.Q<VisualElement>("card-action-menu");
             _cardPlayBtn = _root.Q<Button>("card-play-btn");
             _cardBurnBtn = _root.Q<Button>("card-burn-btn");
+            _cardCancelBtn = _root.Q<Button>("card-cancel-btn");
 
             SetupButton(_cardPlayBtn, OnCardPlayClicked);
             SetupButton(_cardBurnBtn, OnCardBurnClicked);
+            SetupButton(_cardCancelBtn, OnCardCancelClicked);
 
             // 2. Suscribirse a los eventos de los botones
             SetupButton(_aleyButton, OnALeyClicked);
@@ -368,6 +382,7 @@ namespace Code.Player
 
             CleanupButton(_cardPlayBtn, OnCardPlayClicked);
             CleanupButton(_cardBurnBtn, OnCardBurnClicked);
+            CleanupButton(_cardCancelBtn, OnCardCancelClicked);
 
             GameManager.OnTurnStarted -= HandleTurnStarted;
             GameManager.OnScoreChanged -= UpdateScore;
