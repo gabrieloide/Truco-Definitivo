@@ -68,6 +68,7 @@ namespace Code.UI
         private Button _btnLobbyStart;
         private Button _btnLobbyReady;
         private Button _btnSwapRow1, _btnSwapRow2;
+        private Button _btnReconnect;
         private Label _lblPlayStatus;
         private Label _lblLobbyStatus;
 
@@ -175,6 +176,10 @@ namespace Code.UI
             }
 
             // Main Menu
+            _btnReconnect = _root.Q<Button>("btn-main-reconnect");
+            Bind("btn-main-reconnect", HandleReconnect);
+            CheckActiveSessionForReconnect();
+
             Bind("btn-main-singleplayer", () => ShowScreen(_screenSingleplayerSetup));
             Bind("btn-main-play",         () => ShowScreen(_screenPlay));
             Bind("btn-main-settings",     () => ShowScreen(_screenSettings));
@@ -328,6 +333,11 @@ namespace Code.UI
                     s.style.display = DisplayStyle.None;
                 }
             }
+
+            if (target == _screenMain)
+            {
+                CheckActiveSessionForReconnect();
+            }
         }
 
         // ─────────────────────── Singleplayer ─────────────────────────────
@@ -427,6 +437,65 @@ namespace Code.UI
             {
                 Debug.LogError($"[MainMenuController] Join error: {e.Message}");
                 ShowStatus(_lblPlayStatus, "Ese código no funciona: la sala no existe o ya se cerró. Revisalo e intentá de nuevo.");
+                SetButtonsInteractable(true);
+            }
+            finally
+            {
+                _isConnecting = false;
+            }
+        }
+
+        // ─────────────────────── Reconnection ─────────────────────────────
+
+        public void CheckActiveSessionForReconnect()
+        {
+            if (_btnReconnect == null) return;
+
+            if (MatchSessionTracker.HasActiveSession(out var session))
+            {
+                _btnReconnect.style.display = DisplayStyle.Flex;
+                var lblText = _btnReconnect.Q<Label>(className: "menu-btn__text");
+                if (lblText != null)
+                {
+                    lblText.text = $"🔄 RECONECTARSE A SALA {session.lobbyCode}";
+                }
+            }
+            else
+            {
+                _btnReconnect.style.display = DisplayStyle.None;
+            }
+        }
+
+        private async void HandleReconnect()
+        {
+            if (!MatchSessionTracker.HasActiveSession(out var session))
+            {
+                if (_btnReconnect != null) _btnReconnect.style.display = DisplayStyle.None;
+                return;
+            }
+
+            _isConnecting = true;
+            SetButtonsInteractable(false);
+            ShowStatus(_lblPlayStatus, $"Reconectando a la sala {session.lobbyCode}...");
+
+            try
+            {
+                EnsureServicesManager();
+
+                string playerName = PlayerPrefs.GetString("playerNickname", "Gaucho");
+                await UnityServicesManager.Instance.JoinClientAsync(session.lobbyCode, playerName);
+
+                var netMgr = NetworkManager.singleton;
+                if (netMgr == null) throw new Exception("NetworkManager no encontrado.");
+
+                netMgr.StartClient();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[MainMenuController] Error al reconectar: {ex.Message}");
+                MatchSessionTracker.ClearSession();
+                if (_btnReconnect != null) _btnReconnect.style.display = DisplayStyle.None;
+                ShowStatus(_lblPlayStatus, "No se pudo reconectar: la sala ya no existe o la partida finalizó.");
                 SetButtonsInteractable(true);
             }
             finally
@@ -575,6 +644,7 @@ namespace Code.UI
 
         private void HandleLeaveLobby()
         {
+            MatchSessionTracker.ClearSession();
             if (NetworkServer.active) NetworkManager.singleton?.StopHost();
             else if (NetworkClient.active) NetworkManager.singleton?.StopClient();
 

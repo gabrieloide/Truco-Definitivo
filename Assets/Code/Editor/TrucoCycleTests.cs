@@ -382,6 +382,59 @@ namespace Code.Editor
             Assert.AreSame(teams[0], winner, "Team 1 debe ser el ganador");
         }
 
+        [Test]
+        public void Test_FlorImmediatePoints_Reaching24Points_WinsMatchImmediately()
+        {
+            var scorer = new Code.Domain.TrucoMatchScorer(maxPoints: 24);
+            var teams = new List<Code.Player.Team>
+            {
+                new Code.Player.Team("Team 1"),
+                new Code.Player.Team("Team 2")
+            };
+
+            // Partida avanzada: Team 1 tiene 22 puntos
+            teams[0].teamScore = 22;
+            Assert.IsFalse(scorer.CheckForMatchWinner(teams, out _));
+
+            // Se canta Flor (+3 piedras) de forma incontestada
+            scorer.AddPoints("Team 1", 3, teams);
+            Assert.AreEqual(25, teams[0].teamScore);
+
+            // Al añadir los puntos de Flor, se evalúa inmediatamente la victoria de la partida
+            bool matchEnded = scorer.CheckForMatchWinner(teams, out var winner);
+            Assert.IsTrue(matchEnded, "La partida debió finalizar inmediatamente con los puntos de la Flor");
+            Assert.AreSame(teams[0], winner, "Team 1 debe ser el ganador al superar los 24 puntos");
+        }
+
+        [Test]
+        public void Test_EnvidoFirst_ConditionsValidation()
+        {
+            int round = 0;
+            bool envidoCalled = false;
+            bool florCalled = false;
+            bool aLeyCalled = false;
+            bool hasFlor = false;
+
+            Card vira = new Card(1, "Espada");
+            List<Card> responderHand = new List<Card>
+            {
+                new Card(7, "Oro"),
+                new Card(6, "Oro"),
+                new Card(2, "Copa")
+            };
+
+            int envidoScore = TrucoRules.CalculateEnvidoScore(responderHand, vira);
+            Assert.AreEqual(33, envidoScore, "El jugador debe tener 33 de envido (7+6+20)");
+
+            bool canCallEnvidoFirst = (round == 0) && !envidoCalled && !florCalled && !aLeyCalled && !hasFlor && (envidoScore > 0);
+            Assert.IsTrue(canCallEnvidoFirst, "El respondedor debe poder cantar 'El Envido va primero' frente al Truco en ronda 0");
+
+            // Si ya no es ronda 0, no se permite
+            round = 1;
+            canCallEnvidoFirst = (round == 0) && !envidoCalled && !florCalled && !aLeyCalled && !hasFlor && (envidoScore > 0);
+            Assert.IsFalse(canCallEnvidoFirst, "En rondas posteriores a la primera no se permite 'El Envido va primero'");
+        }
+
         // ──────────────────────────────────────────────────────────────────────────
         // 8. MENU ITEM Y MÉTODO PARA EJECUCIÓN DIRECTA POR CONSOLA/BATCHMODE
         // ──────────────────────────────────────────────────────────────────────────
@@ -426,6 +479,8 @@ namespace Code.Editor
             Run("Test_ResponderRouting_In2v2", suite.Test_ResponderRouting_In2v2);
             Run("Test_ALeyAndFlor_AreNonBlocking", suite.Test_ALeyAndFlor_AreNonBlocking);
             Run("Test_TrucoMatchScorer_MatchVictoryFlow", suite.Test_TrucoMatchScorer_MatchVictoryFlow);
+            Run("Test_FlorImmediatePoints_Reaching24Points_WinsMatchImmediately", suite.Test_FlorImmediatePoints_Reaching24Points_WinsMatchImmediately);
+            Run("Test_EnvidoFirst_ConditionsValidation", suite.Test_EnvidoFirst_ConditionsValidation);
             Debug.Log($"================ TEST SUITE FINALIZADO: {passed} PASARON, {failed} FALLARON ================");
 
             if (failed > 0)

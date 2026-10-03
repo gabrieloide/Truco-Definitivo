@@ -10,6 +10,7 @@ using ULobby = Unity.Services.Lobbies.Models.Lobby;
 using Unity.Services.Relay;
 using Unity.Services.Relay.Models;
 using UnityEngine;
+using Code.Persistence;
 
 namespace Code.Networking
 {
@@ -25,6 +26,7 @@ namespace Code.Networking
         public string CurrentLobbyId  { get; private set; }
         public bool   IsHost           { get; private set; }
         public string PlayerName       { get; private set; }
+        public string PlayerId => AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn ? AuthenticationService.Instance.PlayerId : null;
 
         private const string k_RelayCodeKey = "relayCode";
         private const int    k_MaxPlayers   = 4;
@@ -128,6 +130,7 @@ namespace Code.Networking
             CurrentLobbyId   = _currentLobby.Id;
 
             Debug.Log($"[UnityServicesManager] Lobby created. Code: {CurrentLobbyCode}");
+            MatchSessionTracker.SaveSession(CurrentLobbyCode, PlayerId, PlayerName, isHost: true);
             return CurrentLobbyCode;
         }
 
@@ -161,6 +164,7 @@ namespace Code.Networking
             JoinAllocation joinAllocation = await RelayService.Instance.JoinAllocationAsync(relayJoinCode);
             UnityRelayTransport.ClientRelayData = joinAllocation.ToRelayServerData(k_ConnectionType);
 
+            MatchSessionTracker.SaveSession(CurrentLobbyCode, PlayerId, PlayerName, isHost: false);
             Debug.Log("[UnityServicesManager] Client relay configured.");
         }
 

@@ -59,6 +59,51 @@ namespace Code.GameLogic.Announcement
             }
         }
 
+        /// <summary>
+        /// Comprueba si algún jugador del equipo rival tiene Flor en esta mano.
+        /// </summary>
+        public bool HasOpposingTeamFlor(int myTeamIndex)
+        {
+            if (myTeamIndex < 0) return true; // Fallback seguro
+            var deckCreator = DeckCreator.Instance;
+            if (deckCreator == null) return false;
+            var vira = deckCreator.cardVira;
+
+            var gm = GameManager.Instance;
+            if (gm == null || gm.teams.Count < 2) return false;
+
+            int opposingTeamIndex = (myTeamIndex == 0) ? 1 : 0;
+
+            var allPlayers = FindObjectsByType<Code.Player.Player>(FindObjectsSortMode.None);
+            foreach (var p in allPlayers)
+            {
+                if (p.florBurned) continue;
+                int teamIdx = gm.GetTeamIndex(p.team);
+                if (teamIdx == opposingTeamIndex)
+                {
+                    var cardsHandler = p.GetComponent<CardsHandler>() ?? p.GetComponentInChildren<CardsHandler>();
+                    if (cardsHandler != null && cardsHandler.InitialHand != null && cardsHandler.InitialHand.Count >= 3)
+                    {
+                        if (TrucoRules.IsFlor(cardsHandler.InitialHand, vira)) return true;
+                    }
+                }
+            }
+
+            var allNpcs = FindObjectsByType<NPCPlayer>(FindObjectsSortMode.None);
+            foreach (var npc in allNpcs)
+            {
+                int teamIdx = gm.GetTeamIndex(npc.team);
+                if (teamIdx == opposingTeamIndex)
+                {
+                    if (npc.initialHand != null && npc.initialHand.Count >= 3)
+                    {
+                        if (TrucoRules.IsFlor(npc.initialHand, vira)) return true;
+                    }
+                }
+            }
+
+            return false;
+        }
 
         private class FlorData
         {

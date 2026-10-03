@@ -284,6 +284,24 @@ namespace Code.Cards
             PlayerCardSpawner(index, card, card.value, card.suit, 3, 0f);
         }
 
+        /// <summary>
+        /// Retorna las cartas lógicas (Card) que el jugador aún tiene en su mano física sin jugar.
+        /// </summary>
+        public List<Card> GetCurrentCardsInHand()
+        {
+            var list = new List<Card>();
+            foreach (var cardObj in Cards)
+            {
+                if (cardObj == null) continue;
+                var ci = cardObj.GetComponent<CardInteraction>();
+                if (ci != null && ci.Card != null)
+                {
+                    list.Add(ci.Card);
+                }
+            }
+            return list;
+        }
+
         // [TargetRpc]
         public void TargetReceiveCards(/*NetworkConnection target,*/ List<Card> dealtCards)
         {

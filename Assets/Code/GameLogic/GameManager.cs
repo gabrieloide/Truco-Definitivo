@@ -707,7 +707,6 @@ namespace Code.GameLogic
             }
         }
 
-        public List<int> trickWinners = new List<int>(); // 0 = Tie, 1 = Team 1, 2 = Team 2
         private int _manoTeamIndex = 1; // Team index (1 or 2) that is "Mano" in current hand
         public int ManoTeamIndex => _manoTeamIndex;
 
@@ -820,6 +819,7 @@ namespace Code.GameLogic
             if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{teamName.ToUpper()} GANA {points} PIEDRAS!");
             Code.Core.TrucoAudioService.PlayScoreChalk();
             RpcUpdateScores(teams[0].teamScore, teams[1].teamScore, teams[0].roundsWon, teams[1].roundsWon);
+            CheckForMatchWinner();
         }
 
         public void ResolveHandWinner(string teamName, int points)
@@ -847,6 +847,7 @@ namespace Code.GameLogic
                 {
                     flor.UpdateTotalScore();
                     yield return new WaitForSeconds(3.0f); // Tiempo para ver las cartas de la Flor
+                    if (CheckForMatchWinner()) yield break;
                 }
             }
 
@@ -893,11 +894,20 @@ namespace Code.GameLogic
             StartCoroutine(DelayedNewHand());
         }
 
-        private bool CheckForMatchWinner()
+        public bool CheckForMatchWinner()
         {
             if (_scorer.CheckForMatchWinner(teams, out Team matchWinner))
             {
                 if (matchWinner == null) return true;
+
+                isHandResolved = true;
+                isAnnouncementPending = false;
+
+                // Stop all pending turns immediately
+                foreach (var npc in npcs) npc.ResetTurnState();
+                var players = UnityEngine.Object.FindObjectsByType<Code.Player.Player>(UnityEngine.FindObjectsSortMode.None);
+                foreach (var p in players) p.canPlayCard = false;
+                BroadcastTurnLock();
 
                 var playerLocal = FindAnyObjectByType<PlayerLocal>();
                 Team humanTeam = (playerLocal != null && playerLocal.player != null) ? playerLocal.player.team : null;
@@ -906,12 +916,15 @@ namespace Code.GameLogic
 
                 if (PlayerHUD.Instance != null)
                 {
+                    PlayerHUD.Instance.ShowResponseButtons(false);
+                    PlayerHUD.Instance.ShowWaitingResponse(false);
                     PlayerHUD.Instance.NotifyEvent($"¡{matchWinner.teamName.ToUpper()} GANA LA PARTIDA!", 5f);
                 }
 
                 bool isHumanVictory = (humanTeam != null && matchWinner == humanTeam);
                 Code.Core.TrucoAudioService.PlayMatchResult(isHumanVictory);
                 Code.Persistence.CloudAuthManager.Instance?.RecordMatchEnd(isHumanVictory);
+                Code.Persistence.MatchSessionTracker.ClearSession();
 
                 string winnerText = $"¡{matchWinner.teamName.ToUpper()} GANA LA PARTIDA!";
 
@@ -926,6 +939,33 @@ namespace Code.GameLogic
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Host only: llamado cuando expira el tiempo de gracia de un jugador desconectado.
+        /// Se otorga la victoria por abandono (W.O.) al equipo rival.
+        /// </summary>
+        public void HandlePlayerAbandoned(int abandonedSeatIndex, int abandonedTeamIndex)
+        {
+            if (teams == null || teams.Count < 2) return;
+
+            int winningTeamIndex = (abandonedTeamIndex == 0) ? 1 : 0;
+            string winningTeamName = teams[winningTeamIndex].teamName;
+            string forfeitMsg = $"PARTIDA TERMINADA: {winningTeamName.ToUpper()} GANA POR ABANDONO";
+
+            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(forfeitMsg, 5f);
+
+            var netMgr = Mirror.NetworkManager.singleton as MyNetworkingManager;
+            netMgr?.BroadcastHudEvent(forfeitMsg, 5f);
+
+            teams[winningTeamIndex].teamScore = maxPoints;
+            RpcUpdateScores(teams[0].teamScore, teams[1].teamScore, teams[0].roundsWon, teams[1].roundsWon);
+
+            string winnerText = $"¡{winningTeamName.ToUpper()} GANA POR ABANDONO!";
+            netMgr?.BroadcastMatchEnded(winnerText);
+
+            Code.Persistence.MatchSessionTracker.ClearSession();
+            StartCoroutine(ShowMatchEndModalAfterDelay(winnerText));
         }
 
         private System.Collections.IEnumerator ShowMatchEndModalAfterDelay(string winnerText)

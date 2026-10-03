@@ -29,6 +29,9 @@
             </engine:VisualElement>
             <engine:Label text="TRUCO DEFINITIVO" class="title-text title-main"/>
             <engine:VisualElement class="main-buttons-container">
+                <engine:Button name="btn-main-reconnect" class="menu-btn menu-btn--reconnect btn-large" style="display: none;">
+                    <engine:Label text="🔄 RECONECTARSE A SALA" class="menu-btn__text btn-large__text"/>
+                </engine:Button>
                 <engine:Button name="btn-main-singleplayer" class="menu-btn menu-btn--primary btn-large">
                     <engine:Label text="UN JUGADOR" class="menu-btn__text btn-large__text"/>
                 </engine:Button>

@@ -9,6 +9,7 @@ namespace Code.Core
         public static event Action OnAcceptButtonClicked;
         public static event Action OnDeclineButtonClicked;
         public static event Action OnMoreButtonClicked;
+        public static event Action OnEnvidoFirstButtonClicked;
 
         // Eventos Fuertemente Tipados (UI -> Lógica)
         public static event Action<AnnounceState> OnAnnounceStateClicked;
@@ -46,6 +47,11 @@ namespace Code.Core
         {
             OnMoreButtonClicked?.Invoke();
             OnResponseButtonClicked?.Invoke(Code.Domain.ResponseType.Mas);
+        }
+
+        public static void EmitEnvidoFirstButtonClicked()
+        {
+            OnEnvidoFirstButtonClicked?.Invoke();
         }
     }
 }

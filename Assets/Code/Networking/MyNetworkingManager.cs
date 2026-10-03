@@ -4,6 +4,7 @@ using System.Linq;
 using Code.GameLogic;
 using Code.Networking;
 using Code.Player;
+using Code.Persistence;
 using Mirror;
 using UnityEngine;
 
@@ -13,14 +14,25 @@ public class MyNetworkingManager : NetworkManager
     [SerializeField] private int targetPlayerCount = 2;
     [SerializeField] private float clientsReadyTimeout = 30f;
 
+    // ─────────────────────── Reconnection Management ──────────────────────
+    private readonly Dictionary<string, DisconnectedPlayerSession> _pendingReconnections = new Dictionary<string, DisconnectedPlayerSession>();
+    private readonly Dictionary<int, DisconnectedPlayerSession> _pendingBySeat = new Dictionary<int, DisconnectedPlayerSession>();
+
     public override void OnStartHost()
     {
         base.OnStartHost();
+        ClearPendingReconnections();
         // Each room starts with the default team names (the manager is DDOL,
         // so names from a previous room would leak into the new one).
         _lobbyTeamNames[0] = "EQUIPO 1";
         _lobbyTeamNames[1] = "EQUIPO 2";
         Debug.Log("[MyNetworkingManager] Host started.");
+    }
+
+    public override void OnStopServer()
+    {
+        ClearPendingReconnections();
+        base.OnStopServer();
     }
 
     // ─────────────────────── Connection diagnostics ───────────────────────
@@ -37,6 +49,12 @@ public class MyNetworkingManager : NetworkManager
     public override void OnServerDisconnect(NetworkConnectionToClient conn)
     {
         Debug.LogWarning($"[NetDiag] t={Time.realtimeSinceStartup:F1}s — Mirror server: client DISCONNECTED (conn={conn.connectionId}).");
+
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "GameScene")
+        {
+            CaptureDisconnectedPlayerSession(conn);
+        }
+
         base.OnServerDisconnect(conn);
     }
 
@@ -430,5 +448,215 @@ public class MyNetworkingManager : NetworkManager
 
         BroadcastTeamNames(names[0], names[1]);
         PlayerHUD.Instance?.RefreshTeamLabel();
+    }
+
+    // ─────────────────────── Reconnection Handlers ────────────────────────
+
+    public void ClearPendingReconnections()
+    {
+        foreach (var session in _pendingReconnections.Values)
+        {
+            if (session.timeoutCoroutine != null)
+                StopCoroutine(session.timeoutCoroutine);
+        }
+        _pendingReconnections.Clear();
+        _pendingBySeat.Clear();
+    }
+
+    private void CaptureDisconnectedPlayerSession(NetworkConnectionToClient conn)
+    {
+        if (conn == null || conn.identity == null) return;
+
+        var netSync = conn.identity.GetComponent<PlayerNetworkSync>();
+        var cardsHandler = conn.identity.GetComponent<Code.Cards.CardsHandler>();
+        if (netSync == null || netSync.seatIndex < 0) return;
+
+        string idKey = !string.IsNullOrEmpty(netSync.playerId) ? netSync.playerId : netSync.playerName;
+        if (string.IsNullOrEmpty(idKey)) idKey = $"Seat_{netSync.seatIndex}";
+
+        var session = new DisconnectedPlayerSession
+        {
+            playerId = idKey,
+            playerName = netSync.playerName,
+            seatIndex = netSync.seatIndex,
+            teamIndex = netSync.teamIndex,
+            cardsInHand = cardsHandler != null ? cardsHandler.GetCurrentCardsInHand() : new List<Card>(),
+            disconnectTime = Time.time
+        };
+
+        if (_pendingBySeat.TryGetValue(session.seatIndex, out var existing) && existing.timeoutCoroutine != null)
+        {
+            StopCoroutine(existing.timeoutCoroutine);
+        }
+
+        _pendingReconnections[session.playerId] = session;
+        _pendingBySeat[session.seatIndex] = session;
+
+        string discMsg = $"¡{session.playerName.ToUpper()} SE HA DESCONECTADO! ESPERANDO RECONEXIÓN (60s)...";
+        if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(discMsg, 5f);
+        BroadcastHudEvent(discMsg, 5f);
+
+        session.timeoutCoroutine = StartCoroutine(ReconnectionTimeoutRoutine(session, 60f));
+    }
+
+    private System.Collections.IEnumerator ReconnectionTimeoutRoutine(DisconnectedPlayerSession session, float waitSeconds)
+    {
+        yield return new WaitForSeconds(waitSeconds);
+
+        if (_pendingBySeat.ContainsKey(session.seatIndex))
+        {
+            _pendingBySeat.Remove(session.seatIndex);
+            _pendingReconnections.Remove(session.playerId);
+
+            string expiredMsg = $"TIEMPO DE ESPERA AGOTADO: {session.playerName.ToUpper()} HA ABANDONADO.";
+            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(expiredMsg, 5f);
+            BroadcastHudEvent(expiredMsg, 5f);
+
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.HandlePlayerAbandoned(session.seatIndex, session.teamIndex);
+            }
+        }
+    }
+
+    public void CheckAndHandleReconnectingPlayer(NetworkConnectionToClient conn, PlayerNetworkSync netSync, string pId, string playerName)
+    {
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != "GameScene") return;
+
+        DisconnectedPlayerSession session = null;
+        if (!string.IsNullOrEmpty(pId) && _pendingReconnections.TryGetValue(pId, out var s1))
+        {
+            session = s1;
+        }
+        else if (!string.IsNullOrEmpty(playerName))
+        {
+            foreach (var kvp in _pendingReconnections)
+            {
+                if (string.Equals(kvp.Value.playerName, playerName, StringComparison.OrdinalIgnoreCase))
+                {
+                    session = kvp.Value;
+                    break;
+                }
+            }
+        }
+
+        if (session == null && _pendingBySeat.Count > 0)
+        {
+            session = _pendingBySeat.Values.FirstOrDefault();
+        }
+
+        if (session == null)
+        {
+            Debug.Log($"[MyNetworkingManager] Cliente {playerName} ({pId}) conectado en GameScene pero sin sesión pendiente de reconexión.");
+            return;
+        }
+
+        Debug.Log($"[MyNetworkingManager] ¡RECONEXIÓN EXITOSA! Restaurando a {session.playerName} en silla {session.seatIndex} (Equipo {session.teamIndex}).");
+
+        if (session.timeoutCoroutine != null)
+        {
+            StopCoroutine(session.timeoutCoroutine);
+        }
+
+        _pendingReconnections.Remove(session.playerId);
+        _pendingBySeat.Remove(session.seatIndex);
+
+        var seatMgr = SeatManager.Instance;
+        var gameMgr = GameManager.Instance;
+        if (seatMgr == null || gameMgr == null) return;
+
+        // 1. Restaurar asiento y SyncVars
+        netSync.seatIndex = session.seatIndex;
+        netSync.teamIndex = session.teamIndex;
+        netSync.playerName = session.playerName;
+        netSync.playerId = session.playerId;
+
+        if (session.seatIndex >= 0 && session.seatIndex < seatMgr.allChairs.Count)
+        {
+            var chair = seatMgr.allChairs[session.seatIndex];
+            chair.occupant = conn.identity.gameObject;
+            chair.isOccupied = true;
+            seatMgr.RequestSeat(conn.identity.gameObject, chair);
+        }
+
+        // 2. Restaurar cartas en el servidor
+        var cardsHandler = conn.identity.GetComponent<Code.Cards.CardsHandler>();
+        if (cardsHandler != null)
+        {
+            cardsHandler.ClearCards();
+            foreach (var c in session.cardsInHand)
+            {
+                cardsHandler.ReceiveSingleCard(c);
+            }
+        }
+
+        // 3. Re-añadir al GameManager
+        var playerLocal = conn.identity.GetComponent<PlayerLocal>();
+        if (playerLocal != null)
+        {
+            if (playerLocal.player != null)
+            {
+                playerLocal.player.playerName = session.playerName;
+                if (session.teamIndex >= 0 && session.teamIndex < gameMgr.teams.Count)
+                    playerLocal.player.team = gameMgr.teams[session.teamIndex];
+            }
+            gameMgr.AddPlayerToServer(playerLocal);
+        }
+
+        // 4. Enviar mano al cliente reconectado
+        var cardDataList = session.cardsInHand.Select(c => CardNetData.From(c)).ToList();
+        netSync.TargetReceiveHand(conn, cardDataList);
+
+        for (int i = 0; i < session.cardsInHand.Count; i++)
+        {
+            netSync.RpcDealHiddenCard();
+        }
+
+        // 5. Sincronizar estado completo
+        int s1Score = gameMgr.teams.Count > 0 ? gameMgr.teams[0].teamScore : 0;
+        int s2Score = gameMgr.teams.Count > 1 ? gameMgr.teams[1].teamScore : 0;
+        int r1Won = gameMgr.teams.Count > 0 ? gameMgr.teams[0].roundsWon : 0;
+        int r2Won = gameMgr.teams.Count > 1 ? gameMgr.teams[1].roundsWon : 0;
+
+        var vira = DeckCreator.Instance != null ? DeckCreator.Instance.cardVira : null;
+        int viraVal = vira != null ? vira.value : 0;
+        string viraS = vira != null ? vira.suit : "";
+        int viraDb = vira != null ? vira.dbId : -1;
+
+        netSync.TargetSyncReconnectedState(
+            conn,
+            gameMgr.round,
+            s1Score,
+            s2Score,
+            r1Won,
+            r2Won,
+            gameMgr.currentPlayerTurn,
+            viraVal,
+            viraS,
+            viraDb,
+            gameMgr.dealerIndex
+        );
+
+        // 6. Sincronizar cartas en mesa si hay en esta baza
+        if (TableManager.Instance != null)
+        {
+            foreach (var tableCard in TableManager.Instance.CardsInTable)
+            {
+                int cardSeat = -1;
+                GameObject cardPlayerObj = tableCard.ownerObj ?? (tableCard.cardOwner != null ? tableCard.cardOwner.gameObject : null);
+                if (cardPlayerObj != null)
+                    cardSeat = seatMgr.GetPlayerSeatIndex(cardPlayerObj);
+
+                if (cardSeat >= 0)
+                {
+                    netSync.TargetSyncCardOnTable(conn, tableCard.dbId, tableCard.value, tableCard.suit, cardSeat, tableCard.isBurned);
+                }
+            }
+        }
+
+        // 7. Notificar a todos
+        string reconMsg = $"¡{session.playerName.ToUpper()} SE HA RECONECTADO A LA PARTIDA!";
+        if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(reconMsg, 4f);
+        BroadcastHudEvent(reconMsg, 4f);
     }
 }

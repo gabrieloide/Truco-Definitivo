@@ -192,3 +192,4 @@ MonoBehaviour:
   seatIndex: -1
   playerName: 
   teamIndex: -1
+  playerId: 

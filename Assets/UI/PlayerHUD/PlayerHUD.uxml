@@ -62,6 +62,9 @@
                 <engine:Button name="decline-button" class="hud-btn hud-btn--decline">
                     <engine:Label text="NO QUIERO" class="hud-btn__text" />
                 </engine:Button>
+                <engine:Button name="envido-first-button" class="hud-btn hud-btn--envido hud-btn--envido-response" style="display: none;">
+                    <engine:Label text="EL ENVIDO VA PRIMERO" class="hud-btn__text hud-btn__text--small" />
+                </engine:Button>
                 <engine:VisualElement name="hud-slider-container" class="hud-slider-container">
                     <engine:Label name="slider-value-label" text="+1 PIEDRA" class="hud-slider__label" />
                     <engine:SliderInt name="stones-slider" low-value="1" high-value="10" value="1" class="hud-slider" />

@@ -48,6 +48,13 @@ namespace Code.Player
 
         public bool LocalFlorSung => _localFlorSung;
 
+        // Estado de Truco pausado cuando se canta "El Envido va primero"
+        private bool _pausedTrucoState;
+        private string _pausedTrucoAnnouncerName;
+        private Code.Player.Team _pausedTrucoAnnouncerTeam;
+        private int _pausedTrucoAnnouncerSeat = -1;
+        private int _pausedTrucoAcceptAmount;
+
         [Header("UI Buttons (Legacy - Deprecated)")]
         [SerializeField] private Button acceptButton;
         [SerializeField] private Button declineButton;
@@ -71,6 +78,7 @@ namespace Code.Player
             global::Code.Core.GameEventManager.OnAcceptButtonClicked += LocalAccept;
             global::Code.Core.GameEventManager.OnDeclineButtonClicked += LocalDecline;
             global::Code.Core.GameEventManager.OnMoreButtonClicked += LocalMore;
+            global::Code.Core.GameEventManager.OnEnvidoFirstButtonClicked += LocalEnvidoFirst;
 
             // En host/singleplayer los botones de canto los escucha PlayerTurnState, pero
             // la máquina de estados solo corre en el server: el cliente puro los engancha acá.
@@ -83,6 +91,7 @@ namespace Code.Player
             global::Code.Core.GameEventManager.OnAcceptButtonClicked -= LocalAccept;
             global::Code.Core.GameEventManager.OnDeclineButtonClicked -= LocalDecline;
             global::Code.Core.GameEventManager.OnMoreButtonClicked -= LocalMore;
+            global::Code.Core.GameEventManager.OnEnvidoFirstButtonClicked -= LocalEnvidoFirst;
             global::Code.Core.GameEventManager.OnAnnounceButtonClicked -= SendAnnounceToClient;
         }
 
@@ -126,6 +135,11 @@ namespace Code.Player
             currentAnnouncerSeat = -1;
             _localFlorSung = false;
             _florSingers.Clear();
+            _pausedTrucoState = false;
+            _pausedTrucoAnnouncerName = "";
+            _pausedTrucoAnnouncerTeam = null;
+            _pausedTrucoAnnouncerSeat = -1;
+            _pausedTrucoAcceptAmount = 0;
             foreach (var p in FindObjectsByType<Code.Player.Player>(FindObjectsSortMode.None))
                 p.florBurned = false;
             UpdateEnvidoStakeUI(0, false);
@@ -206,6 +220,28 @@ namespace Code.Player
         {
             if (_announcementsCalledThisHand.TryGetValue(state, out bool called)) return called;
             return false;
+        }
+
+        /// <summary>
+        /// Comprueba si ambos equipos han declarado Flor / A Ley en esta mano.
+        /// </summary>
+        public bool HasBothTeamsSungFlor()
+        {
+            var gm = GameManager.Instance;
+            if (gm == null || gm.teams.Count < 2) return false;
+
+            bool team0Sung = false;
+            bool team1Sung = false;
+
+            foreach (var singerName in _florSingers)
+            {
+                var team = FindTeamByPlayerName(singerName);
+                int idx = gm.GetTeamIndex(team);
+                if (idx == 0) team0Sung = true;
+                else if (idx == 1) team1Sung = true;
+            }
+
+            return team0Sung && team1Sung;
         }
 
         /// <summary>The PlayerLocal owned by this machine (host or client). In multiplayer
@@ -515,7 +551,30 @@ namespace Code.Player
             // Si era informativo, nos aseguramos de que el estado vuelva a None tras la notificación
             if (targetState == AnnounceState.ALey || targetState == AnnounceState.Flor)
             {
+                var flor = GetComponentInChildren<Code.GameLogic.Announcement.FlorAnnouncement>();
+                if (flor != null && GameManager.Instance != null && GameManager.Instance.teams.Count >= 2)
+                {
+                    int myTeamIdx = GameManager.Instance.GetTeamIndex(currentAnnouncerTeam);
+                    if (!flor.HasOpposingTeamFlor(myTeamIdx))
+                    {
+                        // Flor incontestada: sumar puntos inmediatamente
+                        flor.UpdateTotalScore();
+                    }
+                    else if (HasBothTeamsSungFlor())
+                    {
+                        // Contraflor declarada por ambos bandos: resolver inmediatamente
+                        flor.UpdateTotalScore();
+                    }
+                }
+
                 _announceState = AnnounceState.None;
+
+                // Si la flor otorgó la victoria, detener inmediatamente la ejecución del turno
+                if (GameManager.Instance != null && GameManager.Instance.isHandResolved)
+                {
+                    yield break;
+                }
+
                 RestoreTurnAfterAnnouncement();
             }
         }
@@ -673,8 +732,28 @@ namespace Code.Player
 
             if (isInformative)
             {
+                var flor = GetComponentInChildren<Code.GameLogic.Announcement.FlorAnnouncement>();
+                if (flor != null && GameManager.Instance != null && GameManager.Instance.teams.Count >= 2)
+                {
+                    int myTeamIdx = GameManager.Instance.GetTeamIndex(npcTeam);
+                    if (!flor.HasOpposingTeamFlor(myTeamIdx))
+                    {
+                        flor.UpdateTotalScore();
+                    }
+                    else if (HasBothTeamsSungFlor())
+                    {
+                        flor.UpdateTotalScore();
+                    }
+                }
+
                 // Si mientras tanto se cantó otra cosa (ej: truco), no pisar ese estado.
                 if (_announceState == state) _announceState = AnnounceState.None;
+
+                if (GameManager.Instance != null && GameManager.Instance.isHandResolved)
+                {
+                    yield break;
+                }
+
                 RestoreTurnAfterAnnouncement();
                 yield break;
             }
@@ -778,6 +857,25 @@ namespace Code.Player
                 }
             }
 
+            bool showEnvidoFirst = false;
+            if (_announceState == AnnounceState.Truco 
+                && GameManager.Instance != null && GameManager.Instance.round == 0
+                && !WasAnnouncementCalledThisHand(AnnounceState.Envido)
+                && !WasAnnouncementCalledThisHand(AnnounceState.Flor)
+                && !WasAnnouncementCalledThisHand(AnnounceState.ALey)
+                && !hasFlor)
+            {
+                int localEnvidoScore = 0;
+                if (playerLocal != null && playerLocal.cardsHandler != null && DeckCreator.Instance != null)
+                {
+                    localEnvidoScore = TrucoRules.CalculateEnvidoScore(playerLocal.cardsHandler.InitialHand, DeckCreator.Instance.cardVira);
+                }
+                if (localEnvidoScore > 0)
+                {
+                    showEnvidoFirst = true;
+                }
+            }
+
             if (PlayerHUD.Instance != null)
             {
                 bool showSlider = _announceState == AnnounceState.Envido && !disableAccept;
@@ -795,8 +893,8 @@ namespace Code.Player
                 };
                 string titleText = $"{announcerText.ToUpper()}\nCANTA {announceLabel}";
                 
-                // CRITICAL: Pasar el moreText calculado (RETRUCO, VALE 9, etc) al PlayerHUD
-                PlayerHUD.Instance.ShowResponseButtons(true, acceptText, declineText, showMore, showSlider, titleText, disableAccept, showDecline, moreText);
+                // CRITICAL: Pasar el moreText calculado (RETRUCO, VALE 9, etc) y showEnvidoFirst al PlayerHUD
+                PlayerHUD.Instance.ShowResponseButtons(true, acceptText, declineText, showMore, showSlider, titleText, disableAccept, showDecline, moreText, showEnvidoFirst);
             }
             else
             {
@@ -811,6 +909,7 @@ namespace Code.Player
         public void LocalAccept() => LocalButtonInteract("AcceptButton");
         public void LocalDecline() => LocalButtonInteract("DeclineButton");
         public void LocalMore() => LocalButtonInteract("MoreAnnounceButton");
+        public void LocalEnvidoFirst() => LocalButtonInteract("EnvidoFirstButton");
 
         private void LocalButtonInteract(string buttonName)
         {
@@ -983,6 +1082,10 @@ namespace Code.Player
 
                 case "MoreAnnounceButton":
                     StartCoroutine(MoreAnnounceCoroutine(playerName, hasFlor, extraStones));
+                    break;
+
+                case "EnvidoFirstButton":
+                    StartCoroutine(EnvidoFirstCoroutine(playerName));
                     break;
 
                 default:
@@ -1179,6 +1282,12 @@ namespace Code.Player
             if (NetworkServer.active)
                 (NetworkManager.singleton as MyNetworkingManager)?.BroadcastWaitingResponse(-1, "");
 
+            if (_pausedTrucoState)
+            {
+                StartCoroutine(ResumePausedTrucoCoroutine());
+                yield break;
+            }
+
             // Restaurar permiso de juego a quien le toca (local y, en multiplayer, su cliente)
             RestoreTurnAfterAnnouncement();
         }
@@ -1245,6 +1354,18 @@ namespace Code.Player
             if (NetworkServer.active)
                 (NetworkManager.singleton as MyNetworkingManager)?.BroadcastWaitingResponse(-1, "");
 
+            if (GameManager.Instance != null && GameManager.Instance.isHandResolved)
+            {
+                _pausedTrucoState = false;
+                yield break;
+            }
+
+            if (_pausedTrucoState)
+            {
+                StartCoroutine(ResumePausedTrucoCoroutine());
+                yield break;
+            }
+
             // Restaurar permiso de juego a quien le toca (local y, en multiplayer, su cliente)
             RestoreTurnAfterAnnouncement();
         }
@@ -1300,6 +1421,116 @@ namespace Code.Player
         private void PlayAnnounceSFX(AnnounceState state, int level)
         {
             Code.Core.TrucoAudioService.PlayAnnounceSFX(state, level);
+        }
+
+        /// <summary>
+        /// Inicia el flujo tradicional "El Envido va primero":
+        /// Pausa el Truco en curso, lanza el Envido y lo enruta al equipo rival.
+        /// </summary>
+        private System.Collections.IEnumerator EnvidoFirstCoroutine(string responderName)
+        {
+            // 1. Pausar el Truco vigente
+            _pausedTrucoState = true;
+            _pausedTrucoAnnouncerName = currentAnnouncerName;
+            _pausedTrucoAnnouncerTeam = currentAnnouncerTeam;
+            _pausedTrucoAnnouncerSeat = currentAnnouncerSeat;
+
+            var trucoAnnounce = GetComponentsInChildren<Announce>().OfType<TrucoAnnouncement>().FirstOrDefault();
+            _pausedTrucoAcceptAmount = trucoAnnounce != null ? trucoAnnounce.acceptAmount : 0;
+
+            // 2. Cambiar al estado Envido, anunciado por el respondedor
+            Team responderTeam = FindTeamByPlayerName(responderName);
+            if (responderTeam == null && currentAnnouncerTeam != null)
+            {
+                responderTeam = (GameManager.Instance != null && GameManager.Instance.teams.Count >= 2)
+                    ? (GameManager.Instance.teams[0] == currentAnnouncerTeam ? GameManager.Instance.teams[1] : GameManager.Instance.teams[0])
+                    : null;
+            }
+
+            currentAnnouncerName = responderName;
+            currentAnnouncerTeam = responderTeam;
+            currentAnnouncerSeat = FindSeatByPlayerName(responderName);
+
+            _announceState = AnnounceState.Envido;
+            _announcementsCalledThisHand[AnnounceState.Envido] = true;
+
+            if (NetworkServer.active)
+            {
+                (NetworkManager.singleton as MyNetworkingManager)?.BroadcastAnnouncementCalled((int)AnnounceState.Envido);
+            }
+
+            PlayAnnounceSFX(AnnounceState.Envido, 1);
+
+            string notifyMsg = $"¡{responderName.ToUpper()} CANTA: EL ENVIDO VA PRIMERO!";
+            if (PlayerHUD.Instance != null)
+            {
+                PlayerHUD.Instance.NotifyEvent(notifyMsg, 3.0f);
+            }
+            if (NetworkServer.active)
+            {
+                (NetworkManager.singleton as MyNetworkingManager)?.BroadcastHudEvent(notifyMsg, 3.0f);
+            }
+
+            GameManager.Instance.isAnnouncementPending = true;
+            UpdateEnvidoStakeUI(ProspectiveEnvidoStake(), true);
+
+            RpcAnnounceToAllClients();
+
+            yield return new WaitForSeconds(3.0f);
+
+            // 3. Enrutar el Envido al equipo rival (el que cantó el Truco original)
+            RouteAnnouncementToResponder(currentAnnouncerTeam);
+        }
+
+        /// <summary>
+        /// Reanuda el Truco que había quedado en pausa tras resolver el Envido.
+        /// </summary>
+        private System.Collections.IEnumerator ResumePausedTrucoCoroutine()
+        {
+            if (GameManager.Instance != null && GameManager.Instance.isHandResolved)
+            {
+                _pausedTrucoState = false;
+                yield break;
+            }
+
+            _pausedTrucoState = false;
+            _announceState = AnnounceState.Truco;
+            GameManager.Instance.isAnnouncementPending = true;
+
+            currentAnnouncerName = _pausedTrucoAnnouncerName;
+            currentAnnouncerTeam = _pausedTrucoAnnouncerTeam;
+            currentAnnouncerSeat = _pausedTrucoAnnouncerSeat;
+
+            var trucoAnnounce = GetComponentsInChildren<Announce>().OfType<TrucoAnnouncement>().FirstOrDefault();
+            if (trucoAnnounce != null)
+            {
+                trucoAnnounce.acceptAmount = _pausedTrucoAcceptAmount;
+            }
+
+            string resumeMsg = $"¡SE REANUDA EL TRUCO DE {currentAnnouncerName.ToUpper()}!";
+            if (PlayerHUD.Instance != null)
+            {
+                PlayerHUD.Instance.NotifyEvent(resumeMsg, 2.8f);
+            }
+            if (NetworkServer.active)
+            {
+                (NetworkManager.singleton as MyNetworkingManager)?.BroadcastHudEvent(resumeMsg, 2.8f);
+            }
+
+            yield return new WaitForSeconds(2.8f);
+
+            if (GameManager.Instance != null && GameManager.Instance.isHandResolved)
+            {
+                yield break;
+            }
+
+            // Enrutar la respuesta del Truco al rival
+            RouteAnnouncementToResponder(currentAnnouncerTeam);
+        }
+
+        public void EnvidoFirstFromNPC(GameObject npcObj)
+        {
+            StartCoroutine(EnvidoFirstCoroutine(NpcDisplayName(npcObj)));
         }
     }
 }

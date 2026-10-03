@@ -202,6 +202,17 @@ namespace Code.Player
                 yield break;
             }
 
+            if (state == AnnounceState.Truco && GameManager.Instance != null && GameManager.Instance.round == 0
+                && am != null
+                && !am.WasAnnouncementCalledThisHand(AnnounceState.Envido)
+                && !am.WasAnnouncementCalledThisHand(AnnounceState.Flor)
+                && !am.WasAnnouncementCalledThisHand(AnnounceState.ALey)
+                && NPCDecisionMaker.ShouldAnnounceEnvido(hand, vira))
+            {
+                am.EnvidoFirstFromNPC(gameObject);
+                yield break;
+            }
+
             bool accept = NPCDecisionMaker.ShouldAcceptAnnounce(state.ToString(), hand, vira);
             if (accept)
             {

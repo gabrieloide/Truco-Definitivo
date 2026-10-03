@@ -30,6 +30,9 @@ namespace Code.Networking
         [SyncVar]
         public int teamIndex = -1;
 
+        [SyncVar]
+        public string playerId = "";
+
         private void Awake()
         {
             _playerLocal  = GetComponent<PlayerLocal>();
@@ -46,7 +49,9 @@ namespace Code.Networking
         {
             base.OnStartLocalPlayer();
             string nick = UnityServicesManager.Instance != null ? UnityServicesManager.Instance.PlayerName : null;
-            if (!string.IsNullOrWhiteSpace(nick)) CmdSetPlayerName(nick);
+            string pId = UnityServicesManager.Instance != null ? UnityServicesManager.Instance.PlayerId : null;
+            if (!string.IsNullOrWhiteSpace(nick))
+                CmdSetPlayerIdentity(nick, pId ?? "");
         }
 
         private void OnPlayerNameChanged(string _, string newName) => ApplyPlayerName(newName);
@@ -60,9 +65,23 @@ namespace Code.Networking
         [Command]
         public void CmdSetPlayerName(string newName)
         {
+            CmdSetPlayerIdentity(newName, playerId);
+        }
+
+        [Command]
+        public void CmdSetPlayerIdentity(string newName, string newPlayerId)
+        {
             if (string.IsNullOrWhiteSpace(newName)) return;
             playerName = newName.Trim();
+            playerId = newPlayerId ?? "";
             ApplyPlayerName(playerName);
+
+            // Si el cliente se conecta en plena partida, verificar si es una reconexión
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "GameScene")
+            {
+                var netMgr = NetworkManager.singleton as MyNetworkingManager;
+                netMgr?.CheckAndHandleReconnectingPlayer(connectionToClient, this, playerId, playerName);
+            }
         }
 
         /// <summary>Client→server: rename this player's own lobby team (2v2).</summary>
@@ -384,6 +403,75 @@ namespace Code.Networking
             var manager = Object.FindAnyObjectByType<AnnouncementManager>();
             if (manager == null) return;
             manager.ShowResponseButtonsFromServer((AnnounceState)announceStateInt, announcerName);
+        }
+
+        /// <summary>
+        /// Server→this client: sincroniza el estado completo de la partida en curso
+        /// cuando el jugador se reconecta tras una desconexión accidental.
+        /// </summary>
+        [TargetRpc]
+        public void TargetSyncReconnectedState(
+            NetworkConnectionToClient target,
+            int currentRound,
+            int scoreTeam1,
+            int scoreTeam2,
+            int roundsWonTeam1,
+            int roundsWonTeam2,
+            int activeTurnSeat,
+            int viraValue,
+            string viraSuit,
+            int viraDbId,
+            int dealerSeat)
+        {
+            Debug.Log($"[PlayerNetworkSync] Sincronizando estado reconectado: Ronda {currentRound}, Puntos {scoreTeam1}-{scoreTeam2}, Turno Silla {activeTurnSeat}");
+
+            if (GameManager.Instance != null && GameManager.Instance.teams.Count >= 2)
+            {
+                GameManager.Instance.round = currentRound;
+                GameManager.Instance.teams[0].teamScore = scoreTeam1;
+                GameManager.Instance.teams[1].teamScore = scoreTeam2;
+                GameManager.Instance.teams[0].roundsWon = roundsWonTeam1;
+                GameManager.Instance.teams[1].roundsWon = roundsWonTeam2;
+                PlayerHUD.Instance?.UpdateScore(scoreTeam1, scoreTeam2, roundsWonTeam1, roundsWonTeam2);
+            }
+
+            if (DeckCreator.Instance != null && !string.IsNullOrEmpty(viraSuit))
+            {
+                var vira = new Card { value = viraValue, suit = viraSuit, dbId = viraDbId };
+                vira.realValue = TrucoRules.GetCardRealValue(vira, vira);
+                DeckCreator.Instance.cardVira = vira;
+
+                if (TableManager.Instance != null)
+                {
+                    TableManager.Instance.SpawnDeck3D(dealerSeat);
+                    TableManager.Instance.SpawnVira3D(vira, dealerSeat);
+                }
+            }
+
+            bool isMyTurn = activeTurnSeat == seatIndex;
+            if (_playerLocal != null && _playerLocal.player != null)
+            {
+                _playerLocal.player.canPlayCard = isMyTurn;
+                PlayerHUD.Instance?.UpdateTurnState(isMyTurn);
+            }
+
+            PlayerHUD.Instance?.NotifyEventLocal("¡TE HAS RECONECTADO CON ÉXITO!", 4f);
+        }
+
+        /// <summary>Server→this client: muestra en la mesa una carta que ya fue jugada en esta baza.</summary>
+        [TargetRpc]
+        public void TargetSyncCardOnTable(NetworkConnectionToClient target, int cardDbId, int cardValue, string cardSuit, int cardSeatIndex, bool isBurned)
+        {
+            if (NetworkServer.active) return;
+            if (TableManager.Instance == null || SeatManager.Instance == null) return;
+            if (cardSeatIndex < 0 || cardSeatIndex >= SeatManager.Instance.allChairs.Count) return;
+
+            var card = new Card { dbId = cardDbId, value = cardValue, suit = cardSuit, isBurned = isBurned };
+            var chair = SeatManager.Instance.allChairs[cardSeatIndex];
+            if (chair?.occupant != null)
+            {
+                TableManager.Instance.SpawnCard3D(card, chair.occupant);
+            }
         }
 
         // ──────────────────────── CLIENT → server ─────────────────────────

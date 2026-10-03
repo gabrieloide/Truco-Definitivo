@@ -89,7 +89,7 @@ namespace Code.Core
             {
                 if (AudioManager.Instance != null)
                 {
-                    AudioManager.Instance.PlaySFX(soundId, volumeMultiplier);
+                    AudioManager.Instance.PlaySFX(soundId);
                 }
             }
             catch

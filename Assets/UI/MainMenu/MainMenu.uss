@@ -259,6 +259,20 @@
 }
 
 /* Button Color Variants */
+.menu-btn--reconnect {
+    background-color: #1F8B5A;
+    border-bottom-color: #0E5736;
+}
+
+.menu-btn--reconnect:hover {
+    background-color: #27A66C;
+}
+
+.menu-btn--reconnect .menu-btn__text {
+    color: #FFFFFF;
+    text-shadow: 0 2px 0 #0A3D26;
+}
+
 .menu-btn--primary {
     background-color: #D63939;
     border-bottom-color: #821919;

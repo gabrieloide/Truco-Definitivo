@@ -44,6 +44,7 @@ namespace Code.Player
         private Label _responseTitleLabel;
         private Button _acceptButton;
         private Button _declineButton;
+        private Button _envidoFirstButton;
         private Button _moreButton;
 
         [Header("Slider Elements")]
@@ -274,6 +275,7 @@ namespace Code.Player
             _responseTitleLabel = _root.Q<Label>("response-title-label");
             _acceptButton = _root.Q<Button>("accept-button");
             _declineButton = _root.Q<Button>("decline-button");
+            _envidoFirstButton = _root.Q<Button>("envido-first-button");
             _moreButton = _root.Q<Button>("more-button");
 
             // Slider Elements
@@ -357,6 +359,7 @@ namespace Code.Player
 
             SetupButton(_acceptButton, OnAcceptClicked);
             SetupButton(_declineButton, OnDeclineClicked);
+            SetupButton(_envidoFirstButton, OnEnvidoFirstClicked);
             SetupButton(_moreButton, OnMoreClicked);
 
             // Ocultar los botones inicialmente
@@ -374,6 +377,7 @@ namespace Code.Player
 
             CleanupButton(_acceptButton, OnAcceptClicked);
             CleanupButton(_declineButton, OnDeclineClicked);
+            CleanupButton(_envidoFirstButton, OnEnvidoFirstClicked);
             CleanupButton(_moreButton, OnMoreClicked);
             
             CleanupButton(_closeHierarchyButton, HideCardHierarchy);
@@ -610,7 +614,7 @@ namespace Code.Player
                 return announceManager.WasAnnouncementCalledThisHand(state);
             }
         }
-        public void ShowResponseButtons(bool visible, string acceptText = "QUIERO", string declineText = "NO QUIERO", bool showMore = false, bool showSlider = false, string title = "", bool disableAccept = false, bool showDecline = true, string moreText = "RE-ENVIDAR")
+        public void ShowResponseButtons(bool visible, string acceptText = "QUIERO", string declineText = "NO QUIERO", bool showMore = false, bool showSlider = false, string title = "", bool disableAccept = false, bool showDecline = true, string moreText = "RE-ENVIDAR", bool showEnvidoFirst = false)
         {
             if (_responseBar != null)
             {
@@ -649,6 +653,10 @@ namespace Code.Player
                         else declineLabel.RemoveFromClassList("hud-btn__text--small");
                     }
                     _declineButton.style.display = showDecline ? DisplayStyle.Flex : DisplayStyle.None;
+                }
+                if (_envidoFirstButton != null)
+                {
+                    _envidoFirstButton.style.display = showEnvidoFirst ? DisplayStyle.Flex : DisplayStyle.None;
                 }
                 if (_moreButton != null)
                 {
@@ -772,6 +780,11 @@ namespace Code.Player
             global::Code.Core.GameEventManager.EmitDeclineButtonClicked();
         }
 
+        private void OnEnvidoFirstClicked()
+        {
+            global::Code.Core.GameEventManager.EmitEnvidoFirstButtonClicked();
+        }
+
         private void OnMoreClicked()
         {
             global::Code.Core.GameEventManager.EmitMoreButtonClicked();
@@ -844,6 +857,8 @@ namespace Code.Player
 
         private void ConfirmQuitGame()
         {
+            Code.Persistence.MatchSessionTracker.ClearSession();
+
             // Multiplayer: hay que cortar la sesión de Mirror, NO destruir objetos a mano.
             // StopHost/StopClient dispara OnClientDisconnect (MyNetworkingManager), que
             // destruye el HUD, abandona el lobby de Unity Services y carga el MainMenu.
