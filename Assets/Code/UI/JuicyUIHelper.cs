@@ -38,6 +38,7 @@ namespace Code.UI
                 }
                 list.Clear();
             }
+            elem.style.opacity = 1f;
         }
 
         /// <summary>
@@ -161,7 +162,15 @@ namespace Code.UI
                 onComplete?.Invoke();
             });
 
-            RegisterTween(element, tw);
+            if (tw == null)
+            {
+                element.transform.scale = Vector3.one;
+                element.style.opacity = 1f;
+            }
+            else
+            {
+                RegisterTween(element, tw);
+            }
         }
 
         /// <summary>

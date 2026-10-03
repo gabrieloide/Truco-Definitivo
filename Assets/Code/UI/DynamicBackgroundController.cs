@@ -169,33 +169,40 @@ namespace Code.UI
 
         private void OnGeneratePatternVisualContent(MeshGenerationContext mgc)
         {
-            if (patternTexture == null || _bgPattern == null) return;
+            try
+            {
+                if (patternTexture == null || _bgPattern == null) return;
 
-            Rect rect = _bgPattern.contentRect;
-            if (rect.width <= 1f || rect.height <= 1f) return;
+                Rect rect = _bgPattern.contentRect;
+                if (rect.width <= 1f || rect.height <= 1f) return;
 
-            float uSpan = rect.width / patternTileSize;
-            float vSpan = rect.height / patternTileSize;
+                float uSpan = rect.width / patternTileSize;
+                float vSpan = rect.height / patternTileSize;
 
-            float u0 = _scrollU;
-            float v0 = _scrollV;
-            float u1 = u0 + uSpan;
-            float v1 = v0 + vSpan;
+                float u0 = _scrollU;
+                float v0 = _scrollV;
+                float u1 = u0 + uSpan;
+                float v1 = v0 + vSpan;
 
-            var mesh = mgc.Allocate(4, 6, patternTexture);
-            Color32 tint = new Color32(255, 255, 255, 225);
+                var mesh = mgc.Allocate(4, 6, patternTexture);
+                Color32 tint = new Color32(255, 255, 255, 225);
 
-            mesh.SetNextVertex(new Vertex { position = new Vector3(0, 0, Vertex.nearZ), tint = tint, uv = new Vector2(u0, v0) });
-            mesh.SetNextVertex(new Vertex { position = new Vector3(rect.width, 0, Vertex.nearZ), tint = tint, uv = new Vector2(u1, v0) });
-            mesh.SetNextVertex(new Vertex { position = new Vector3(rect.width, rect.height, Vertex.nearZ), tint = tint, uv = new Vector2(u1, v1) });
-            mesh.SetNextVertex(new Vertex { position = new Vector3(0, rect.height, Vertex.nearZ), tint = tint, uv = new Vector2(u0, v1) });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(0, 0, Vertex.nearZ), tint = tint, uv = new Vector2(u0, v0) });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(rect.width, 0, Vertex.nearZ), tint = tint, uv = new Vector2(u1, v0) });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(rect.width, rect.height, Vertex.nearZ), tint = tint, uv = new Vector2(u1, v1) });
+                mesh.SetNextVertex(new Vertex { position = new Vector3(0, rect.height, Vertex.nearZ), tint = tint, uv = new Vector2(u0, v1) });
 
-            mesh.SetNextIndex(0);
-            mesh.SetNextIndex(1);
-            mesh.SetNextIndex(2);
-            mesh.SetNextIndex(2);
-            mesh.SetNextIndex(3);
-            mesh.SetNextIndex(0);
+                mesh.SetNextIndex(0);
+                mesh.SetNextIndex(1);
+                mesh.SetNextIndex(2);
+                mesh.SetNextIndex(2);
+                mesh.SetNextIndex(3);
+                mesh.SetNextIndex(0);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[DynamicBackgroundController] Mesh generation skipped: {ex.Message}");
+            }
         }
 
         private void SetupParticles()
