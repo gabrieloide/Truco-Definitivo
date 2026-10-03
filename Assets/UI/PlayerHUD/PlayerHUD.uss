@@ -10,6 +10,8 @@
     height: 100%;
     justify-content: space-between;
     padding: 0;
+    -unity-font: url("project://database/Assets/Art/Fonts/Rubik.ttf");
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/Rubik.ttf");
 }
 
 /* =========================================================
@@ -57,12 +59,13 @@
 }
 
 .central-banner .hud-score__text {
+    -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
     color: #FFFFFF;
-    font-size: 38px;
-    -unity-font-style: bold;
+    font-size: 42px;
     -unity-text-align: middle-center;
-    letter-spacing: 3px;
-    text-shadow: 0 3px 12px rgba(0, 0, 0, 0.95);
+    letter-spacing: 2px;
+    text-shadow: 0 3px 0 rgba(0, 0, 0, 0.7);
     margin-top: -2px;
     margin-bottom: 2px;
 }
@@ -74,23 +77,21 @@
 }
 
 .hud-turn__text {
+    -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
     color: #FFF1C5;
     font-size: 15px;
-    -unity-font-style: bold;
     -unity-text-align: middle-center;
-    letter-spacing: 2.5px;
+    letter-spacing: 2px;
     background-color: rgba(232, 211, 158, 0.2);
     border-radius: 12px;
-    border-top-width: 1px;
-    border-top-color: #FFF4D1;
+    border-top-width: 0;
+    border-left-width: 0;
+    border-right-width: 0;
     border-bottom-width: 3px;
-    border-bottom-color: rgba(160, 125, 55, 0.8);
-    border-left-width: 1px;
-    border-left-color: #E8D39E;
-    border-right-width: 1px;
-    border-right-color: #E8D39E;
+    border-bottom-color: rgba(140, 95, 17, 0.9);
     padding: 5px 22px;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.8);
 }
 
 /* --- TRICKS DOTS (BAZAS PIPS / GEMSTONES) --- */
@@ -141,21 +142,17 @@
     top: 16px;
     width: 48px;
     height: 48px;
-    border-radius: 12px;
+    border-radius: 10px;
     justify-content: center;
     align-items: center;
-    border-top-width: 1.5px;
-    border-top-color: rgba(255, 255, 255, 0.35);
+    border-top-width: 0;
+    border-left-width: 0;
+    border-right-width: 0;
     border-bottom-width: 4px;
-    border-bottom-color: rgba(0, 0, 0, 0.65);
-    border-left-width: 1px;
-    border-left-color: rgba(255, 255, 255, 0.1);
-    border-right-width: 1px;
-    border-right-color: rgba(255, 255, 255, 0.1);
-    background-color: rgba(22, 28, 38, 0.94);
-    transition-property: scale, translate, background-color, border-color;
-    transition-duration: 0.12s;
-    transition-timing-function: ease-out;
+    border-bottom-color: #0E151F;
+    background-color: #1F2C3D;
+    transition-property: background-color;
+    transition-duration: 0.1s;
 }
 
 .hud-btn-pause  { right: 18px; }
@@ -164,23 +161,20 @@
 .hud-btn-look   { right: 186px; }
 
 .hud-btn-icon:hover {
-    scale: 1.05;
-    translate: 0 -2px;
-    background-color: rgba(36, 46, 62, 0.98);
-    border-top-color: rgba(255, 255, 255, 0.6);
+    background-color: #2B3D54;
 }
 
 .hud-btn-icon:active {
-    scale: 0.95;
-    translate: 0 3px;
-    border-bottom-width: 1.5px;
+    translate: 0 2px;
+    border-bottom-width: 2px;
 }
 
 .hud-btn-icon__text {
+    -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
     font-size: 18px;
-    -unity-font-style: bold;
     color: #F0F4F8;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.7);
 }
 
 /* =========================================================
@@ -199,23 +193,21 @@
     display: flex;
     opacity: 0;
     scale: 0.8;
-    background-color: rgba(14, 18, 26, 0.97);
+    background-color: #121822;
     color: #FFDF80;
-    font-size: 46px;
-    -unity-font-style: bold;
-    letter-spacing: 4px;
+    -unity-font: url("project://database/Assets/Art/Fonts/Rye-Regular.ttf");
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/Rye-Regular.ttf");
+    font-size: 44px;
+    letter-spacing: 3px;
     padding: 18px 52px;
     border-radius: 16px;
-    border-top-width: 2px;
-    border-top-color: #E8D39E;
-    border-bottom-width: 5px;
-    border-bottom-color: rgba(0, 0, 0, 0.8);
-    border-left-width: 1.5px;
-    border-left-color: rgba(232, 211, 158, 0.4);
-    border-right-width: 1.5px;
-    border-right-color: rgba(232, 211, 158, 0.4);
+    border-top-width: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 6px;
+    border-bottom-color: #8C5F11;
     -unity-text-align: middle-center;
-    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.95);
+    text-shadow: 0 3px 0 #0A0F17;
     transition-property: opacity, scale;
     transition-duration: 0.2s;
     transition-timing-function: ease-out;
@@ -283,15 +275,16 @@
 }
 
 .hud-response-title__text {
+    -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
     color: #E8D39E;
-    font-size: 16px;
-    -unity-font-style: bold;
+    font-size: 18px;
     -unity-text-align: middle-center;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
     margin-bottom: 16px;
     width: 100%;
     white-space: normal;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+    text-shadow: 0 2px 0 #0A0F17;
 }
 
 /* =========================================================
@@ -346,7 +339,7 @@
 }
 
 /* =========================================================
-   HUD BUTTONS (TACTILE 3D BEVEL & HIGH GAME IMPACT)
+   HUD BUTTONS (FLAT DESIGN WITH SOLID DROP SHADOW)
    ========================================================= */
 .hud-btn {
     border-radius: 12px;
@@ -355,60 +348,56 @@
     padding: 0 18px;
     align-items: center;
     justify-content: center;
-    border-top-width: 1.5px;
-    border-top-color: rgba(255, 255, 255, 0.35);
-    border-bottom-width: 4.5px;
-    border-bottom-color: rgba(0, 0, 0, 0.65);
-    border-left-width: 1px;
-    border-left-color: rgba(255, 255, 255, 0.1);
-    border-right-width: 1px;
-    border-right-color: rgba(255, 255, 255, 0.1);
-    background-color: rgba(28, 36, 48, 0.95);
-    transition-property: scale, translate, background-color, border-color;
-    transition-duration: 0.12s;
+    border-top-width: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 5px;
+    border-bottom-color: #111A26;
+    background-color: #223348;
+    transition-property: background-color;
+    transition-duration: 0.1s;
     transition-timing-function: ease-out;
 }
 
 .hud-btn:hover {
-    scale: 1.03;
-    translate: 0 -2px;
-    border-top-color: rgba(255, 255, 255, 0.6);
+    background-color: #2D425C;
 }
 
 .hud-btn:active {
-    scale: 0.98;
-    translate: 0 4px;
-    border-bottom-width: 1.5px;
+    translate: 0 3px;
+    border-bottom-width: 2px;
 }
 
 .hud-btn__text {
-    font-size: 19px;
-    -unity-font-style: bold;
+    -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    font-size: 20px;
     -unity-text-align: middle-center;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
     color: #FFFFFF;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
 }
 
 /* Color Variants */
 .hud-btn--accept {
-    background-color: #1E824C;
-    border-top-color: rgba(130, 240, 160, 0.6);
-    border-bottom-color: #0A3D20;
+    background-color: #27AE60;
+    border-bottom-color: #145A32;
     width: 100%;
     height: 54px;
     min-height: 54px;
 }
 
 .hud-btn--accept:hover {
-    background-color: #259E5D;
-    border-top-color: rgba(170, 255, 190, 0.8);
+    background-color: #2ECC71;
+}
+
+.hud-btn--accept .hud-btn__text {
+    text-shadow: 0 2px 0 #0E3E22;
 }
 
 .hud-btn--decline {
-    background-color: #7A2424;
-    border-top-color: rgba(255, 140, 140, 0.45);
-    border-bottom-color: #380C0C;
+    background-color: #C0392B;
+    border-bottom-color: #641E16;
     width: 100%;
     height: 48px;
     min-height: 48px;
@@ -416,19 +405,18 @@
 }
 
 .hud-btn--decline:hover {
-    background-color: #962E2E;
-    border-top-color: rgba(255, 180, 180, 0.7);
+    background-color: #D94534;
 }
 
 .hud-btn--decline .hud-btn__text {
-    font-size: 17px;
-    color: #FFCCCC;
+    font-size: 18px;
+    color: #FFD5D5;
+    text-shadow: 0 2px 0 #4A130C;
 }
 
 .hud-btn--more {
-    background-color: #B57E1E;
-    border-top-color: rgba(255, 220, 140, 0.6);
-    border-bottom-color: #543605;
+    background-color: #D4AC0D;
+    border-bottom-color: #7D6608;
     width: 100%;
     height: 48px;
     min-height: 48px;
@@ -436,58 +424,66 @@
 }
 
 .hud-btn--more:hover {
-    background-color: #D19424;
-    border-top-color: rgba(255, 240, 180, 0.8);
+    background-color: #F1C40F;
 }
 
 .hud-btn--more .hud-btn__text {
-    font-size: 17px;
-    color: #FFF6DD;
+    font-size: 18px;
+    color: #261D02;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 /* Action Variants (Cantos) */
 .hud-btn--truco {
-    background-color: #A92D2D;
-    border-top-color: rgba(255, 160, 160, 0.6);
-    border-bottom-color: #4A0D0D;
+    background-color: #C0392B;
+    border-bottom-color: #641E16;
 }
 
 .hud-btn--truco:hover {
-    background-color: #C73636;
-    border-top-color: rgba(255, 200, 200, 0.8);
+    background-color: #D94534;
+}
+
+.hud-btn--truco .hud-btn__text {
+    text-shadow: 0 2px 0 #4A130C;
 }
 
 .hud-btn--envido {
-    background-color: #C2821A;
-    border-top-color: rgba(255, 220, 140, 0.6);
-    border-bottom-color: #573705;
+    background-color: #E67E22;
+    border-bottom-color: #87460D;
 }
 
 .hud-btn--envido:hover {
-    background-color: #DB9522;
-    border-top-color: rgba(255, 240, 180, 0.8);
+    background-color: #F39C12;
+}
+
+.hud-btn--envido .hud-btn__text {
+    text-shadow: 0 2px 0 #5A2E08;
 }
 
 .hud-btn--flor {
-    background-color: #7B2CBF;
-    border-top-color: rgba(220, 150, 255, 0.6);
-    border-bottom-color: #370F59;
+    background-color: #8E44AD;
+    border-bottom-color: #4A235A;
 }
 
 .hud-btn--flor:hover {
-    background-color: #9239E0;
-    border-top-color: rgba(240, 190, 255, 0.8);
+    background-color: #9B59B6;
+}
+
+.hud-btn--flor .hud-btn__text {
+    text-shadow: 0 2px 0 #32173E;
 }
 
 .hud-btn--aley {
-    background-color: #1E5AA8;
-    border-top-color: rgba(140, 190, 255, 0.6);
-    border-bottom-color: #0B254A;
+    background-color: #2980B9;
+    border-bottom-color: #154360;
 }
 
 .hud-btn--aley:hover {
-    background-color: #2874D4;
-    border-top-color: rgba(180, 220, 255, 0.8);
+    background-color: #3498DB;
+}
+
+.hud-btn--aley .hud-btn__text {
+    text-shadow: 0 2px 0 #0E2C3F;
 }
 
 /* =========================================================
@@ -521,18 +517,20 @@
    ENVIDO STAKE INDICATOR (PIEDRAS EN JUEGO)
    ========================================================= */
 .envido-stake-chip {
+    -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
     font-size: 18px;
-    -unity-font-style: bold;
     color: #FFDF80;
-    background-color: rgba(14, 18, 26, 0.95);
-    border-width: 1.5px;
-    border-color: #E8D39E;
-    border-bottom-width: 3.5px;
-    border-bottom-color: rgba(0, 0, 0, 0.7);
-    border-radius: 14px;
+    background-color: #121822;
+    border-top-width: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 4px;
+    border-bottom-color: #8C5F11;
+    border-radius: 12px;
     padding: 8px 24px;
     letter-spacing: 2px;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+    text-shadow: 0 2px 0 #0A0F17;
 }
 
 /* =========================================================
@@ -577,13 +575,14 @@
 }
 
 .hierarchy-title {
+    -unity-font: url("project://database/Assets/Art/Fonts/Rye-Regular.ttf");
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/Rye-Regular.ttf");
     color: #E8D39E;
-    font-size: 24px;
-    -unity-font-style: bold;
+    font-size: 26px;
     -unity-text-align: middle-center;
     letter-spacing: 2px;
     margin-bottom: 22px;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    text-shadow: 0 2px 0 #070A0F;
 }
 
 .hierarchy-scroll {

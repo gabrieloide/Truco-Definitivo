@@ -29,6 +29,7 @@ namespace Code.UI
         private VisualElement _screenCredits;
 
         private VisualElement[] _allScreens;
+        private VisualElement _currentScreen;
 
         // Lobby UI labels
         private Label _lblRoomCode;
@@ -179,7 +180,26 @@ namespace Code.UI
                 });
             }
 
-            ShowScreen(_screenMain);
+            // Asegurar que DynamicBackgroundController esté activo
+            if (GetComponent<DynamicBackgroundController>() == null)
+            {
+                gameObject.AddComponent<DynamicBackgroundController>();
+            }
+
+            // Aplicar Juicy UI a todos los botones del menú
+            JuicyUIHelper.EnhanceAllButtons(_root);
+
+            // Animación de respiración / flotación idle al título
+            var titleMain = _root.Q<Label>(className: "title-main");
+            if (titleMain != null) JuicyUIHelper.StartIdleFloat(titleMain, 3.5f, 3.2f);
+
+            // Mostrar pantalla principal con pop-in elástico inicial
+            _currentScreen = _screenMain;
+            foreach (var s in _allScreens)
+            {
+                if (s != null) s.style.display = s == _screenMain ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+            if (_screenMain != null) JuicyUIHelper.PopIn(_screenMain, 0.28f);
         }
 
         private void OnDisable()
@@ -209,9 +229,27 @@ namespace Code.UI
         private void ShowScreen(VisualElement target)
         {
             if (target == null) return;
+            if (_currentScreen == target) return;
+
+            var prev = _currentScreen;
+            _currentScreen = target;
+
             foreach (var s in _allScreens)
-                if (s != null)
-                    s.style.display = s == target ? DisplayStyle.Flex : DisplayStyle.None;
+            {
+                if (s == null) continue;
+                if (s == target)
+                {
+                    JuicyUIHelper.PopIn(s, 0.24f);
+                }
+                else if (s == prev)
+                {
+                    JuicyUIHelper.PopOut(s, 0.14f);
+                }
+                else
+                {
+                    s.style.display = DisplayStyle.None;
+                }
+            }
         }
 
         // ─────────────────────── Singleplayer ─────────────────────────────
@@ -453,6 +491,7 @@ namespace Code.UI
             }
 
             CopyToClipboard(code);
+            if (_lblRoomCode != null) JuicyUIHelper.Bump(_lblRoomCode, 1.2f, 0.22f);
             ShowStatus(_lblLobbyStatus, $"Código {code} copiado al portapapeles.");
         }
 
@@ -505,6 +544,7 @@ namespace Code.UI
 
             lbl.text = message;
             lbl.style.display = DisplayStyle.Flex;
+            JuicyUIHelper.Bump(lbl, 1.15f, 0.20f);
 
             if (_statusRoutine != null) StopCoroutine(_statusRoutine);
             _statusRoutine = StartCoroutine(HideStatusAfter(lbl, duration));

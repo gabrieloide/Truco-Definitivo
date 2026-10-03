@@ -4,6 +4,17 @@
     <engine:VisualElement class="menu-root">
         
         <!-- ============================================== -->
+        <!-- DYNAMIC BACKGROUND SYSTEM                      -->
+        <!-- ============================================== -->
+        <engine:VisualElement name="bg-root" class="bg-root" picking-mode="Ignore">
+            <engine:VisualElement name="bg-solid-base" class="bg-solid-base" picking-mode="Ignore" />
+            <engine:VisualElement name="bg-glow" class="bg-glow" picking-mode="Ignore" />
+            <engine:VisualElement name="bg-pattern" class="bg-pattern" picking-mode="Ignore" />
+            <engine:VisualElement name="bg-vignette" class="bg-vignette" picking-mode="Ignore" />
+            <engine:VisualElement name="bg-particles" class="bg-particles" picking-mode="Ignore" />
+        </engine:VisualElement>
+        
+        <!-- ============================================== -->
         <!-- SCREEN: MAIN MENU                              -->
         <!-- ============================================== -->
         <engine:VisualElement name="screen-main" class="screen-container main-layout">
@@ -123,7 +134,7 @@
                         </engine:Button>
                     </engine:VisualElement>
 
-                    <engine:VisualElement class="lobby-team lobby-team-card">
+                    <engine:VisualElement class="lobby-team lobby-team-card lobby-team-card--team2">
                         <engine:TextField name="input-team2-name" value="EQUIPO 2" max-length="16" class="team-name-input" />
                         <engine:VisualElement class="player-slot">
                             <engine:Label name="lbl-t2-p1" text="Esperando..." class="player-name" />

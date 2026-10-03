@@ -11,6 +11,7 @@ using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
 using Code.Scripts.Audio;
 using Code.Domain;
+using Code.UI;
 
 namespace Code.Player
 {
@@ -426,7 +427,10 @@ namespace Code.Player
         public void UpdateScore(int team1, int team2, int roundsTeam1, int roundsTeam2)
         {
             if (_scoreLabel != null)
+            {
                 _scoreLabel.text = $"{team1} | {team2}";
+                JuicyUIHelper.Bump(_scoreLabel, 1.20f, 0.22f);
+            }
             
             UpdateDots(_t1DotsContainer, roundsTeam1);
             UpdateDots(_t2DotsContainer, roundsTeam2);
@@ -451,7 +455,10 @@ namespace Code.Player
             if (_envidoStakeLabel == null) return;
             _envidoStakeLabel.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             if (visible)
+            {
                 _envidoStakeLabel.text = $"ENVIDO EN JUEGO: {points} {(points == 1 ? "PIEDRA" : "PIEDRAS")}";
+                JuicyUIHelper.Bump(_envidoStakeLabel, 1.25f, 0.24f);
+            }
         }
 
         public void UpdateTurnState(bool isYourTurn, string playerName = "")
@@ -966,6 +973,8 @@ namespace Code.Player
             
             button.UnregisterCallback<PointerEnterEvent>(OnButtonHover);
             button.RegisterCallback<PointerEnterEvent>(OnButtonHover);
+
+            JuicyUIHelper.EnhanceButton(button);
         }
 
         private void CleanupButton(Button button, System.Action onClickAction)
