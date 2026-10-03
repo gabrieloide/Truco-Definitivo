@@ -1057,6 +1057,9 @@ namespace Code.GameLogic
                         AudioManager.Instance.PlaySFX("match_defeat_sadness");
                     }
                 }
+                bool isHumanVictory = (humanTeam != null && matchWinner == humanTeam);
+                Code.Persistence.CloudAuthManager.Instance?.RecordMatchEnd(isHumanVictory);
+
                 string winnerText = $"¡{matchWinner.teamName.ToUpper()} GANA LA PARTIDA!";
 
                 // Multiplayer: en vez de auto-salir, todos ven el modal de

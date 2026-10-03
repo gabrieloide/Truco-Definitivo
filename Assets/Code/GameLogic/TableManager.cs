@@ -247,13 +247,14 @@ namespace Code.GameLogic
                     {
                         if (isMega)
                         {
-                            JuiceVFXManager.Instance.ShakeCamera(0.38f, 0.22f);
+                            // Golpe seco y calibrado SOLO para cartas altas (sin mareos ni exageraciones)
+                            JuiceVFXManager.Instance.ShakeCamera(0.18f, 0.07f);
                             JuiceVFXManager.Instance.PlayImpactParticles(targetPos, new Color(1f, 0.85f, 0.35f));
                             TriggerTableSlamShockwave(targetPos, cardObj);
                         }
                         else
                         {
-                            JuiceVFXManager.Instance.ShakeCamera(0.15f, 0.05f);
+                            // Cartas normales: NO sacuden la cámara, aterrizaje limpio y suave
                             JuiceVFXManager.Instance.PlayImpactParticles(targetPos);
                         }
                     }
@@ -264,11 +265,8 @@ namespace Code.GameLogic
 
                     if (AudioManager.Instance != null)
                     {
+                        // Golpe seco limpio sobre la mesa
                         AudioManager.Instance.PlaySFX("card_slam_thud");
-                        if (isMega)
-                        {
-                            AudioManager.Instance.PlaySFX("canto_envido_wood");
-                        }
                     }
                 },
                 onComplete: null,
@@ -279,11 +277,10 @@ namespace Code.GameLogic
         }
 
         /// <summary>
-        /// Determina si una carta jugada debe generar un "Mega Slam" que sacuda la mesa:
-        /// 1. Piezas especiales o Cartas Bravas (Perico 100, Perica 99, 1 de Espada 20, 1 de Basto 19, 7 de Espada 18, 7 de Oro 17).
-        /// 2. Truco Caliente (Retruco o Vale Cuatro en juego, currentHandValue >= 3).
-        /// 3. Tercera Baza (ronda definitoria, round == 2).
-        /// 4. Matar la Baza (superar una carta alta rival ya presente en la mesa).
+        /// Determina si una carta jugada es una CARTA ALTA / BRAVA genuina que merece impacto en la mesa:
+        /// 1. Triunfos y Cartas Bravas: Perico (100), Perica (99), As de Espadas (20), As de Bastos (19), 7 de Espadas (18), 7 de Oros (17).
+        /// 2. Matar una carta brava rival ya presente en la mesa con otra carta alta.
+        /// (Las cartas normales NO activan el slam ni el shake de cámara).
         /// </summary>
         public bool CheckIsMegaSlam(Card card)
         {
@@ -301,19 +298,7 @@ namespace Code.GameLogic
                 return true;
             }
 
-            // 2. Apuesta Fuerte (Retruco = 3, Vale Cuatro = 4)
-            if (GameManager.Instance != null && GameManager.Instance.currentHandValue >= 3)
-            {
-                return true;
-            }
-
-            // 3. Tercera Mano (Desempate de la ronda)
-            if (GameManager.Instance != null && GameManager.Instance.round == 2)
-            {
-                return true;
-            }
-
-            // 4. Matar la baza (superar una carta alta rival de valor >= 15 ya jugada en esta mano)
+            // 2. Matar una carta rival alta (>= 16) con una carta superior
             if (CardsInTable != null && CardsInTable.Count > 0)
             {
                 int maxTableVal = 0;
@@ -324,7 +309,7 @@ namespace Code.GameLogic
                         maxTableVal = c.realValue;
                     }
                 }
-                if (maxTableVal >= 15 && card.realValue > maxTableVal)
+                if (maxTableVal >= 16 && card.realValue > maxTableVal)
                 {
                     return true;
                 }

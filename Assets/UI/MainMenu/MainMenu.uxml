@@ -15,6 +15,32 @@
         </engine:VisualElement>
         
         <!-- ============================================== -->
+        <!-- TOP PROFILE & STATUS BAR                      -->
+        <!-- ============================================== -->
+        <engine:VisualElement name="top-profile-bar" class="profile-bar">
+            <engine:VisualElement class="profile-info-group">
+                <engine:VisualElement class="profile-avatar">
+                    <engine:Label text="🂡" class="profile-avatar__icon" />
+                </engine:VisualElement>
+                <engine:VisualElement class="profile-text-group">
+                    <engine:VisualElement class="profile-name-row">
+                        <engine:Label name="lbl-profile-name" text="Gaucho" class="profile-name" />
+                        <engine:Label name="lbl-profile-status" text="INVITADO" class="profile-status-badge profile-status--guest" />
+                    </engine:VisualElement>
+                    <engine:VisualElement class="profile-stats-row">
+                        <engine:Label name="lbl-profile-level" text="NV. 1" class="profile-stat-badge" />
+                        <engine:Label name="lbl-profile-coins" text="🪙 1.000" class="profile-stat-coins" />
+                        <engine:Label name="lbl-profile-winrate" text="V: 0 | D: 0" class="profile-stat-sub" />
+                    </engine:VisualElement>
+                </engine:VisualElement>
+            </engine:VisualElement>
+
+            <engine:Button name="btn-open-auth" class="menu-btn menu-btn--auth-quick">
+                <engine:Label name="lbl-auth-btn-text" text="GUARDAR EN NUBE" class="menu-btn__text menu-btn--auth-quick__text" />
+            </engine:Button>
+        </engine:VisualElement>
+
+        <!-- ============================================== -->
         <!-- SCREEN: MAIN MENU                              -->
         <!-- ============================================== -->
         <engine:VisualElement name="screen-main" class="screen-container main-layout">
@@ -200,6 +226,60 @@
                 <engine:Label text="Red: Mirror" class="credits-text" />
                 
                 <engine:Button name="btn-credits-back" class="menu-btn menu-btn--back" style="margin-top: 30px;">
+                    <engine:Label text="VOLVER" class="menu-btn__text" />
+                </engine:Button>
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <!-- ============================================== -->
+        <!-- SCREEN: AUTHENTICATION & CLOUD SAVE            -->
+        <!-- ============================================== -->
+        <engine:VisualElement name="screen-auth" class="screen-container" style="display: none;">
+            <engine:VisualElement class="panel-container auth-panel">
+                <engine:Label text="CUENTA Y NUBE" class="title-text" />
+                <engine:Label text="Guardá tus fichas, nivel y victorias en la nube o jugá como invitado local." class="auth-subtitle" />
+                
+                <engine:VisualElement class="auth-tabs">
+                    <engine:Button name="btn-tab-login" class="auth-tab-btn auth-tab-btn--active">
+                        <engine:Label text="INICIAR SESIÓN" class="auth-tab-btn__text" />
+                    </engine:Button>
+                    <engine:Button name="btn-tab-register" class="auth-tab-btn">
+                        <engine:Label text="REGISTRARSE" class="auth-tab-btn__text" />
+                    </engine:Button>
+                </engine:VisualElement>
+
+                <engine:Label name="lbl-auth-status" text="" class="status-text" style="display: none;" />
+
+                <engine:VisualElement class="input-group">
+                    <engine:Label text="Usuario o Correo:" class="input-label" />
+                    <engine:TextField name="input-auth-user" class="menu-input" />
+                </engine:VisualElement>
+
+                <engine:VisualElement name="group-auth-displayname" class="input-group" style="display: none;">
+                    <engine:Label text="Tu Apodo / Nombre en Juego:" class="input-label" />
+                    <engine:TextField name="input-auth-displayname" class="menu-input" />
+                </engine:VisualElement>
+
+                <engine:VisualElement class="input-group">
+                    <engine:Label text="Contraseña:" class="input-label" />
+                    <engine:TextField name="input-auth-pass" is-password-field="true" class="menu-input" />
+                </engine:VisualElement>
+
+                <engine:Button name="btn-auth-submit" class="menu-btn menu-btn--primary">
+                    <engine:Label name="lbl-auth-submit" text="INICIAR SESIÓN" class="menu-btn__text" />
+                </engine:Button>
+
+                <engine:VisualElement class="divider" />
+
+                <engine:Button name="btn-auth-guest" class="menu-btn menu-btn--secondary">
+                    <engine:Label text="JUGAR COMO INVITADO (SIN CUENTA)" class="menu-btn__text" />
+                </engine:Button>
+
+                <engine:Button name="btn-auth-logout" class="menu-btn menu-btn--danger" style="display: none;">
+                    <engine:Label text="CERRAR SESIÓN" class="menu-btn__text" />
+                </engine:Button>
+
+                <engine:Button name="btn-auth-back" class="menu-btn menu-btn--back" style="margin-top: 15px;">
                     <engine:Label text="VOLVER" class="menu-btn__text" />
                 </engine:Button>
             </engine:VisualElement>

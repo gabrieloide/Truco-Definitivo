@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Code.Networking;
+using Code.Persistence;
 using Mirror;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -27,9 +28,30 @@ namespace Code.UI
         private VisualElement _screenLobby;
         private VisualElement _screenSettings;
         private VisualElement _screenCredits;
+        private VisualElement _screenAuth;
 
         private VisualElement[] _allScreens;
         private VisualElement _currentScreen;
+
+        // Top Profile UI
+        private Label _lblProfileName;
+        private Label _lblProfileStatus;
+        private Label _lblProfileLevel;
+        private Label _lblProfileCoins;
+        private Label _lblProfileWinrate;
+        private Label _lblAuthBtnText;
+
+        // Auth Screen UI
+        private Button _btnTabLogin;
+        private Button _btnTabRegister;
+        private VisualElement _groupAuthDisplayName;
+        private TextField _inputAuthUser;
+        private TextField _inputAuthPass;
+        private TextField _inputAuthDisplayName;
+        private Label _lblAuthSubmit;
+        private Label _lblAuthStatus;
+        private Button _btnAuthLogout;
+        private bool _isRegisterMode;
 
         // Lobby UI labels
         private Label _lblRoomCode;
@@ -59,6 +81,8 @@ namespace Code.UI
             _root = _uiDocument.rootVisualElement;
             if (_root == null) return;
 
+            EnsureAuthManager();
+
             // Screens
             _screenMain             = _root.Q<VisualElement>("screen-main");
             _screenSingleplayerSetup = _root.Q<VisualElement>("screen-singleplayer-setup");
@@ -66,12 +90,32 @@ namespace Code.UI
             _screenLobby            = _root.Q<VisualElement>("screen-lobby");
             _screenSettings         = _root.Q<VisualElement>("screen-settings");
             _screenCredits          = _root.Q<VisualElement>("screen-credits");
+            _screenAuth             = _root.Q<VisualElement>("screen-auth");
 
             _allScreens = new[]
             {
                 _screenMain, _screenSingleplayerSetup, _screenPlay,
-                _screenLobby, _screenSettings, _screenCredits
+                _screenLobby, _screenSettings, _screenCredits, _screenAuth
             };
+
+            // Top Profile labels
+            _lblProfileName    = _root.Q<Label>("lbl-profile-name");
+            _lblProfileStatus  = _root.Q<Label>("lbl-profile-status");
+            _lblProfileLevel   = _root.Q<Label>("lbl-profile-level");
+            _lblProfileCoins   = _root.Q<Label>("lbl-profile-coins");
+            _lblProfileWinrate = _root.Q<Label>("lbl-profile-winrate");
+            _lblAuthBtnText    = _root.Q<Label>("lbl-auth-btn-text");
+
+            // Auth Screen Elements
+            _btnTabLogin          = _root.Q<Button>("btn-tab-login");
+            _btnTabRegister       = _root.Q<Button>("btn-tab-register");
+            _groupAuthDisplayName = _root.Q<VisualElement>("group-auth-displayname");
+            _inputAuthUser        = _root.Q<TextField>("input-auth-user");
+            _inputAuthPass        = _root.Q<TextField>("input-auth-pass");
+            _inputAuthDisplayName = _root.Q<TextField>("input-auth-displayname");
+            _lblAuthSubmit        = _root.Q<Label>("lbl-auth-submit");
+            _lblAuthStatus        = _root.Q<Label>("lbl-auth-status");
+            _btnAuthLogout        = _root.Q<Button>("btn-auth-logout");
 
             // Lobby labels
             _lblRoomCode  = _root.Q<Label>("lbl-room-code");
@@ -85,6 +129,24 @@ namespace Code.UI
             _btnSwapRow2   = _root.Q<Button>("btn-lobby-swap-2");
             _lblPlayStatus  = _root.Q<Label>("lbl-play-status");
             _lblLobbyStatus = _root.Q<Label>("lbl-lobby-status");
+
+            // Profile & Auth
+            Bind("btn-open-auth", () => ShowScreen(_screenAuth));
+            Bind("btn-auth-back", () => ShowScreen(_screenMain));
+            Bind("btn-tab-login", () => SetAuthMode(false));
+            Bind("btn-tab-register", () => SetAuthMode(true));
+            Bind("btn-auth-submit", HandleAuthSubmit);
+            Bind("btn-auth-guest", HandleAuthGuest);
+            Bind("btn-auth-logout", HandleAuthLogout);
+
+            if (CloudAuthManager.Instance != null)
+            {
+                CloudAuthManager.Instance.OnProfileUpdated += UpdateProfileUI;
+                if (CloudAuthManager.Instance.CurrentPlayer != null)
+                {
+                    UpdateProfileUI(CloudAuthManager.Instance.CurrentPlayer);
+                }
+            }
 
             // Main Menu
             Bind("btn-main-singleplayer", () => ShowScreen(_screenSingleplayerSetup));
@@ -175,8 +237,15 @@ namespace Code.UI
 
                 nickField.RegisterValueChangedCallback(evt =>
                 {
-                    PlayerPrefs.SetString("playerNickname", evt.newValue ?? "");
+                    string newNick = evt.newValue ?? "";
+                    PlayerPrefs.SetString("playerNickname", newNick);
                     PlayerPrefs.Save();
+                    if (CloudAuthManager.Instance != null && CloudAuthManager.Instance.CurrentPlayer != null)
+                    {
+                        CloudAuthManager.Instance.CurrentPlayer.username = string.IsNullOrWhiteSpace(newNick) ? "Gaucho" : newNick;
+                        _ = CloudAuthManager.Instance.SaveProfileAsync();
+                        UpdateProfileUI(CloudAuthManager.Instance.CurrentPlayer);
+                    }
                 });
             }
 
@@ -204,6 +273,10 @@ namespace Code.UI
 
         private void OnDisable()
         {
+            if (CloudAuthManager.Instance != null)
+            {
+                CloudAuthManager.Instance.OnProfileUpdated -= UpdateProfileUI;
+            }
             if (Instance == this) Instance = null;
         }
 
@@ -569,6 +642,146 @@ namespace Code.UI
             if (UnityServicesManager.Instance != null) return;
             var go = new GameObject("UnityServicesManager");
             go.AddComponent<UnityServicesManager>();
+        }
+
+        // ─────────────────────── Profile & Cloud Auth ─────────────────────
+
+        private void SetAuthMode(bool isRegister)
+        {
+            _isRegisterMode = isRegister;
+            if (_btnTabLogin != null)
+            {
+                if (isRegister) _btnTabLogin.RemoveFromClassList("auth-tab-btn--active");
+                else _btnTabLogin.AddToClassList("auth-tab-btn--active");
+            }
+            if (_btnTabRegister != null)
+            {
+                if (isRegister) _btnTabRegister.AddToClassList("auth-tab-btn--active");
+                else _btnTabRegister.RemoveFromClassList("auth-tab-btn--active");
+            }
+
+            if (_groupAuthDisplayName != null)
+            {
+                _groupAuthDisplayName.style.display = isRegister ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (_lblAuthSubmit != null)
+            {
+                _lblAuthSubmit.text = isRegister ? "CREAR CUENTA" : "INICIAR SESIÓN";
+            }
+        }
+
+        private async void HandleAuthSubmit()
+        {
+            string user = _inputAuthUser != null ? _inputAuthUser.value?.Trim() : "";
+            string pass = _inputAuthPass != null ? _inputAuthPass.value : "";
+            string displayName = _inputAuthDisplayName != null ? _inputAuthDisplayName.value?.Trim() : "";
+
+            if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass))
+            {
+                ShowStatus(_lblAuthStatus, "Por favor ingresá usuario y contraseña.");
+                return;
+            }
+
+            ShowStatus(_lblAuthStatus, _isRegisterMode ? "Creando cuenta..." : "Iniciando sesión...", 10f);
+
+            if (_isRegisterMode)
+            {
+                var (success, error) = await CloudAuthManager.Instance.RegisterAsync(user, pass, displayName);
+                if (success)
+                {
+                    ShowStatus(_lblAuthStatus, "¡Cuenta creada y guardada con éxito!");
+                    ShowScreen(_screenMain);
+                }
+                else
+                {
+                    ShowStatus(_lblAuthStatus, error ?? "Error al registrar la cuenta.");
+                }
+            }
+            else
+            {
+                var (success, error) = await CloudAuthManager.Instance.LoginAsync(user, pass);
+                if (success)
+                {
+                    ShowStatus(_lblAuthStatus, "¡Sesión iniciada con éxito!");
+                    ShowScreen(_screenMain);
+                }
+                else
+                {
+                    ShowStatus(_lblAuthStatus, error ?? "Usuario o contraseña incorrectos.");
+                }
+            }
+        }
+
+        private void HandleAuthGuest()
+        {
+            CloudAuthManager.Instance.PlayAsGuest();
+            ShowStatus(_lblAuthStatus, "Modo invitado activado (sin guardar en la nube).");
+            ShowScreen(_screenMain);
+        }
+
+        private void HandleAuthLogout()
+        {
+            CloudAuthManager.Instance.Logout();
+            ShowStatus(_lblAuthStatus, "Sesión cerrada. Ahora estás jugando como invitado.");
+            ShowScreen(_screenMain);
+        }
+
+        private void UpdateProfileUI(PlayerData player)
+        {
+            if (player == null) return;
+
+            if (_lblProfileName != null)
+                _lblProfileName.text = player.username;
+
+            if (_lblProfileStatus != null)
+            {
+                if (player.isGuest)
+                {
+                    _lblProfileStatus.text = "INVITADO";
+                    _lblProfileStatus.RemoveFromClassList("profile-status--cloud");
+                    _lblProfileStatus.AddToClassList("profile-status--guest");
+                }
+                else
+                {
+                    _lblProfileStatus.text = "EN LÍNEA";
+                    _lblProfileStatus.RemoveFromClassList("profile-status--guest");
+                    _lblProfileStatus.AddToClassList("profile-status--cloud");
+                }
+            }
+
+            if (_lblAuthBtnText != null)
+            {
+                _lblAuthBtnText.text = player.isGuest ? "GUARDAR EN NUBE" : "MI PERFIL";
+            }
+
+            if (_btnAuthLogout != null)
+            {
+                _btnAuthLogout.style.display = player.isGuest ? DisplayStyle.None : DisplayStyle.Flex;
+            }
+
+            if (_lblProfileLevel != null)
+                _lblProfileLevel.text = $"NV. {player.level}";
+
+            if (_lblProfileCoins != null)
+                _lblProfileCoins.text = $"🪙 {player.coins:N0}";
+
+            if (_lblProfileWinrate != null)
+                _lblProfileWinrate.text = $"V: {player.gamesWon} | D: {player.gamesLost}";
+
+            // Sincronizar nickname en el input de multijugador si está vacío o difiere
+            var nickField = _root.Q<TextField>("input-nickname");
+            if (nickField != null && nickField.value != player.username)
+            {
+                nickField.SetValueWithoutNotify(player.username);
+            }
+        }
+
+        private static void EnsureAuthManager()
+        {
+            if (CloudAuthManager.Instance != null) return;
+            var go = new GameObject("CloudAuthManager");
+            go.AddComponent<CloudAuthManager>();
         }
     }
 }

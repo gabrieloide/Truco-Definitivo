@@ -210,44 +210,38 @@ namespace Code.Cards
 
             if (isMegaSlam)
             {
-                // Lanzamiento agresivo en arco con aceleración hacia el impacto
-                _moveTween = transform.DOJump(targetPos, 0.32f, 1, duration)
-                    .SetEase(Ease.InQuad);
+                // Vuelo firme con arco suave y aceleración limpia hacia la mesa
+                _moveTween = transform.DOJump(targetPos, 0.16f, 1, duration)
+                    .SetEase(Ease.OutQuad);
             }
             else
             {
-                // Lanzamiento normal usando DOMove directo a la mesa
+                // Lanzamiento normal directo y suave a la mesa
                 _moveTween = transform.DOMove(targetPos, duration)
                     .SetEase(Ease.OutQuad);
             }
 
-            // Rotar en el aire (voltear a posición de mesa + giro adicional de 360 grados para espectacularidad)
-            Vector3 rotTarget = targetRot.eulerAngles;
-            transform.localRotation = transform.rotation;
-            _rotateTween = transform.DORotate(new Vector3(rotTarget.x + 360f, rotTarget.y, rotTarget.z), duration, RotateMode.FastBeyond360)
-                .SetEase(isMegaSlam ? Ease.InQuad : Ease.OutQuad);
+            // Orientar limpiamente hacia la rotación destino en la mesa (sin giros circenses de 360 grados)
+            _rotateTween = transform.DORotateQuaternion(targetRot, duration)
+                .SetEase(Ease.OutQuad);
 
             _moveTween.OnComplete(() =>
             {
-                // Disparar evento de impacto (sonido, partículas, sacudida de cámara)
+                // Disparar evento de impacto (sonido y VFX)
                 onImpact?.Invoke();
 
-                // Animación de Squash & Stretch (rebote elástico)
+                // Micro-rebote de cartulina sólida rígida (firme y seco, sin efecto de goma o gelatina)
                 _squashSequence = DOTween.Sequence();
                 
                 if (isMegaSlam)
                 {
-                    // Aplastamiento contundente (golpe seco contra la madera)
-                    _squashSequence.Append(transform.DOScale(new Vector3(_originalScale.x * 1.4f, _originalScale.y * 0.22f, _originalScale.z * 1.4f), 0.05f).SetEase(Ease.OutQuad));
-                    _squashSequence.Append(transform.DOScale(new Vector3(_originalScale.x * 0.82f, _originalScale.y * 1.25f, _originalScale.z * 0.82f), 0.07f).SetEase(Ease.InOutQuad));
-                    _squashSequence.Append(transform.DOScale(_originalScale, 0.1f).SetEase(Ease.OutQuad));
+                    _squashSequence.Append(transform.DOScale(new Vector3(_originalScale.x * 1.05f, _originalScale.y * 0.95f, _originalScale.z * 1.05f), 0.05f).SetEase(Ease.OutQuad));
+                    _squashSequence.Append(transform.DOScale(_originalScale, 0.07f).SetEase(Ease.OutQuad));
                 }
                 else
                 {
-                    // Aplastamiento estándar
-                    _squashSequence.Append(transform.DOScale(new Vector3(_originalScale.x * 1.25f, _originalScale.y * 0.4f, _originalScale.z * 1.25f), 0.08f).SetEase(Ease.OutQuad));
-                    _squashSequence.Append(transform.DOScale(new Vector3(_originalScale.x * 0.85f, _originalScale.y * 1.15f, _originalScale.z * 0.85f), 0.08f).SetEase(Ease.InOutQuad));
-                    _squashSequence.Append(transform.DOScale(_originalScale, 0.1f).SetEase(Ease.OutQuad));
+                    _squashSequence.Append(transform.DOScale(new Vector3(_originalScale.x * 1.02f, _originalScale.y * 0.98f, _originalScale.z * 1.02f), 0.04f).SetEase(Ease.OutQuad));
+                    _squashSequence.Append(transform.DOScale(_originalScale, 0.05f).SetEase(Ease.OutQuad));
                 }
 
                 _squashSequence.OnComplete(() => onComplete?.Invoke());
