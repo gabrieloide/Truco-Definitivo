@@ -648,7 +648,7 @@
     left: 32px;
     right: 32px;
     flex-direction: row;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
 }
 
@@ -772,27 +772,7 @@
     letter-spacing: 0.5px;
 }
 
-.menu-btn--auth-quick {
-    width: auto;
-    height: 44px;
-    min-height: 44px;
-    padding: 0 20px;
-    margin: 0;
-    background-color: #1F2E42;
-    border-bottom-width: 5px;
-    border-bottom-color: #101824;
-    border-radius: 12px;
-}
 
-.menu-btn--auth-quick:hover {
-    background-color: #2D425C;
-}
-
-.menu-btn--auth-quick__text {
-    font-size: 15px;
-    letter-spacing: 1.5px;
-    color: #E8D39E;
-}
 
 /* =========================================================
    AUTH MODAL & TABS

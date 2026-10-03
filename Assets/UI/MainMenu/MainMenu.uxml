@@ -37,10 +37,6 @@
                         </engine:VisualElement>
                     </engine:VisualElement>
                 </engine:Button>
-
-                <engine:Button name="btn-open-auth" class="menu-btn menu-btn--auth-quick">
-                    <engine:Label name="lbl-auth-btn-text" text="GUARDAR EN NUBE" class="menu-btn__text menu-btn--auth-quick__text" />
-                </engine:Button>
             </engine:VisualElement>
 
             <engine:Label text="TRUCO DEFINITIVO" class="title-text title-main" />

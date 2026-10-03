@@ -39,7 +39,6 @@ namespace Code.UI
         private Label _lblProfileLevel;
         private Label _lblProfileCoins;
         private Label _lblProfileWinrate;
-        private Label _lblAuthBtnText;
 
         // Auth & Profile Screen UI
         private VisualElement _panelProfileView;
@@ -114,7 +113,6 @@ namespace Code.UI
             _lblProfileLevel   = _root.Q<Label>("lbl-profile-level");
             _lblProfileCoins   = _root.Q<Label>("lbl-profile-coins");
             _lblProfileWinrate = _root.Q<Label>("lbl-profile-winrate");
-            _lblAuthBtnText    = _root.Q<Label>("lbl-auth-btn-text");
 
             // Auth Screen Elements
             // Auth & Profile Screen Elements
@@ -152,7 +150,6 @@ namespace Code.UI
             _lblLobbyStatus = _root.Q<Label>("lbl-lobby-status");
 
             // Profile & Auth Bindings
-            Bind("btn-open-auth", OpenAuthOrProfileScreen);
             Bind("btn-profile-info", OpenAuthOrProfileScreen);
             Bind("btn-profile-logout", HandleAuthLogout);
             Bind("btn-profile-back", () => ShowScreen(_screenMain));
@@ -792,11 +789,6 @@ namespace Code.UI
                     _lblProfileStatus.RemoveFromClassList("profile-status--guest");
                     _lblProfileStatus.AddToClassList("profile-status--cloud");
                 }
-            }
-
-            if (_lblAuthBtnText != null)
-            {
-                _lblAuthBtnText.text = player.isGuest ? "GUARDAR EN NUBE" : "MI PERFIL";
             }
 
             PopulateProfileView(player);
