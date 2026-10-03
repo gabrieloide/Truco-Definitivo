@@ -1,0 +1,71 @@
+// ============================================================================
+// TRUCO DEFINITIVO - REGLAS DE SEGURIDAD PARA FIREBASE REALTIME DATABASE
+// ============================================================================
+// INSTRUCCIONES:
+// 1. Abre tu consola de Firebase: https://console.firebase.google.com/
+// 2. Selecciona tu proyecto: Venezuelan Truco
+// 3. En el menu lateral izquierdo, ve a: Compilacion (Build) -> Realtime Database
+// 4. Haz clic en la pestana superior: "Reglas" (Rules)
+// 5. Borra lo que haya alli, copia y pega TODO el bloque JSON de abajo.
+// 6. Haz clic en el boton azul: "Publicar" (Publish).
+// ============================================================================
+
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        // Solo el usuario autenticado puede leer y editar su propio perfil
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+
+        // Validacion de estructura: evita datos corruptos o inyeccion de campos invalidos
+        ".validate": "newData.hasChildren(['userId', 'username', 'level', 'coins'])",
+
+        "userId": {
+          ".validate": "newData.val() === $uid"
+        },
+        "username": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 24"
+        },
+        "coins": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "level": {
+          ".validate": "newData.isNumber() && newData.val() >= 1"
+        },
+        "experience": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "gamesPlayed": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "gamesWon": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "gamesLost": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "highestEnvido": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 40"
+        },
+        "lastSavedUtc": {
+          ".validate": "newData.isNumber()"
+        }
+      }
+    },
+    // Bloqueo total: ninguna otra ruta no autorizada puede ser leida o escrita
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}
+
+// ============================================================================
+// RECORDATORIO FINAL:
+// 1. En Firebase Console -> Authentication -> pestana "Sign-in method":
+//    Habilita el proveedor "Correo electronico/Contrasena" (Email/Password).
+// 2. En Firebase Console -> Icono de Engranaje (Configuracion del proyecto) -> General:
+//    Copia tu "Clave de API web" (Web API Key) y pegala en Unity en el
+//    componente CloudAuthManager (campo "Firebase Api Key").
+// ============================================================================
