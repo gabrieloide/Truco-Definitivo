@@ -114,6 +114,9 @@ namespace Code.UI
             _lblProfileCoins   = _root.Q<Label>("lbl-profile-coins");
             _lblProfileWinrate = _root.Q<Label>("lbl-profile-winrate");
 
+            var lblVersion = _root.Q<Label>("lbl-game-version");
+            if (lblVersion != null) lblVersion.text = $"v{Application.version}";
+
             // Auth Screen Elements
             // Auth & Profile Screen Elements
             _panelProfileView     = _root.Q<VisualElement>("panel-profile-view");

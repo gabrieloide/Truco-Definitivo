@@ -251,5 +251,6 @@
                 </engine:Button>
             </engine:VisualElement>
         </engine:VisualElement>
+        <engine:Label name="lbl-game-version" text="v1.0.1" class="version-label" picking-mode="Ignore"/>
     </engine:VisualElement>
 </engine:UXML>

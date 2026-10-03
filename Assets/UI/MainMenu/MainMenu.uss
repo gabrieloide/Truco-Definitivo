@@ -966,4 +966,15 @@
     letter-spacing: 1px;
 }
 
+.version-label {
+    position: absolute;
+    bottom: 10px;
+    right: 16px;
+    font-size: 13px;
+    color: rgba(232, 211, 158, 0.6);
+    -unity-font-style: bold;
+    letter-spacing: 1.2px;
+}
+
+
 
