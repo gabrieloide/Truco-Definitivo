@@ -18,7 +18,7 @@ namespace Code.Persistence
         [SerializeField] private string firebaseApiKey = "";
 
         [Tooltip("URL de tu Firebase Realtime Database (ej: https://mi-proyecto-default-rtdb.firebaseio.com)")]
-        [SerializeField] private string firebaseDatabaseUrl = "";
+        [SerializeField] private string firebaseDatabaseUrl = "https://venezuelan-truco-default-rtdb.firebaseio.com";
 
         public PlayerData CurrentPlayer { get; private set; }
         public bool IsLoggedIn => CurrentPlayer != null && !CurrentPlayer.isGuest && !string.IsNullOrEmpty(_currentIdToken);
