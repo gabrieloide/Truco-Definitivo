@@ -1128,9 +1128,26 @@ namespace Code.GameLogic
             yield return new WaitForSeconds(2.8f);
 
             bool animationFinished = false;
-            TableManager.Instance.AnimateCardsToDeck(() => { animationFinished = true; });
+            if (TableManager.Instance != null)
+            {
+                TableManager.Instance.AnimateCardsToDeck(() => { animationFinished = true; });
+            }
+            else
+            {
+                animationFinished = true;
+            }
             
-            yield return new WaitUntil(() => animationFinished);
+            float waitTimer = 0f;
+            while (!animationFinished && waitTimer < 2.0f)
+            {
+                waitTimer += Time.deltaTime;
+                yield return null;
+            }
+            if (!animationFinished)
+            {
+                Debug.LogWarning("[GameManager] DelayedNewHand: Animación de cartas al mazo excedió tiempo límite, forzando limpieza.");
+                TableManager.Instance?.ClearTable();
+            }
             yield return new WaitForSeconds(0.2f);
 
             StartNewHand();

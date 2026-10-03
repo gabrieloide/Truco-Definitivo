@@ -24,6 +24,10 @@ namespace Code.Player
         {
             hand.Clear();
             initialHand.Clear();
+            haveFlower = false;
+            isMyTurn = false;
+            if (_turnCoroutine != null) StopCoroutine(_turnCoroutine);
+            _turnCoroutine = null;
             foreach (var v in _visualCards) if (v != null) Destroy(v);
             _visualCards.Clear();
         }
@@ -101,10 +105,8 @@ namespace Code.Player
 
         public void StartTurn()
         {
-            if (isMyTurn) return;
-            isMyTurn = true;
-            
             if (_turnCoroutine != null) StopCoroutine(_turnCoroutine);
+            isMyTurn = true;
             _turnCoroutine = StartCoroutine(NPCLifeCycle());
         }
 
@@ -220,12 +222,17 @@ namespace Code.Player
 
         private IEnumerator PlayCard()
         {
-            if (hand.Count > 0 && _visualCards.Count > 0)
+            if (hand.Count > 0)
             {
-                if (GameManager.Instance.isAnnouncementPending)
+                while (GameManager.Instance != null && GameManager.Instance.isAnnouncementPending)
                 {
-                    // Si justo se inició un canto un milisegundo antes de que tire la carta
-                    isMyTurn = true;
+                    yield return new WaitForSeconds(0.5f);
+                }
+
+                if (!isMyTurn || GameManager.Instance == null || GameManager.Instance.isHandResolved)
+                {
+                    isMyTurn = false;
+                    _turnCoroutine = null;
                     yield break;
                 }
 
@@ -234,8 +241,8 @@ namespace Code.Player
                 
                 hand.Remove(cardToPlay);
 
-                GameObject visualCard = _visualCards[0];
-                _visualCards.RemoveAt(0);
+                GameObject visualCard = _visualCards.Count > 0 ? _visualCards[0] : null;
+                if (_visualCards.Count > 0) _visualCards.RemoveAt(0);
                 Vector3? startPos = null;
                 if (visualCard != null) 
                 {
@@ -243,7 +250,6 @@ namespace Code.Player
                     Destroy(visualCard);
                 }
 
-                
                 // IMPORTANTE: Liberar el turno ANTES de ejecutar el comando que avanza el juego
                 isMyTurn = false;
                 _turnCoroutine = null;

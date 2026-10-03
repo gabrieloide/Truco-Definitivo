@@ -274,6 +274,7 @@ namespace Code.Player
                 PlayerHUD.Instance?.ShowWaitingResponse(false);
                 if (NetworkServer.active)
                     (NetworkManager.singleton as MyNetworkingManager)?.BroadcastWaitingResponse(-1, "");
+                RestoreTurnAfterAnnouncement();
                 return;
             }
 
@@ -284,6 +285,7 @@ namespace Code.Player
                 PlayerHUD.Instance?.ShowWaitingResponse(false);
                 if (NetworkServer.active)
                     (NetworkManager.singleton as MyNetworkingManager)?.BroadcastWaitingResponse(-1, "");
+                RestoreTurnAfterAnnouncement();
                 return;
             }
 
@@ -327,6 +329,7 @@ namespace Code.Player
             PlayerHUD.Instance?.ShowWaitingResponse(false);
             if (NetworkServer.active)
                 (NetworkManager.singleton as MyNetworkingManager)?.BroadcastWaitingResponse(-1, "");
+            RestoreTurnAfterAnnouncement();
         }
 
         private void UpdateWaitingIndicatorForResponder(GameObject occupant, int responderSeat, string responderName)
@@ -471,7 +474,7 @@ namespace Code.Player
                     return;
             }
 
-            if (targetState == AnnounceState.Flor)
+            if (targetState == AnnounceState.Flor || targetState == AnnounceState.ALey)
             {
                 _localFlorSung = true;
                 if (playerLocal != null && playerLocal.player != null)
@@ -488,8 +491,8 @@ namespace Code.Player
 
         private System.Collections.IEnumerator SendAnnounceCoroutine(AnnounceState targetState, PlayerLocal playerLocal)
         {
-            // SI targetState es Flor y el estado anterior era Envido, la Flor anula al Envido.
-            if (targetState == AnnounceState.Flor && _announceState == AnnounceState.Envido)
+            // SI targetState es Flor o A Ley y el estado anterior era Envido, anula al Envido.
+            if ((targetState == AnnounceState.Flor || targetState == AnnounceState.ALey) && _announceState == AnnounceState.Envido)
             {
                 Debug.Log("[AnnouncementManager] FLOR anula ENVIDO (Jugador).");
                 if (PlayerHUD.Instance != null)
@@ -568,7 +571,11 @@ namespace Code.Player
             }
 
             // Si era informativo, nos aseguramos de que el estado vuelva a None tras la notificación
-            if (targetState == AnnounceState.ALey || targetState == AnnounceState.Flor) _announceState = AnnounceState.None;
+            if (targetState == AnnounceState.ALey || targetState == AnnounceState.Flor)
+            {
+                _announceState = AnnounceState.None;
+                RestoreTurnAfterAnnouncement();
+            }
         }
 
         private void RpcAnnounceToAllClients()
@@ -601,7 +608,7 @@ namespace Code.Player
             // Flor: validación autoritativa contra la mano repartida (haveFlower solo
             // existe en la máquina del dueño) y un solo canto de flor por jugador.
             string announcerName = playerObj.GetComponent<PlayerLocal>()?.player?.playerName ?? playerObj.name;
-            if (state == AnnounceState.Flor
+            if ((state == AnnounceState.Flor || state == AnnounceState.ALey)
                 && (!PlayerHandHasFlor(playerObj) || _florSingers.Contains(announcerName)))
                 return;
 
@@ -617,7 +624,7 @@ namespace Code.Player
 
             // Con flor cantada no hay envido — validación autoritativa: se rechaza acá
             // aunque el botón del cliente esté desincronizado o el comando sea forzado.
-            if (state == AnnounceState.Envido && WasAnnouncementCalledThisHand(AnnounceState.Flor))
+            if (state == AnnounceState.Envido && (WasAnnouncementCalledThisHand(AnnounceState.Flor) || WasAnnouncementCalledThisHand(AnnounceState.ALey)))
             {
                 var rejectedSync = playerObj.GetComponent<PlayerNetworkSync>();
                 if (rejectedSync != null && rejectedSync.connectionToClient != null
@@ -643,7 +650,7 @@ namespace Code.Player
                 if (trucoAnnounce != null && trucoAnnounce.acceptAmount >= 3) return;
             }
 
-            if (state == AnnounceState.Flor)
+            if (state == AnnounceState.Flor || state == AnnounceState.ALey)
             {
                 _florSingers.Add(announcerName);
             }
@@ -664,13 +671,19 @@ namespace Code.Player
             {
                 return;
             }
+            if (state == AnnounceState.Flor || state == AnnounceState.ALey)
+            {
+                var npcComp = npcObj != null ? npcObj.GetComponent<NPCPlayer>() : null;
+                string name = npcComp != null && !string.IsNullOrEmpty(npcComp.playerName) ? npcComp.playerName : npcObj.name;
+                _florSingers.Add(name);
+            }
             StartCoroutine(ReceiveAnnounceFromNPCCoroutine(state, npcObj));
         }
 
         private System.Collections.IEnumerator ReceiveAnnounceFromNPCCoroutine(AnnounceState state, GameObject npcObj)
         {
-            // SI el NPC canta Flor y el estado anterior era Envido, la Flor anula al Envido.
-            if (state == AnnounceState.Flor && _announceState == AnnounceState.Envido)
+            // SI el NPC canta Flor o A Ley y el estado anterior era Envido, la Flor anula al Envido.
+            if ((state == AnnounceState.Flor || state == AnnounceState.ALey) && _announceState == AnnounceState.Envido)
             {
                 Debug.Log("[AnnouncementManager] FLOR anula ENVIDO (NPC).");
                 if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent("FLOR ANULA ENVIDO", 2f);
@@ -705,9 +718,10 @@ namespace Code.Player
                     (NetworkManager.singleton as MyNetworkingManager)?.BroadcastAnnouncementCalled((int)state);
             }
 
-            // La Flor es informativa (igual que en SendAnnounceCoroutine): no bloquea la
-            // mano ni pide Quiero/No Quiero; la contraflor se resuelve sola al cerrar la mano.
-            GameManager.Instance.isAnnouncementPending = state != AnnounceState.Flor;
+            // Flor y A Ley son informativos (igual que en SendAnnounceCoroutine): no bloquean la
+            // mano ni piden Quiero/No Quiero; la contraflor se resuelve sola al cerrar la mano.
+            bool isInformative = (state == AnnounceState.Flor || state == AnnounceState.ALey);
+            GameManager.Instance.isAnnouncementPending = !isInformative;
 
             if (state == AnnounceState.Envido)
                 UpdateEnvidoStakeUI(ProspectiveEnvidoStake(), true);
@@ -715,10 +729,11 @@ namespace Code.Player
             // 2.5s para coincidir con la duración de la notificación en pantalla
             yield return new WaitForSeconds(2.5f);
 
-            if (state == AnnounceState.Flor)
+            if (isInformative)
             {
                 // Si mientras tanto se cantó otra cosa (ej: truco), no pisar ese estado.
-                if (_announceState == AnnounceState.Flor) _announceState = AnnounceState.None;
+                if (_announceState == state) _announceState = AnnounceState.None;
+                RestoreTurnAfterAnnouncement();
                 yield break;
             }
 
@@ -990,11 +1005,25 @@ namespace Code.Player
             if (occupant == null) return;
 
             var p = occupant.GetComponent<Code.Player.Player>();
-            if (p == null) return;
-
-            p.canPlayCard = true;
-            if (NetworkServer.active)
-                occupant.GetComponent<PlayerNetworkSync>()?.RpcSetTurn(true);
+            if (p != null)
+            {
+                p.canPlayCard = true;
+                var pl = occupant.GetComponent<PlayerLocal>();
+                if (pl != null && pl.isLocalPlayer && PlayerHUD.Instance != null)
+                {
+                    PlayerHUD.Instance.UpdateTurnState(true, p.playerName);
+                }
+                if (NetworkServer.active)
+                    occupant.GetComponent<PlayerNetworkSync>()?.RpcSetTurn(true);
+            }
+            else
+            {
+                var npc = occupant.GetComponent<NPCPlayer>();
+                if (npc != null)
+                {
+                    npc.StartTurn();
+                }
+            }
         }
 
         // [Command(requiresAuthority = false)]
