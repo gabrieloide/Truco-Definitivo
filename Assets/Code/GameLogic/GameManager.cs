@@ -77,95 +77,60 @@ namespace Code.GameLogic
         [SerializeField] private bool _gameSceneStarted = false;
         public List<Team> teams = new List<Team>();
         public bool isAnnouncementPending = false; // Bloquea el flujo del juego para esperar respuesta
-        
-        [Header("Pending Envido State")]
-        public bool pendingEnvidoResolution = false;
-        public string pendingEnvidoWinnerTeam = "";
-        public int pendingEnvidoPoints = 0;
-        public int pendingEnvidoScoreTeam1 = 0;
-        public int pendingEnvidoScoreTeam2 = 0;
-        
         public Code.GameLogic.States.GameStateMachine stateMachine { get; private set; }
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void SetupAudioManager()
+
+        [Header("Match Scorer & Rules Domain")]
+        private readonly TrucoMatchScorer _scorer = new TrucoMatchScorer();
+
+        public int maxPoints
         {
-            try
-            {
-                var audioManagerInstance = AudioManager.Instance;
-                if (audioManagerInstance == null)
-                {
-                    Debug.LogError("[GameManager] AudioManager.Instance es nulo al inicializar!");
-                    return;
-                }
-
-                var fieldInfo = typeof(AudioManager).GetField("_database", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (fieldInfo == null)
-                {
-                    Debug.LogError("[GameManager] No se pudo encontrar el campo privado '_database' en AudioManager.");
-                    return;
-                }
-
-                var database = (AudioDatabase)fieldInfo.GetValue(audioManagerInstance);
-                if (database == null)
-                {
-                    var dbAsset = Resources.Load<AudioDatabase>("Audio/AudioDatabase");
-                    if (dbAsset != null)
-                    {
-                        fieldInfo.SetValue(audioManagerInstance, dbAsset);
-                    }
-                    else
-                    {
-                        Debug.LogError("[GameManager] ¡No se pudo cargar Audio/AudioDatabase de Resources!");
-                    }
-                }
-                else
-                {
-                }
-
-                // Force loop=true on music tracks at runtime to guarantee proper looping
-                // regardless of YAML serialization state
-                var db = (AudioDatabase)fieldInfo.GetValue(audioManagerInstance);
-                if (db != null)
-                {
-                    foreach (var audioData in db.audioDataList)
-                    {
-                        if (audioData.id == "backyard_truco" || audioData.id == "main_menu_truco")
-                        {
-                            audioData.loop = true;
-                        }
-                    }
-                }
-
-                UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoadedPlayMusic;
-                UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoadedPlayMusic;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[GameManager] Error al configurar el AudioManager: {ex.Message}\n{ex.StackTrace}");
-            }
+            get => _scorer.MaxPoints;
+            set => _scorer.MaxPoints = value;
         }
 
-        private static void OnSceneLoadedPlayMusic(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        public int currentHandValue
         {
-            try
-            {
-                var audioManagerInstance = AudioManager.Instance;
-                if (audioManagerInstance == null) return;
-                
-                if (scene.name == "GameScene")
-                {
-                    audioManagerInstance.PlayMusic("backyard_truco", crossfade: true, duration: 1.5f);
-                }
-                else if (scene.name == "MainMenu" || scene.name == "LobbyScene")
-                {
-                    audioManagerInstance.PlayMusic("main_menu_truco", crossfade: true, duration: 1.5f);
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[GameManager] Error al cambiar música de escena: {ex.Message}");
-            }
+            get => _scorer.CurrentHandValue;
+            set => _scorer.CurrentHandValue = value;
         }
+
+        public int lastTrucoTeamIndex
+        {
+            get => _scorer.LastTrucoTeamIndex;
+            set => _scorer.LastTrucoTeamIndex = value;
+        }
+
+        public bool pendingEnvidoResolution
+        {
+            get => _scorer.PendingEnvidoResolution;
+            set => _scorer.PendingEnvidoResolution = value;
+        }
+
+        public string pendingEnvidoWinnerTeam
+        {
+            get => _scorer.PendingEnvidoWinnerTeam;
+            set => _scorer.PendingEnvidoWinnerTeam = value;
+        }
+
+        public int pendingEnvidoPoints
+        {
+            get => _scorer.PendingEnvidoPoints;
+            set => _scorer.PendingEnvidoPoints = value;
+        }
+
+        public int pendingEnvidoScoreTeam1
+        {
+            get => _scorer.PendingEnvidoScoreTeam1;
+            set => _scorer.PendingEnvidoScoreTeam1 = value;
+        }
+
+        public int pendingEnvidoScoreTeam2
+        {
+            get => _scorer.PendingEnvidoScoreTeam2;
+            set => _scorer.PendingEnvidoScoreTeam2 = value;
+        }
+
+        public List<int> trickWinners => _scorer.TrickWinners;
 
         [Header("Pacing")]
         [Tooltip("Espera tras cada carta antes de pasar el turno, en mesa de 2.")]
@@ -180,10 +145,6 @@ namespace Code.GameLogic
         private bool IsFullTable => _totalPlayersCount >= 4;
         public float TurnDelay => IsFullTable ? turnDelaySeconds4P : turnDelaySeconds;
         public float TrickResultDelay => IsFullTable ? trickResultDelaySeconds4P : trickResultDelaySeconds;
-
-        [Header("Match Settings")]
-        public int maxPoints = 15; // Límite de puntos para ganar la partida
-        private bool _matchEnded = false;
 
         private void Awake()
         {
@@ -626,10 +587,7 @@ namespace Code.GameLogic
 
             if (occupant.GetComponent<PlayerLocal>() != null)
             {
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.PlaySFX("turn_alert_ping");
-                }
+                Code.Core.TrucoAudioService.PlayTurnAlert();
             }
 
             var playerComp = occupant.GetComponent<Code.Player.Player>();
@@ -773,9 +731,6 @@ namespace Code.GameLogic
             int idx = GetTeamIndex(manoTeam);
             if (idx >= 0) _manoTeamIndex = idx + 1;
         }
-        public int currentHandValue = 1; // Points for the winner of the hand (Truco, Retruco, etc)
-        public int lastTrucoTeamIndex = 0; // The team that made the last accepted challenge (1 or 2)
-
         public void HandleTrickResult(GameObject winnerObj)
         {
             int winnerTeam = 0; // Tie
@@ -798,21 +753,17 @@ namespace Code.GameLogic
                 string teamNameResult = (team != null) ? team.teamName : (winnerObj != null ? winnerObj.name : "EQUIPO " + winnerTeam);
                 string resultMsg = (winnerTeam == 0) ? "¡EMPATE!" : $"GANADOR: {teamNameResult.ToUpper()}";
                 if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(resultMsg, 2.8f);
-                
 
-                if (AudioManager.Instance != null)
+                if (winnerTeam == 0)
                 {
-                    if (winnerTeam == 0)
+                    Code.Core.TrucoAudioService.PlayParda();
+                }
+                else
+                {
+                    var playerLocal = FindAnyObjectByType<PlayerLocal>();
+                    if (playerLocal != null && playerLocal.player != null && playerLocal.player.team == team)
                     {
-                        AudioManager.Instance.PlaySFX("parda_tie_dissonance");
-                    }
-                    else
-                    {
-                        var playerLocal = FindAnyObjectByType<PlayerLocal>();
-                        if (playerLocal != null && playerLocal.player != null && playerLocal.player.team == team)
-                        {
-                            AudioManager.Instance.PlaySFX("trick_won_coin");
-                        }
+                        Code.Core.TrucoAudioService.PlayTrickWon();
                     }
                 }
             }
@@ -820,11 +771,7 @@ namespace Code.GameLogic
             {
                 string resultMsg = "¡EMPATE!";
                 if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent(resultMsg, 2.8f);
-
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.PlaySFX("parda_tie_dissonance");
-                }
+                Code.Core.TrucoAudioService.PlayParda();
             }
 
             trickWinners.Add(winnerTeam);
@@ -847,51 +794,10 @@ namespace Code.GameLogic
 
         private void EvaluateHandResolution()
         {
-            int currentRound = trickWinners.Count; // 1, 2 or 3
-            int handWinner = 0; // 0 = not resolved, 1 = Team 1, 2 = Team 2
-
-            // Rule 1: Someone wins 2 bazas
-            if (teams[0].roundsWon >= 2) handWinner = 1;
-            else if (teams[1].roundsWon >= 2) handWinner = 2;
-            
-            // Rule 2: Ties (Empardes)
-            if (handWinner == 0)
-            {
-                if (currentRound == 1)
-                {
-                    // Tied 1st: Nothing happens yet, continue to 2nd.
-                }
-                else if (currentRound == 2)
-                {
-                    if (trickWinners[0] == 0 && trickWinners[1] != 0) handWinner = trickWinners[1];
-                    else if (trickWinners[0] != 0 && trickWinners[1] == 0) handWinner = trickWinners[0];
-                    // Muerte súbita tras parda en la primera: la mano termina acá sí o sí.
-                    // Si la carta de desempate también emparda, gana el equipo Mano.
-                    else if (trickWinners[0] == 0 && trickWinners[1] == 0) handWinner = _manoTeamIndex;
-                }
-                else if (currentRound == 3)
-                {
-                    if (trickWinners[2] != 0)
-                    {
-                        handWinner = trickWinners[2];
-                    }
-                    else
-                    {
-                        if (trickWinners[0] != 0)
-                        {
-                            handWinner = trickWinners[0];
-                        }
-                        else
-                        {
-                            handWinner = _manoTeamIndex;
-                        }
-                    }
-                }
-            }
-
+            int handWinner = _scorer.EvaluateHandWinner(_manoTeamIndex, teams);
             if (handWinner != 0)
             {
-                ResolveHandWinner(teams[handWinner - 1].teamName, currentHandValue); 
+                ResolveHandWinner(teams[handWinner - 1].teamName, currentHandValue);
             }
         }
 
@@ -910,19 +816,9 @@ namespace Code.GameLogic
 
         public void AddAnnouncementPoints(string teamName, int points)
         {
-            foreach (var team in teams)
-            {
-                if (team.teamName == teamName)
-                {
-                    team.teamScore += points;
-                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{teamName.ToUpper()} GANA {points} PIEDRAS!");
-                    break;
-                }
-            }
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlaySFX("score_add_chalk");
-            }
+            _scorer.AddPoints(teamName, points, teams);
+            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{teamName.ToUpper()} GANA {points} PIEDRAS!");
+            Code.Core.TrucoAudioService.PlayScoreChalk();
             RpcUpdateScores(teams[0].teamScore, teams[1].teamScore, teams[0].roundsWon, teams[1].roundsWon);
         }
 
@@ -955,87 +851,54 @@ namespace Code.GameLogic
             }
 
             // 1. Resolver Envido pendiente primero
-            if (pendingEnvidoResolution)
+            if (_scorer.PendingEnvidoResolution)
             {
-                pendingEnvidoResolution = false;
-                
+                string envidoTeam = _scorer.PendingEnvidoWinnerTeam;
+                int envidoPts = _scorer.PendingEnvidoPoints;
+                int envidoS1 = _scorer.PendingEnvidoScoreTeam1;
+                int envidoS2 = _scorer.PendingEnvidoScoreTeam2;
+                _scorer.ClearPendingEnvido();
+
                 if (PlayerHUD.Instance != null)
                 {
-                    PlayerHUD.Instance.NotifyEvent($"ENVIDO: {teams[0].teamName.ToUpper()} ({pendingEnvidoScoreTeam1}) vs {teams[1].teamName.ToUpper()} ({pendingEnvidoScoreTeam2})", 3.5f);
+                    PlayerHUD.Instance.NotifyEvent($"ENVIDO: {teams[0].teamName.ToUpper()} ({envidoS1}) vs {teams[1].teamName.ToUpper()} ({envidoS2})", 3.5f);
                 }
-                
-                foreach (var team in teams)
-                {
-                    if (team.teamName == pendingEnvidoWinnerTeam)
-                    {
-                        team.teamScore += pendingEnvidoPoints;
-                        break;
-                    }
-                }
-                
-                if (AudioManager.Instance != null) AudioManager.Instance.PlaySFX("score_add_chalk");
+
+                _scorer.AddPoints(envidoTeam, envidoPts, teams);
+                Code.Core.TrucoAudioService.PlayScoreChalk();
                 RpcUpdateScores(teams[0].teamScore, teams[1].teamScore, teams[0].roundsWon, teams[1].roundsWon);
-                
-                yield return new WaitForSeconds(3.5f); // Esperar a que se lea el resultado del envido
-                
-                // Chequear si el Envido terminó la partida antes de dar los puntos del Truco
+
+                yield return new WaitForSeconds(3.5f);
+
                 if (CheckForMatchWinner()) yield break;
             }
 
             // 2. Resolver los puntos de la mano (Truco)
-            Team winningTeam = null;
-            foreach (var team in teams)
-            {
-                if (team.teamName == teamName)
-                {
-                    team.teamScore += points;
-                    winningTeam = team;
-                    if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{teamName.ToUpper()} GANA LA MANO (+{points})!", 3.2f);
-                    break;
-                }
-            }
-
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlaySFX("score_add_chalk");
-            }
+            Team winningTeam = _scorer.AddPoints(teamName, points, teams);
+            if (PlayerHUD.Instance != null) PlayerHUD.Instance.NotifyEvent($"¡{teamName.ToUpper()} GANA LA MANO (+{points})!", 3.2f);
+            Code.Core.TrucoAudioService.PlayScoreChalk();
             RpcUpdateScores(teams[0].teamScore, teams[1].teamScore, teams[0].roundsWon, teams[1].roundsWon);
 
-            yield return new WaitForSeconds(2.8f); // Esperar para que se lea la victoria de la mano
-            
-            // Check if game is over (score >= 30)
+            yield return new WaitForSeconds(2.8f);
+
             if (CheckForMatchWinner()) yield break;
 
             var playerLocal = FindAnyObjectByType<PlayerLocal>();
             Team humanTeam = (playerLocal != null && playerLocal.player != null) ? playerLocal.player.team : null;
 
-            // Play hand win fanfare if human team won this hand
-            if (AudioManager.Instance != null && humanTeam != null && winningTeam == humanTeam)
+            if (humanTeam != null && winningTeam == humanTeam)
             {
-                AudioManager.Instance.PlaySFX("score_buenas_fanfare");
+                Code.Core.TrucoAudioService.PlayBuenasFanfare();
             }
             StartCoroutine(DelayedNewHand());
         }
 
         private bool CheckForMatchWinner()
         {
-            if (_matchEnded) return true;
-
-            bool gameOver = false;
-            Team matchWinner = null;
-            foreach (var team in teams)
+            if (_scorer.CheckForMatchWinner(teams, out Team matchWinner))
             {
-                if (team.teamScore >= maxPoints)
-                {
-                    gameOver = true;
-                    matchWinner = team;
-                    break;
-                }
-            }
+                if (matchWinner == null) return true;
 
-            if (gameOver && matchWinner != null)
-            {
-                _matchEnded = true;
                 var playerLocal = FindAnyObjectByType<PlayerLocal>();
                 Team humanTeam = (playerLocal != null && playerLocal.player != null) ? playerLocal.player.team : null;
 
@@ -1045,25 +908,13 @@ namespace Code.GameLogic
                 {
                     PlayerHUD.Instance.NotifyEvent($"¡{matchWinner.teamName.ToUpper()} GANA LA PARTIDA!", 5f);
                 }
-                
-                if (AudioManager.Instance != null)
-                {
-                    if (humanTeam != null && matchWinner == humanTeam)
-                    {
-                        AudioManager.Instance.PlaySFX("match_victory_melody");
-                    }
-                    else
-                    {
-                        AudioManager.Instance.PlaySFX("match_defeat_sadness");
-                    }
-                }
+
                 bool isHumanVictory = (humanTeam != null && matchWinner == humanTeam);
+                Code.Core.TrucoAudioService.PlayMatchResult(isHumanVictory);
                 Code.Persistence.CloudAuthManager.Instance?.RecordMatchEnd(isHumanVictory);
 
                 string winnerText = $"¡{matchWinner.teamName.ToUpper()} GANA LA PARTIDA!";
 
-                // Multiplayer: en vez de auto-salir, todos ven el modal de
-                // revancha/salir (clientes vía RPC, host con el mismo delay local).
                 if (Mirror.NetworkServer.active)
                 {
                     (Mirror.NetworkManager.singleton as MyNetworkingManager)?.BroadcastMatchEnded(winnerText);
@@ -1157,11 +1008,8 @@ namespace Code.GameLogic
         {
             isHandResolved = false;
             round = 0;
-            currentHandValue = 1; 
-            lastTrucoTeamIndex = 0;
+            _scorer.ResetForNewHand(teams);
             lastTrickWinnerSeatIndex = -1;
-            trickWinners.Clear();
-            ResetTeamsRoundsWon();
 
             // Limpiar estados de turno de todos los NPCs y jugadores
             foreach (var npc in npcs) npc.ResetTurnState();

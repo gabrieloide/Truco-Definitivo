@@ -226,32 +226,7 @@ namespace Code.Editor
         {
             int t1Wins = trickWinners.Count(w => w == 1);
             int t2Wins = trickWinners.Count(w => w == 2);
-
-            if (t1Wins >= 2) return 1;
-            if (t2Wins >= 2) return 2;
-
-            int currentRound = trickWinners.Count;
-            if (currentRound == 1) return 0; // Continúa a 2da
-
-            if (currentRound == 2)
-            {
-                // Parda primera, segunda define
-                if (trickWinners[0] == 0 && trickWinners[1] != 0) return trickWinners[1];
-                // Primera ganada, segunda parda -> gana el de la primera
-                if (trickWinners[0] != 0 && trickWinners[1] == 0) return trickWinners[0];
-                // Parda primera y parda segunda -> desempata Mano
-                if (trickWinners[0] == 0 && trickWinners[1] == 0) return manoTeamIndex;
-            }
-            else if (currentRound == 3)
-            {
-                if (trickWinners[2] != 0) return trickWinners[2];
-                // Tercera parda: gana quien ganó la primera
-                if (trickWinners[0] != 0) return trickWinners[0];
-                // Todo pardo: gana Mano
-                return manoTeamIndex;
-            }
-
-            return 0;
+            return Code.Domain.TrucoHandResolver.EvaluateHandWinner(trickWinners, manoTeamIndex, t1Wins, t2Wins);
         }
 
         [Test]
@@ -384,6 +359,29 @@ namespace Code.Editor
             Assert.IsFalse(isEnvidoInformative, "Envido NO debe ser informativo (bloquea hasta Quiero/No Quiero)");
         }
 
+        [Test]
+        public void Test_TrucoMatchScorer_MatchVictoryFlow()
+        {
+            var scorer = new Code.Domain.TrucoMatchScorer(maxPoints: 12);
+            var teams = new List<Code.Player.Team>
+            {
+                new Code.Player.Team("Team 1"),
+                new Code.Player.Team("Team 2")
+            };
+
+            // Mano 1: T1 gana 3 puntos de Truco
+            scorer.AddPoints("Team 1", 3, teams);
+            Assert.AreEqual(3, teams[0].teamScore);
+            Assert.IsFalse(scorer.CheckForMatchWinner(teams, out _));
+
+            // Mano 2: T1 gana 9 puntos más -> 12 puntos alcanzados!
+            scorer.AddPoints("Team 1", 9, teams);
+            Assert.AreEqual(12, teams[0].teamScore);
+            bool won = scorer.CheckForMatchWinner(teams, out var winner);
+            Assert.IsTrue(won, "La partida debió finalizar al alcanzar 12 puntos");
+            Assert.AreSame(teams[0], winner, "Team 1 debe ser el ganador");
+        }
+
         // ──────────────────────────────────────────────────────────────────────────
         // 8. MENU ITEM Y MÉTODO PARA EJECUCIÓN DIRECTA POR CONSOLA/BATCHMODE
         // ──────────────────────────────────────────────────────────────────────────
@@ -427,6 +425,7 @@ namespace Code.Editor
             Run("Test_DealerAndManoRotation_4Players", suite.Test_DealerAndManoRotation_4Players);
             Run("Test_ResponderRouting_In2v2", suite.Test_ResponderRouting_In2v2);
             Run("Test_ALeyAndFlor_AreNonBlocking", suite.Test_ALeyAndFlor_AreNonBlocking);
+            Run("Test_TrucoMatchScorer_MatchVictoryFlow", suite.Test_TrucoMatchScorer_MatchVictoryFlow);
             Debug.Log($"================ TEST SUITE FINALIZADO: {passed} PASARON, {failed} FALLARON ================");
 
             if (failed > 0)

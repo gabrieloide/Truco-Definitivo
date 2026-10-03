@@ -221,46 +221,10 @@ namespace Code.Player
             return fallback;
         }
 
-        private static Team TeamOf(GameObject obj)
-        {
-            if (obj == null) return null;
-            var p = obj.GetComponent<Code.Player.Player>();
-            if (p != null && p.team != null) return p.team;
-            var npc = obj.GetComponent<NPCPlayer>();
-            return npc != null ? npc.team : null;
-        }
+        private static Team TeamOf(GameObject obj) => AnnouncementRouter.TeamOf(obj);
 
-        /// <summary>Silla del rival que tiene que contestar el canto: el primer ocupante
-        /// del equipo contrario a la DERECHA del cantor (silla siguiente en el orden de
-        /// turnos). Es la única regla válida con 4 jugadores — antes se elegía "el
-        /// primer NPC rival que aparezca" o directamente el host, así que en 2v2
-        /// contestaba cualquiera menos el que correspondía. -1 si no hay rival.</summary>
-        private int GetResponderSeat(Team announcerTeam)
-        {
-            var seatMgr = SeatManager.Instance;
-            var gm = GameManager.Instance;
-            if (seatMgr == null || gm == null || announcerTeam == null) return -1;
-
-            int count = seatMgr.allChairs.Count;
-            if (count == 0) return -1;
-
-            int announcerTeamIdx = gm.GetTeamIndex(announcerTeam);
-            int start = currentAnnouncerSeat >= 0 ? currentAnnouncerSeat : 0;
-
-            for (int step = 1; step <= count; step++)
-            {
-                int seat = (start + step) % count;
-                var occupant = seatMgr.allChairs[seat].occupant;
-                if (occupant == null) continue;
-
-                var team = TeamOf(occupant);
-                if (team == null) continue;
-                if (gm.GetTeamIndex(team) == announcerTeamIdx) continue;
-
-                return seat;
-            }
-            return -1;
-        }
+        private int GetResponderSeat(Team announcerTeam) =>
+            AnnouncementRouter.GetResponderSeat(announcerTeam, currentAnnouncerSeat);
 
         /// <summary>Abre la respuesta (Quiero / No quiero / subir) en el rival que
         /// corresponde, sea NPC, el jugador de esta máquina o un cliente remoto.
@@ -289,20 +253,7 @@ namespace Code.Player
                 return;
             }
 
-            // Identificar nombre del que debe responder
-            string responderName = "";
-            var npcComp = occupant.GetComponent<NPCPlayer>();
-            var localComp = occupant.GetComponent<PlayerLocal>();
-            var playerComp = occupant.GetComponent<Code.Player.Player>();
-            var netSync = occupant.GetComponent<PlayerNetworkSync>();
-
-            if (npcComp != null) responderName = NpcDisplayName(occupant);
-            else if (localComp != null && localComp.player != null && !string.IsNullOrEmpty(localComp.player.playerName)) responderName = localComp.player.playerName;
-            else if (playerComp != null && !string.IsNullOrEmpty(playerComp.playerName)) responderName = playerComp.playerName;
-            else if (netSync != null && !string.IsNullOrEmpty(netSync.playerName)) responderName = netSync.playerName;
-            else responderName = occupant.name;
-
-            // Mostrar el aviso de espera / pensando local y en red
+            string responderName = AnnouncementRouter.IdentifyResponderName(occupant);
             UpdateWaitingIndicatorForResponder(occupant, seat, responderName);
 
             var npc = occupant.GetComponent<NPCPlayer>();
@@ -312,6 +263,7 @@ namespace Code.Player
                 return;
             }
 
+            var netSync = occupant.GetComponent<PlayerNetworkSync>();
             if (NetworkServer.active && netSync != null && ShowResponseTo(netSync)) return;
 
             // Singleplayer: el rival humano es el de esta misma máquina.
@@ -345,17 +297,7 @@ namespace Code.Player
                 }
                 else
                 {
-                    bool isTeammate = false;
-                    if (myLocalPlayer != null && myLocalPlayer.player != null && myLocalPlayer.player.team != null && GameManager.Instance != null)
-                    {
-                        var responderTeam = TeamOf(occupant);
-                        if (responderTeam != null)
-                        {
-                            int myTeamIdx = GameManager.Instance.GetTeamIndex(myLocalPlayer.player.team);
-                            int respTeamIdx = GameManager.Instance.GetTeamIndex(responderTeam);
-                            isTeammate = (myTeamIdx == respTeamIdx);
-                        }
-                    }
+                    bool isTeammate = AnnouncementRouter.IsTeammateOfLocal(occupant, myLocalPlayer, GameManager.Instance);
                     PlayerHUD.Instance.ShowWaitingResponse(true, responderName, isTeammate);
                 }
             }
@@ -1179,10 +1121,7 @@ namespace Code.Player
 
         private System.Collections.IEnumerator AcceptAnnounceCoroutine(string playerName, bool hasFlor)
         {
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlaySFX("confirm_quiero_positive");
-            }
+            Code.Core.TrucoAudioService.PlayQuieroPositive();
             string displayWinner = GetTeamNameByPlayerName(playerName);
             string msg = $"¡{displayWinner.ToUpper()} QUIERE!";
             if (_announceState == AnnounceState.ALey) msg = $"¡{displayWinner.ToUpper()} TIENE FLOR!";
@@ -1246,16 +1185,13 @@ namespace Code.Player
 
         private System.Collections.IEnumerator DeclineAnnounceCoroutine(string playerName, bool hasFlor, AnnounceState previousState, Team announcerTeam)
         {
-            if (AudioManager.Instance != null)
+            if (previousState == AnnounceState.Truco)
             {
-                if (previousState == AnnounceState.Truco)
-                {
-                    AudioManager.Instance.PlaySFX("fold_go_to_deck_slide");
-                }
-                else
-                {
-                    AudioManager.Instance.PlaySFX("decline_noquiero_neg");
-                }
+                Code.Core.TrucoAudioService.PlaySFX("fold_go_to_deck_slide");
+            }
+            else
+            {
+                Code.Core.TrucoAudioService.PlayNoQuieroNegative();
             }
             string displayWinner = GetTeamNameByPlayerName(playerName);
             string msg = $"¡{displayWinner.ToUpper()} NO QUIERO!";
@@ -1363,44 +1299,7 @@ namespace Code.Player
 
         private void PlayAnnounceSFX(AnnounceState state, int level)
         {
-            if (AudioManager.Instance == null) return;
-
-            string sfxId = "";
-            switch (state)
-            {
-                case AnnounceState.Envido:
-                    sfxId = level switch
-                    {
-                        <= 1 => "canto_envido_wood",
-                        2 => "canto_realenvido_wood",
-                        _ => "canto_faltaenvido_sweep"
-                    };
-                    break;
-                case AnnounceState.Truco:
-                    sfxId = level switch
-                    {
-                        <= 1 => "canto_truco_warn",
-                        2 => "canto_retruco_raise",
-                        _ => "canto_valecuatro_siren"
-                    };
-                    break;
-                case AnnounceState.Flor:
-                    sfxId = level switch
-                    {
-                        <= 1 => "canto_flor_bell",
-                        2 => "canto_contraflor_chime",
-                        _ => "canto_contraflor_resto_blast"
-                    };
-                    break;
-                case AnnounceState.ALey:
-                    sfxId = "canto_aley_gong";
-                    break;
-            }
-
-            if (!string.IsNullOrEmpty(sfxId))
-            {
-                AudioManager.Instance.PlaySFX(sfxId);
-            }
+            Code.Core.TrucoAudioService.PlayAnnounceSFX(state, level);
         }
     }
 }
