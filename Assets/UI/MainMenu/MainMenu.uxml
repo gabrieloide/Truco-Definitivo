@@ -15,35 +15,34 @@
         </engine:VisualElement>
         
         <!-- ============================================== -->
-        <!-- TOP PROFILE & STATUS BAR                      -->
-        <!-- ============================================== -->
-        <engine:VisualElement name="top-profile-bar" class="profile-bar">
-            <engine:VisualElement class="profile-info-group">
-                <engine:VisualElement class="profile-avatar">
-                    <engine:Label text="🂡" class="profile-avatar__icon" />
-                </engine:VisualElement>
-                <engine:VisualElement class="profile-text-group">
-                    <engine:VisualElement class="profile-name-row">
-                        <engine:Label name="lbl-profile-name" text="Gaucho" class="profile-name" />
-                        <engine:Label name="lbl-profile-status" text="INVITADO" class="profile-status-badge profile-status--guest" />
-                    </engine:VisualElement>
-                    <engine:VisualElement class="profile-stats-row">
-                        <engine:Label name="lbl-profile-level" text="NV. 1" class="profile-stat-badge" />
-                        <engine:Label name="lbl-profile-coins" text="🪙 1.000" class="profile-stat-coins" />
-                        <engine:Label name="lbl-profile-winrate" text="V: 0 | D: 0" class="profile-stat-sub" />
-                    </engine:VisualElement>
-                </engine:VisualElement>
-            </engine:VisualElement>
-
-            <engine:Button name="btn-open-auth" class="menu-btn menu-btn--auth-quick">
-                <engine:Label name="lbl-auth-btn-text" text="GUARDAR EN NUBE" class="menu-btn__text menu-btn--auth-quick__text" />
-            </engine:Button>
-        </engine:VisualElement>
-
-        <!-- ============================================== -->
         <!-- SCREEN: MAIN MENU                              -->
         <!-- ============================================== -->
         <engine:VisualElement name="screen-main" class="screen-container main-layout">
+            
+            <!-- TOP PROFILE & STATUS BAR -->
+            <engine:VisualElement name="top-profile-bar" class="profile-bar">
+                <engine:Button name="btn-profile-info" class="profile-info-group">
+                    <engine:VisualElement class="profile-avatar">
+                        <engine:Label text="🂡" class="profile-avatar__icon" />
+                    </engine:VisualElement>
+                    <engine:VisualElement class="profile-text-group">
+                        <engine:VisualElement class="profile-name-row">
+                            <engine:Label name="lbl-profile-name" text="Gaucho" class="profile-name" />
+                            <engine:Label name="lbl-profile-status" text="INVITADO" class="profile-status-badge profile-status--guest" />
+                        </engine:VisualElement>
+                        <engine:VisualElement class="profile-stats-row">
+                            <engine:Label name="lbl-profile-level" text="NV. 1" class="profile-stat-badge" />
+                            <engine:Label name="lbl-profile-coins" text="🪙 1.000" class="profile-stat-coins" />
+                            <engine:Label name="lbl-profile-winrate" text="V: 0 | D: 0" class="profile-stat-sub" />
+                        </engine:VisualElement>
+                    </engine:VisualElement>
+                </engine:Button>
+
+                <engine:Button name="btn-open-auth" class="menu-btn menu-btn--auth-quick">
+                    <engine:Label name="lbl-auth-btn-text" text="GUARDAR EN NUBE" class="menu-btn__text menu-btn--auth-quick__text" />
+                </engine:Button>
+            </engine:VisualElement>
+
             <engine:Label text="TRUCO DEFINITIVO" class="title-text title-main" />
             <engine:Label text="JUEGO DE CARTAS TRADICIONAL" class="main-subtitle" />
             
@@ -262,7 +261,7 @@
 
                 <engine:VisualElement class="input-group">
                     <engine:Label text="Contraseña:" class="input-label" />
-                    <engine:TextField name="input-auth-pass" is-password-field="true" class="menu-input" />
+                    <engine:TextField name="input-auth-pass" password="true" class="menu-input" />
                 </engine:VisualElement>
 
                 <engine:Button name="btn-auth-submit" class="menu-btn menu-btn--primary">

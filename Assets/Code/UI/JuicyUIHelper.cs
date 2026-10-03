@@ -46,7 +46,11 @@ namespace Code.UI
         public static void EnhanceAllButtons(VisualElement root)
         {
             if (root == null) return;
-            root.Query<Button>().ForEach(EnhanceButton);
+            root.Query<Button>().ForEach(btn =>
+            {
+                if (btn.ClassListContains("profile-info-group")) return;
+                EnhanceButton(btn);
+            });
         }
 
         /// <summary>

@@ -132,12 +132,16 @@ namespace Code.UI
 
             // Profile & Auth
             Bind("btn-open-auth", () => ShowScreen(_screenAuth));
+            Bind("btn-profile-info", () => ShowScreen(_screenAuth));
             Bind("btn-auth-back", () => ShowScreen(_screenMain));
             Bind("btn-tab-login", () => SetAuthMode(false));
             Bind("btn-tab-register", () => SetAuthMode(true));
             Bind("btn-auth-submit", HandleAuthSubmit);
             Bind("btn-auth-guest", HandleAuthGuest);
             Bind("btn-auth-logout", HandleAuthLogout);
+
+            if (_inputAuthPass != null)
+                _inputAuthPass.isPasswordField = true;
 
             if (CloudAuthManager.Instance != null)
             {
