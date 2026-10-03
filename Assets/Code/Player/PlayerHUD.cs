@@ -220,29 +220,13 @@ namespace Code.Player
             _scoreLabel = _root.Q<Label>("score-label");
             _teamLabel = _root.Q<Label>("team-label");
             _turnLabel = _root.Q<Label>("turn-label");
-            // Oculto hasta que sea tu turno (el texto por defecto del UXML quedaba fijo)
+            var turnIndicator = _root.Q<VisualElement>("hud-turn-indicator");
+            if (turnIndicator != null) turnIndicator.style.display = DisplayStyle.None;
             if (_turnLabel != null) _turnLabel.style.display = DisplayStyle.None;
 
-            // Indicador de puntos de envido en juego: arriba al centro, lejos de las
-            // cartas (centro/abajo). PickingMode.Ignore para no robar clicks.
-            // Contenedor de fila que centra al chip sin importar su ancho.
-            var envidoStakeRow = new VisualElement();
-            envidoStakeRow.pickingMode = PickingMode.Ignore;
-            envidoStakeRow.style.position = Position.Absolute;
-            envidoStakeRow.style.top = Length.Percent(10);
-            envidoStakeRow.style.left = 0;
-            envidoStakeRow.style.right = 0;
-            envidoStakeRow.style.flexDirection = FlexDirection.Row;
-            envidoStakeRow.style.justifyContent = Justify.Center;
-
-            _envidoStakeLabel = new Label();
-            _envidoStakeLabel.name = "envido-stake-label";
-            _envidoStakeLabel.pickingMode = PickingMode.Ignore;
-            _envidoStakeLabel.AddToClassList("envido-stake-chip");
-            _envidoStakeLabel.style.display = DisplayStyle.None;
-
-            envidoStakeRow.Add(_envidoStakeLabel);
-            _root.Add(envidoStakeRow);
+            // Indicador de puntos de envido en juego: integrado en el banner central
+            _envidoStakeLabel = _root.Q<Label>("envido-stake-label");
+            if (_envidoStakeLabel != null) _envidoStakeLabel.style.display = DisplayStyle.None;
             
             // Tricks dots
             _t1DotsContainer = _root.Q<VisualElement>("t1-dots");
@@ -463,7 +447,12 @@ namespace Code.Player
 
         public void UpdateTurnState(bool isYourTurn, string playerName = "")
         {
-            // El cartel solo existe cuando es tu turno; si no, se oculta por completo.
+            var turnIndicator = _root?.Q<VisualElement>("hud-turn-indicator");
+            if (turnIndicator != null)
+            {
+                turnIndicator.style.display = isYourTurn ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
             if (_turnLabel != null)
             {
                 _turnLabel.style.display = isYourTurn ? DisplayStyle.Flex : DisplayStyle.None;
@@ -511,7 +500,11 @@ namespace Code.Player
                 _envidoButton.SetEnabled(true);
                 var envidoLabel = _envidoButton.Q<Label>();
                 if (envidoLabel != null)
+                {
                     envidoLabel.text = hasFlor ? "ENVIDO\n(QUEMAR FLOR)" : "ENVIDO";
+                    if (hasFlor) envidoLabel.AddToClassList("hud-btn__text--small");
+                    else envidoLabel.RemoveFromClassList("hud-btn__text--small");
+                }
             }
 
             // Lógica para visibilidad de Truco (puede llamarse en cualquier ronda si tienes el 'quiro')
@@ -541,7 +534,13 @@ namespace Code.Player
                 };
                 if (!wasTrucoCalled) trucoText = "TRUCO";
                 
-                _trucoButton.Q<Label>().text = trucoText;
+                var trucoLabel = _trucoButton.Q<Label>();
+                if (trucoLabel != null)
+                {
+                    trucoLabel.text = trucoText;
+                    if (trucoText.Length > 8) trucoLabel.AddToClassList("hud-btn__text--small");
+                    else trucoLabel.RemoveFromClassList("hud-btn__text--small");
+                }
             }
 
             // FLOR: visible mientras tengas flor sin cantar. Si un rival ya cantó la suya,
@@ -555,7 +554,11 @@ namespace Code.Player
             {
                 var florLabel = _florButton.Q<Label>();
                 if (florLabel != null)
+                {
                     florLabel.text = florSungByRival ? "FLOR\n(ENVIDO)" : "FLOR";
+                    if (florSungByRival) florLabel.AddToClassList("hud-btn__text--small");
+                    else florLabel.RemoveFromClassList("hud-btn__text--small");
+                }
             }
 
             bool WasCalled(AnnounceState state)
@@ -573,18 +576,36 @@ namespace Code.Player
             {
                 if (_acceptButton != null)
                 {
-                    _acceptButton.Q<Label>().text = acceptText;
+                    var acceptLabel = _acceptButton.Q<Label>();
+                    if (acceptLabel != null)
+                    {
+                        acceptLabel.text = acceptText;
+                        if (acceptText.Length > 10) acceptLabel.AddToClassList("hud-btn__text--small");
+                        else acceptLabel.RemoveFromClassList("hud-btn__text--small");
+                    }
                     _acceptButton.SetEnabled(!disableAccept);
                 }
                 if (_declineButton != null)
                 {
-                    _declineButton.Q<Label>().text = declineText;
+                    var declineLabel = _declineButton.Q<Label>();
+                    if (declineLabel != null)
+                    {
+                        declineLabel.text = declineText;
+                        if (declineText.Length > 10) declineLabel.AddToClassList("hud-btn__text--small");
+                        else declineLabel.RemoveFromClassList("hud-btn__text--small");
+                    }
                     _declineButton.style.display = showDecline ? DisplayStyle.Flex : DisplayStyle.None;
                 }
                 if (_moreButton != null)
                 {
+                    var moreLabel = _moreButton.Q<Label>();
+                    if (moreLabel != null)
+                    {
+                        moreLabel.text = moreText;
+                        if (moreText.Length > 10) moreLabel.AddToClassList("hud-btn__text--small");
+                        else moreLabel.RemoveFromClassList("hud-btn__text--small");
+                    }
                     _moreButton.style.display = showMore ? DisplayStyle.Flex : DisplayStyle.None;
-                    _moreButton.Q<Label>().text = moreText;
                 }
                 
                 if (_sliderContainer != null) _sliderContainer.style.display = showSlider ? DisplayStyle.Flex : DisplayStyle.None;

@@ -22,23 +22,27 @@
                     </engine:VisualElement>
                 </engine:VisualElement>
 
-                <engine:VisualElement class="hud-turn-indicator" picking-mode="Ignore">
+                <engine:Label name="envido-stake-label" text="ENVIDO EN JUEGO: 2 PIEDRAS" class="envido-stake-chip" style="display: none;" />
+
+                <engine:VisualElement name="hud-turn-indicator" class="hud-turn-indicator" picking-mode="Ignore">
                     <engine:Label name="turn-label" text="TU TURNO" class="hud-turn__text" />
                 </engine:VisualElement>
             </engine:VisualElement>
 
-            <engine:Button name="look-button" class="hud-btn-icon hud-btn-look">
-                <engine:Label name="look-button-label" text="V" class="hud-btn-icon__text" />
-            </engine:Button>
-            <engine:Button name="camera-button" class="hud-btn-icon hud-btn-camera">
-                <engine:Label text="O" class="hud-btn-icon__text" />
-            </engine:Button>
-            <engine:Button name="info-button" class="hud-btn-icon hud-btn-info">
-                <engine:Label text="?" class="hud-btn-icon__text" />
-            </engine:Button>
-            <engine:Button name="pause-button" class="hud-btn-icon hud-btn-pause">
-                <engine:Label text="II" class="hud-btn-icon__text" />
-            </engine:Button>
+            <engine:VisualElement class="hud-top-right-bar" picking-mode="Ignore">
+                <engine:Button name="look-button" class="hud-btn-icon hud-btn-look">
+                    <engine:Label name="look-button-label" text="V" class="hud-btn-icon__text" />
+                </engine:Button>
+                <engine:Button name="camera-button" class="hud-btn-icon hud-btn-camera">
+                    <engine:Label text="O" class="hud-btn-icon__text" />
+                </engine:Button>
+                <engine:Button name="info-button" class="hud-btn-icon hud-btn-info">
+                    <engine:Label text="?" class="hud-btn-icon__text" />
+                </engine:Button>
+                <engine:Button name="pause-button" class="hud-btn-icon hud-btn-pause">
+                    <engine:Label text="II" class="hud-btn-icon__text" />
+                </engine:Button>
+            </engine:VisualElement>
         </engine:VisualElement>
         
         <engine:VisualElement class="hud-event-overlay" picking-mode="Ignore">
@@ -46,7 +50,7 @@
         </engine:VisualElement>
         
         <engine:VisualElement class="hud-right-area" picking-mode="Ignore">
-            <engine:VisualElement name="hud-response-bar" class="hud-action-bar" picking-mode="Ignore">
+            <engine:VisualElement name="hud-response-bar" class="hud-response-panel" picking-mode="Ignore">
                 <engine:Label name="response-title-label" text="RESPONDER" class="hud-response-title__text" />
                 <engine:Button name="accept-button" class="hud-btn hud-btn--accept">
                     <engine:Label text="QUIERO" class="hud-btn__text" />

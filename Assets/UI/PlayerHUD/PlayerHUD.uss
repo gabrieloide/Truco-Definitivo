@@ -34,7 +34,7 @@
     border-bottom-right-radius: 18px;
     border-top-left-radius: 0;
     border-top-right-radius: 0;
-    padding: 10px 28px 14px 28px;
+    padding: 10px 24px 12px 24px;
     border-top-width: 0;
     border-bottom-width: 4.5px;
     border-bottom-color: rgba(0, 0, 0, 0.75);
@@ -43,9 +43,9 @@
     border-right-width: 1.5px;
     border-right-color: rgba(232, 211, 158, 0.35);
     align-items: center;
-    min-width: 320px;
+    min-width: 280px;
     width: auto;
-    max-width: 90%;
+    max-width: 480px;
 }
 
 .hud-team__text {
@@ -53,9 +53,13 @@
     font-size: 13px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
     margin-bottom: 2px;
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+    max-width: 440px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .central-banner .hud-score__text {
@@ -137,11 +141,20 @@
 }
 
 /* --- TOP RIGHT CORNER HUD BUTTONS (Tactile Squircle Plaques) --- */
-.hud-btn-icon {
+.hud-top-right-bar {
     position: absolute;
-    top: 16px;
-    width: 48px;
-    height: 48px;
+    top: 14px;
+    right: 18px;
+    flex-direction: row;
+    align-items: center;
+}
+
+.hud-btn-icon {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    margin-left: 8px;
     border-radius: 10px;
     justify-content: center;
     align-items: center;
@@ -154,11 +167,6 @@
     transition-property: background-color;
     transition-duration: 0.1s;
 }
-
-.hud-btn-pause  { right: 18px; }
-.hud-btn-info   { right: 74px; }
-.hud-btn-camera { right: 130px; }
-.hud-btn-look   { right: 186px; }
 
 .hud-btn-icon:hover {
     background-color: #2B3D54;
@@ -182,9 +190,9 @@
    ========================================================= */
 .hud-event-overlay {
     position: absolute;
-    top: 32%;
-    left: 0;
-    right: 0;
+    top: 25%;
+    left: 5%;
+    right: 5%;
     align-items: center;
     justify-content: center;
 }
@@ -193,21 +201,24 @@
     display: flex;
     opacity: 0;
     scale: 0.8;
-    background-color: #121822;
+    background-color: rgba(14, 18, 26, 0.95);
     color: #FFDF80;
-    -unity-font: url("project://database/Assets/Art/Fonts/Rye-Regular.ttf");
-    -unity-font-definition: url("project://database/Assets/Art/Fonts/Rye-Regular.ttf");
-    font-size: 44px;
-    letter-spacing: 3px;
-    padding: 18px 52px;
-    border-radius: 16px;
-    border-top-width: 0;
+    -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    font-size: 26px;
+    letter-spacing: 1.5px;
+    padding: 12px 32px;
+    border-radius: 14px;
+    border-top-width: 1px;
+    border-top-color: rgba(232, 211, 158, 0.4);
     border-left-width: 0;
     border-right-width: 0;
-    border-bottom-width: 6px;
+    border-bottom-width: 4px;
     border-bottom-color: #8C5F11;
     -unity-text-align: middle-center;
-    text-shadow: 0 3px 0 #0A0F17;
+    white-space: normal;
+    max-width: 80%;
+    text-shadow: 0 2px 0 #0A0F17;
     transition-property: opacity, scale;
     transition-duration: 0.2s;
     transition-timing-function: ease-out;
@@ -240,8 +251,8 @@
 
 #hud-action-bar .hud-btn {
     width: 172px;
-    height: 56px;
-    min-height: 56px;
+    height: 58px;
+    min-height: 58px;
     margin: 6px;
 }
 
@@ -252,7 +263,7 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    right: 28px;
+    right: 24px;
     justify-content: center;
     align-items: flex-end;
 }
@@ -270,18 +281,18 @@
     border-left-color: rgba(255, 255, 255, 0.1);
     border-right-width: 1px;
     border-right-color: rgba(255, 255, 255, 0.1);
-    padding: 22px 24px;
-    width: 250px;
+    padding: 18px 20px;
+    width: 264px;
 }
 
 .hud-response-title__text {
     -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
     -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
     color: #E8D39E;
-    font-size: 18px;
+    font-size: 16px;
     -unity-text-align: middle-center;
-    letter-spacing: 1.5px;
-    margin-bottom: 16px;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
     width: 100%;
     white-space: normal;
     text-shadow: 0 2px 0 #0A0F17;
@@ -294,9 +305,9 @@
     flex-direction: column;
     align-items: center;
     background-color: rgba(0, 0, 0, 0.45);
-    padding: 10px 14px;
+    padding: 8px 12px;
     border-radius: 10px;
-    margin: 10px 0;
+    margin: 8px 0;
     border-width: 1px;
     border-color: rgba(255, 255, 255, 0.08);
     width: 100%;
@@ -304,14 +315,15 @@
 
 .hud-slider__label {
     color: #E8D39E;
-    font-size: 14px;
+    font-size: 13px;
     -unity-font-style: bold;
-    letter-spacing: 1.5px;
-    margin-bottom: 6px;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
 }
 
 .hud-slider {
-    width: 190px;
+    width: 100%;
+    max-width: 190px;
 }
 
 .hud-slider .unity-base-slider__tracker {
@@ -371,11 +383,18 @@
 .hud-btn__text {
     -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
     -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
-    font-size: 20px;
+    font-size: 18px;
     -unity-text-align: middle-center;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
     color: #FFFFFF;
     text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
+    white-space: normal;
+}
+
+.hud-btn__text--small {
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    -unity-text-align: middle-center;
 }
 
 /* Color Variants */
@@ -519,18 +538,23 @@
 .envido-stake-chip {
     -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
     -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
-    font-size: 18px;
+    font-size: 13px;
     color: #FFDF80;
-    background-color: #121822;
-    border-top-width: 0;
+    background-color: rgba(18, 24, 34, 0.95);
+    border-top-width: 1px;
+    border-top-color: rgba(232, 211, 158, 0.35);
     border-left-width: 0;
     border-right-width: 0;
-    border-bottom-width: 4px;
+    border-bottom-width: 3px;
     border-bottom-color: #8C5F11;
-    border-radius: 12px;
-    padding: 8px 24px;
-    letter-spacing: 2px;
-    text-shadow: 0 2px 0 #0A0F17;
+    border-radius: 8px;
+    padding: 3px 14px;
+    margin-top: 6px;
+    margin-bottom: 2px;
+    letter-spacing: 1.5px;
+    text-shadow: 0 1px 0 #0A0F17;
+    -unity-text-align: middle-center;
+    align-self: center;
 }
 
 /* =========================================================
@@ -582,6 +606,7 @@
     -unity-text-align: middle-center;
     letter-spacing: 2px;
     margin-bottom: 22px;
+    white-space: normal;
     text-shadow: 0 2px 0 #070A0F;
 }
 
@@ -659,4 +684,5 @@
     -unity-text-align: middle-center;
     margin-bottom: 24px;
     letter-spacing: 1px;
+    white-space: normal;
 }
