@@ -7,7 +7,61 @@
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
     <link rel="manifest" href="manifest.webmanifest">
-  </head>
+      <script>
+      // Truco Definitivo: diagnóstico de pantalla negra en dispositivos reales.
+      (function () {
+        var box, pending = [];
+        var debug = /[?&]debug=1/.test(location.search);
+        function show(msg) {
+          if (!document.body) { pending.push(msg); return; }
+          if (!box) {
+            box = document.createElement('div');
+            box.id = 'truco-diag';
+            box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-height:45%;overflow:auto;' +
+              'background:rgba(110,0,0,.92);color:#fff;font:12px monospace;padding:8px;z-index:99999;white-space:pre-wrap';
+            box.onclick = function () { box.style.display = 'none'; };
+            document.body.appendChild(box);
+          }
+          box.style.display = 'block';
+          box.textContent += msg + '\n';
+        }
+        function gpuInfo() {
+          try {
+            var gl = document.createElement('canvas').getContext('webgl2');
+            if (!gl) return 'WebGL2: NO SOPORTADO';
+            var d = gl.getExtension('WEBGL_debug_renderer_info');
+            return 'WebGL2 OK | GPU: ' + (d ? gl.getParameter(d.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)) +
+              ' | maxTex: ' + gl.getParameter(gl.MAX_TEXTURE_SIZE);
+          } catch (e) { return 'WebGL2 error: ' + e; }
+        }
+        window.addEventListener('error', function (e) {
+          show('[error] ' + (e.message || e) + (e.filename ? ' @ ' + e.filename + ':' + e.lineno : ''));
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          show('[promise] ' + ((e.reason && e.reason.message) || e.reason));
+        });
+        if (debug) {
+          var origError = console.error;
+          console.error = function () { show('[console] ' + Array.prototype.join.call(arguments, ' ')); origError.apply(console, arguments); };
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+          pending.forEach(show); pending = [];
+          var cv = document.querySelector('#unity-canvas');
+          if (cv) {
+            cv.addEventListener('webglcontextlost', function () {
+              show('[webglcontextlost] La GPU perdió el contexto WebGL (memoria insuficiente o driver).');
+            });
+          }
+          if (debug) {
+            show('[info] ' + navigator.userAgent);
+            show('[info] ' + gpuInfo());
+            show('[info] RAM: ' + (navigator.deviceMemory || '?') + ' GB | DPR: ' + window.devicePixelRatio +
+              ' | WebGPU expuesto: ' + (!!navigator.gpu));
+          }
+        });
+      })();
+    </script>
+</head>
   <body>
     <div id="unity-container">
       <canvas id="unity-canvas" width=960 height=600 tabindex="-1"></canvas>
@@ -66,7 +120,8 @@
         streamingAssetsUrl: "StreamingAssets",
         companyName: "DefaultCompany",
         productName: "Truco Definitivo",
-        productVersion: "0.0.77",
+        productVersion: "0.0.80",
+        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
         showBanner: unityShowBanner,
         // errorHandler: function(err, url, line) {
         //    alert("error " + err + " occurred at line " + line);
