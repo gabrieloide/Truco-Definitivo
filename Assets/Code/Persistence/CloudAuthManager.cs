@@ -15,7 +15,7 @@ namespace Code.Persistence
 
         [Header("Configuración Firebase REST API")]
         [Tooltip("Tu Firebase Web API Key (de la consola de Firebase -> Project Settings).")]
-        [SerializeField] private string firebaseApiKey = "";
+        [SerializeField] private string firebaseApiKey = "AIzaSyB3GoigtTzP2R4c9eU4x6m2sPNvoRKJa4Y";
 
         [Tooltip("URL de tu Firebase Realtime Database (ej: https://mi-proyecto-default-rtdb.firebaseio.com)")]
         [SerializeField] private string firebaseDatabaseUrl = "https://venezuelan-truco-default-rtdb.firebaseio.com";
