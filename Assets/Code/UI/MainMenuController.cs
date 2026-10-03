@@ -254,27 +254,6 @@ namespace Code.UI
                 }, TrickleDown.TrickleDown);
             }
 
-            // Nickname persistente entre sesiones (en WebGL sobrevive a recargar la página)
-            var nickField = _root.Q<TextField>("input-nickname");
-            if (nickField != null)
-            {
-                string savedNick = PlayerPrefs.GetString("playerNickname", "");
-                if (!string.IsNullOrEmpty(savedNick)) nickField.value = savedNick;
-
-                nickField.RegisterValueChangedCallback(evt =>
-                {
-                    string newNick = evt.newValue ?? "";
-                    PlayerPrefs.SetString("playerNickname", newNick);
-                    PlayerPrefs.Save();
-                    if (CloudAuthManager.Instance != null && CloudAuthManager.Instance.CurrentPlayer != null)
-                    {
-                        CloudAuthManager.Instance.CurrentPlayer.username = string.IsNullOrWhiteSpace(newNick) ? "Gaucho" : newNick;
-                        _ = CloudAuthManager.Instance.SaveProfileAsync();
-                        UpdateProfileUI(CloudAuthManager.Instance.CurrentPlayer);
-                    }
-                });
-            }
-
             // Asegurar que DynamicBackgroundController esté activo
             if (GetComponent<DynamicBackgroundController>() == null)
             {
@@ -629,8 +608,11 @@ namespace Code.UI
 
         private string GetNickname()
         {
-            var field = _root.Q<TextField>("input-nickname");
-            return field != null && field.value != null ? field.value.Trim() : "";
+            if (CloudAuthManager.Instance != null && CloudAuthManager.Instance.CurrentPlayer != null && !string.IsNullOrWhiteSpace(CloudAuthManager.Instance.CurrentPlayer.username))
+            {
+                return CloudAuthManager.Instance.CurrentPlayer.username.Trim();
+            }
+            return PlayerPrefs.GetString("playerNickname", "Gaucho");
         }
 
         private void ShowStatus(Label lbl, string message, float duration = 4f)
@@ -828,11 +810,11 @@ namespace Code.UI
             if (_lblProfileWinrate != null)
                 _lblProfileWinrate.text = $"V: {player.gamesWon} | D: {player.gamesLost}";
 
-            // Sincronizar nickname en el input de multijugador si está vacío o difiere
-            var nickField = _root.Q<TextField>("input-nickname");
-            if (nickField != null && nickField.value != player.username)
+            // Sincronizar nombre en la tarjeta de multijugador
+            var lblMultiplayer = _root.Q<Label>("lbl-multiplayer-name");
+            if (lblMultiplayer != null)
             {
-                nickField.SetValueWithoutNotify(player.username);
+                lblMultiplayer.text = player.username;
             }
         }
 

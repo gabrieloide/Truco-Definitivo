@@ -957,4 +957,33 @@
     color: #5CE696;
 }
 
+/* =========================================================
+   MULTIPLAYER READ-ONLY PLAYER CARD
+   ========================================================= */
+.multiplayer-player-card {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 22px;
+    padding: 12px 18px;
+    background-color: rgba(10, 15, 22, 0.85);
+    border-radius: 14px;
+    border-top-width: 1px;
+    border-top-color: rgba(232, 211, 158, 0.3);
+    border-bottom-width: 3px;
+    border-bottom-color: rgba(0, 0, 0, 0.6);
+    border-left-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.08);
+    border-right-width: 1px;
+    border-right-color: rgba(255, 255, 255, 0.08);
+}
+
+.multiplayer-name-text {
+    -unity-font: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    -unity-font-definition: url("project://database/Assets/Art/Fonts/LilitaOne-Regular.ttf");
+    font-size: 20px;
+    color: #FFFFFF;
+    letter-spacing: 1px;
+}
+
 
