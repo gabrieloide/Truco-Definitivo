@@ -415,7 +415,7 @@ namespace Code.Networking
         }
 
         [TargetRpc]
-        public void TargetSyncPlayerInfo(NetworkConnectionToClient target, string playerName, int teamIndex, string team1Name = "", string team2Name = "")
+        public void TargetSyncPlayerInfo(NetworkConnectionToClient target, string playerName, int teamIndex, string team1Name, string team2Name)
         {
             if (_playerLocal == null || _playerLocal.player == null) return;
             _playerLocal.player.playerName = playerName;
