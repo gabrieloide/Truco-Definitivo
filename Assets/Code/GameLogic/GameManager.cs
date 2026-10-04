@@ -158,6 +158,12 @@ namespace Code.GameLogic
             
             _instance = this;
 
+            // In multiplayer, disable NPCs immediately on Awake so they are never visible or active
+            if (Mirror.NetworkServer.active || Mirror.NetworkClient.active)
+            {
+                DisableNpcsForMultiplayer();
+            }
+
             // Cargar configuración elegida en el Menú Principal (12 o 24 puntos)
             maxPoints = Code.UI.MainMenuController.SingleplayerMaxPoints;
             Debug.Log($"[GameManager] Límite de puntos configurado a: {maxPoints}");
@@ -175,6 +181,11 @@ namespace Code.GameLogic
 
         private void OnDestroy()
         {
+            if (_instance == this)
+            {
+                _instance = null;
+            }
+
             if (playerInput != null)
             {
                 playerInput.Disable();
@@ -273,6 +284,8 @@ namespace Code.GameLogic
                 if (Camera.main != null && Camera.main.GetComponent<UnityEngine.EventSystems.PhysicsRaycaster>() == null)
                     Camera.main.gameObject.AddComponent<UnityEngine.EventSystems.PhysicsRaycaster>();
 
+                DisableNpcsForMultiplayer();
+
                 if (SeatManager.Instance == null || SeatManager.Instance.InitializeLayout() == 0)
                 {
                     Debug.LogError("[GameManager] CRITICAL: Sin sillas disponibles en multiplayer.");
@@ -280,7 +293,6 @@ namespace Code.GameLogic
                 }
 
                 EnsureDeckCreator();
-                DisableNpcsForMultiplayer();
                 return;
             }
 
@@ -545,7 +557,9 @@ namespace Code.GameLogic
                 if (netSync == null || pLocal == null || pLocal.player == null) continue;
 
                 int teamIdx = pLocal.player.team != null ? teams.IndexOf(pLocal.player.team) : 0;
-                netSync.TargetSyncPlayerInfo(conn, pLocal.player.playerName, Mathf.Max(teamIdx, 0));
+                string t1Name = teams.Count > 0 ? teams[0].teamName : "";
+                string t2Name = teams.Count > 1 ? teams[1].teamName : "";
+                netSync.TargetSyncPlayerInfo(conn, pLocal.player.playerName, Mathf.Max(teamIdx, 0), t1Name, t2Name);
             }
 
             Debug.Log($"[GameManager] StartMultiplayerMatch: {occupiedCount} jugadores. Dealer={dealerIndex}, Mano={currentManoSeatIndex}.");

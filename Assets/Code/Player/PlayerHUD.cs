@@ -112,6 +112,7 @@ namespace Code.Player
             if (scene.name == "GameScene")
             {
                 InitializeUI();
+                RefreshTeamLabel();
                 
                 if (GameManager.Instance != null && GameManager.Instance.teams.Count >= 2)
                 {
@@ -122,6 +123,7 @@ namespace Code.Player
 
         private void Start()
         {
+            RefreshTeamLabel();
             if (GameManager.Instance != null && GameManager.Instance.teams.Count >= 2)
             {
                 UpdateScore(GameManager.Instance.teams[0].teamScore, GameManager.Instance.teams[1].teamScore);
@@ -965,12 +967,44 @@ namespace Code.Player
         {
             if (_teamLabel == null) return;
 
-            string t1 = "TEAM 1", t2 = "TEAM 2";
+            string t1 = null, t2 = null;
             if (GameManager.Instance != null && GameManager.Instance.teams.Count >= 2)
             {
-                if (!string.IsNullOrWhiteSpace(GameManager.Instance.teams[0].teamName)) t1 = GameManager.Instance.teams[0].teamName;
-                if (!string.IsNullOrWhiteSpace(GameManager.Instance.teams[1].teamName)) t2 = GameManager.Instance.teams[1].teamName;
+                t1 = GameManager.Instance.teams[0].teamName;
+                t2 = GameManager.Instance.teams[1].teamName;
             }
+
+            // Fallback a los nombres cacheados en PlayerNetworkSync si los del GameManager están vacíos o por defecto
+            bool t1Default = string.IsNullOrWhiteSpace(t1) || t1.Equals("Team 1", System.StringComparison.OrdinalIgnoreCase) || t1.Equals("EQUIPO 1", System.StringComparison.OrdinalIgnoreCase);
+            bool t2Default = string.IsNullOrWhiteSpace(t2) || t2.Equals("Team 2", System.StringComparison.OrdinalIgnoreCase) || t2.Equals("EQUIPO 2", System.StringComparison.OrdinalIgnoreCase);
+
+            if (t1Default && !string.IsNullOrWhiteSpace(Code.Networking.PlayerNetworkSync.CachedTeam1Name))
+            {
+                t1 = Code.Networking.PlayerNetworkSync.CachedTeam1Name;
+                t1Default = false;
+            }
+
+            if (t2Default && !string.IsNullOrWhiteSpace(Code.Networking.PlayerNetworkSync.CachedTeam2Name))
+            {
+                t2 = Code.Networking.PlayerNetworkSync.CachedTeam2Name;
+                t2Default = false;
+            }
+
+            // Si aún siguen por defecto y estamos en partida 1v1 (2 jugadores conectados), resolver nombres de los jugadores directamente
+            if (t1Default || t2Default)
+            {
+                var allSyncs = FindObjectsByType<Code.Networking.PlayerNetworkSync>(FindObjectsSortMode.None);
+                if (allSyncs != null && allSyncs.Length == 2)
+                {
+                    var p0 = allSyncs.FirstOrDefault(s => s.teamIndex == 0);
+                    var p1 = allSyncs.FirstOrDefault(s => s.teamIndex == 1);
+                    if (p0 != null && !string.IsNullOrWhiteSpace(p0.playerName)) t1 = p0.playerName;
+                    if (p1 != null && !string.IsNullOrWhiteSpace(p1.playerName)) t2 = p1.playerName;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(t1)) t1 = "EQUIPO 1";
+            if (string.IsNullOrWhiteSpace(t2)) t2 = "EQUIPO 2";
 
             _teamLabel.text = $"{t1.ToUpper()}    -    {t2.ToUpper()}";
             _teamLabel.style.display = DisplayStyle.Flex;

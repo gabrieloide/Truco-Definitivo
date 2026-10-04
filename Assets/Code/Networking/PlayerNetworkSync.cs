@@ -33,10 +33,33 @@ namespace Code.Networking
         [SyncVar]
         public string playerId = "";
 
+        private static string _cachedTeam1Name;
+        private static string _cachedTeam2Name;
+        public static string CachedTeam1Name => _cachedTeam1Name;
+        public static string CachedTeam2Name => _cachedTeam2Name;
+
         private void Awake()
         {
             _playerLocal  = GetComponent<PlayerLocal>();
             _cardsHandler = GetComponent<CardsHandler>();
+        }
+
+        private void OnEnable()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += HandleSceneLoaded;
+        }
+
+        private void OnDisable()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= HandleSceneLoaded;
+        }
+
+        private void HandleSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            if (scene.name == "GameScene" && !NetworkServer.active && seatIndex >= 0)
+            {
+                ApplySeatOnClient(seatIndex);
+            }
         }
 
         public override void OnStartClient()
@@ -98,10 +121,13 @@ namespace Code.Networking
         [ClientRpc]
         public void RpcSyncTeamNames(string team1, string team2)
         {
+            _cachedTeam1Name = team1;
+            _cachedTeam2Name = team2;
+
             if (!NetworkServer.active && GameManager.Instance != null && GameManager.Instance.teams.Count >= 2)
             {
-                GameManager.Instance.teams[0].teamName = team1;
-                GameManager.Instance.teams[1].teamName = team2;
+                if (!string.IsNullOrEmpty(team1)) GameManager.Instance.teams[0].teamName = team1;
+                if (!string.IsNullOrEmpty(team2)) GameManager.Instance.teams[1].teamName = team2;
                 PlayerHUD.Instance?.RefreshTeamLabel();
             }
 
@@ -388,12 +414,22 @@ namespace Code.Networking
         }
 
         [TargetRpc]
-        public void TargetSyncPlayerInfo(NetworkConnectionToClient target, string playerName, int teamIndex)
+        public void TargetSyncPlayerInfo(NetworkConnectionToClient target, string playerName, int teamIndex, string team1Name = "", string team2Name = "")
         {
             if (_playerLocal == null || _playerLocal.player == null) return;
             _playerLocal.player.playerName = playerName;
-            if (GameManager.Instance != null && teamIndex >= 0 && teamIndex < GameManager.Instance.teams.Count)
-                _playerLocal.player.team = GameManager.Instance.teams[teamIndex];
+            if (!string.IsNullOrEmpty(team1Name)) _cachedTeam1Name = team1Name;
+            if (!string.IsNullOrEmpty(team2Name)) _cachedTeam2Name = team2Name;
+
+            if (GameManager.Instance != null && GameManager.Instance.teams.Count >= 2)
+            {
+                if (teamIndex >= 0 && teamIndex < GameManager.Instance.teams.Count)
+                    _playerLocal.player.team = GameManager.Instance.teams[teamIndex];
+
+                if (!string.IsNullOrEmpty(team1Name)) GameManager.Instance.teams[0].teamName = team1Name;
+                if (!string.IsNullOrEmpty(team2Name)) GameManager.Instance.teams[1].teamName = team2Name;
+            }
+            PlayerHUD.Instance?.RefreshTeamLabel();
         }
 
         /// <summary>Server→this client: an opponent announced; show the response UI.</summary>

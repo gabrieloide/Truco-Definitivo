@@ -396,6 +396,17 @@ public class MyNetworkingManager : NetworkManager
             return;
         }
 
+        // Resetear sillas y manos de todos los jugadores para que Mirror detecte el cambio de asiento en la revancha
+        foreach (var conn in NetworkServer.connections.Values)
+        {
+            if (conn.identity == null) continue;
+            var sync = conn.identity.GetComponent<PlayerNetworkSync>();
+            if (sync != null) sync.seatIndex = -1;
+
+            var ch = conn.identity.GetComponent<Code.Cards.CardsHandler>();
+            if (ch != null) ch.ClearCards();
+        }
+
         ServerChangeScene("GameScene");
     }
 

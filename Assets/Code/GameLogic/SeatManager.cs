@@ -86,6 +86,14 @@ namespace Code.GameLogic
             // Ya NO llamamos a nada aquí. El GameManager tiene el control.
         }
 
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
         public void SpawnChairs()
         {
             Debug.Log($"[SeatManager] SpawnChairs ejecutado. useManualPositions={useManualPositions}");

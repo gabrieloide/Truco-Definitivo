@@ -65,14 +65,19 @@
             <engine:VisualElement class="panel-container">
                 <engine:Label text="MULTIJUGADOR" class="title-text"/>
                 <engine:Label name="lbl-play-status" text="" class="status-text" style="display: none;"/>
-                <engine:VisualElement class="multiplayer-player-card">
+                <engine:VisualElement name="group-multiplayer-guest" class="input-group">
+                    <engine:Label text="Tu Nombre / Apodo (Invitado):" class="input-label"/>
+                    <engine:TextField name="input-nickname" max-length="16" class="menu-input"/>
+                </engine:VisualElement>
+                <engine:VisualElement name="group-multiplayer-logged" class="multiplayer-player-card" style="display: none;">
                     <engine:VisualElement class="profile-avatar" style="width: 38px; height: 38px; min-width: 38px; margin-right: 12px;">
                         <engine:Label text="🂡" class="profile-avatar__icon" style="font-size: 18px;"/>
                     </engine:VisualElement>
                     <engine:VisualElement style="flex-direction: column; flex-grow: 1;">
-                        <engine:Label text="JUGANDO COMO:" class="input-label" style="margin-bottom: 2px; font-size: 11px;"/>
+                        <engine:Label text="JUGANDO COMO (CUENTA VINCULADA):" class="input-label" style="margin-bottom: 2px; font-size: 11px;"/>
                         <engine:Label name="lbl-multiplayer-name" text="Gaucho" class="multiplayer-name-text"/>
                     </engine:VisualElement>
+                    <engine:Label text="NUBE" class="profile-status-badge profile-status--cloud" style="align-self: center; margin-left: 8px;"/>
                 </engine:VisualElement>
                 <engine:Button name="btn-play-host" class="menu-btn menu-btn--primary">
                     <engine:Label text="CREAR SALA" class="menu-btn__text"/>

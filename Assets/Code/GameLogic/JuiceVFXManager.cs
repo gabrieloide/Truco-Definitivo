@@ -32,6 +32,14 @@ namespace Code.GameLogic
             }
         }
 
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
         /// <summary>
         /// Realiza una sacudida directamente sobre el transform de la cámara activa.
         /// </summary>

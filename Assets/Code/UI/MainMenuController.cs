@@ -82,6 +82,12 @@ namespace Code.UI
         // Campos editables de nombre de equipo en el lobby (índice = equipo)
         private readonly TextField[] _teamNameFields = new TextField[2];
 
+        // Nickname en multijugador (editable en invitado, bloqueado si inició sesión)
+        private VisualElement _groupMultiplayerGuest;
+        private VisualElement _groupMultiplayerLogged;
+        private TextField _inputNickname;
+        private Label _lblMultiplayer;
+
         private void OnEnable()
         {
             Instance = this;
@@ -152,6 +158,35 @@ namespace Code.UI
             _btnSwapRow2   = _root.Q<Button>("btn-lobby-swap-2");
             _lblPlayStatus  = _root.Q<Label>("lbl-play-status");
             _lblLobbyStatus = _root.Q<Label>("lbl-lobby-status");
+
+            // Multiplayer player name / card
+            _groupMultiplayerGuest  = _root.Q<VisualElement>("group-multiplayer-guest");
+            _groupMultiplayerLogged = _root.Q<VisualElement>("group-multiplayer-logged");
+            _inputNickname          = _root.Q<TextField>("input-nickname");
+            _lblMultiplayer         = _root.Q<Label>("lbl-multiplayer-name");
+
+            if (_inputNickname != null)
+            {
+                string savedNick = PlayerPrefs.GetString("playerNickname", "Gaucho");
+                _inputNickname.SetValueWithoutNotify(savedNick);
+
+                _inputNickname.RegisterValueChangedCallback(evt =>
+                {
+                    string newNick = evt.newValue != null ? evt.newValue.Trim() : "";
+                    if (string.IsNullOrEmpty(newNick)) newNick = "Gaucho";
+
+                    PlayerPrefs.SetString("playerNickname", newNick);
+                    PlayerPrefs.Save();
+
+                    if (CloudAuthManager.Instance != null && CloudAuthManager.Instance.IsGuest && CloudAuthManager.Instance.CurrentPlayer != null)
+                    {
+                        CloudAuthManager.Instance.CurrentPlayer.username = newNick;
+                        _ = CloudAuthManager.Instance.SaveProfileAsync();
+                    }
+
+                    if (_lblProfileName != null) _lblProfileName.text = newNick;
+                });
+            }
 
             // Profile & Auth Bindings
             Bind("btn-profile-info", OpenAuthOrProfileScreen);
@@ -678,10 +713,17 @@ namespace Code.UI
 
         private string GetNickname()
         {
-            if (CloudAuthManager.Instance != null && CloudAuthManager.Instance.CurrentPlayer != null && !string.IsNullOrWhiteSpace(CloudAuthManager.Instance.CurrentPlayer.username))
+            bool isLoggedIn = CloudAuthManager.Instance != null && CloudAuthManager.Instance.IsLoggedIn;
+            if (isLoggedIn && CloudAuthManager.Instance.CurrentPlayer != null && !string.IsNullOrWhiteSpace(CloudAuthManager.Instance.CurrentPlayer.username))
             {
                 return CloudAuthManager.Instance.CurrentPlayer.username.Trim();
             }
+
+            if (_inputNickname != null && !string.IsNullOrWhiteSpace(_inputNickname.value))
+            {
+                return _inputNickname.value.Trim();
+            }
+
             return PlayerPrefs.GetString("playerNickname", "Gaucho");
         }
 
@@ -830,6 +872,12 @@ namespace Code.UI
         private void HandleAuthGuest()
         {
             CloudAuthManager.Instance.PlayAsGuest();
+            string savedNick = PlayerPrefs.GetString("playerNickname", "Gaucho");
+            if (CloudAuthManager.Instance.CurrentPlayer != null)
+            {
+                CloudAuthManager.Instance.CurrentPlayer.username = savedNick;
+            }
+            UpdateProfileUI(CloudAuthManager.Instance.CurrentPlayer);
             ShowStatus(_lblAuthStatus, "Modo invitado activado (sin guardar en la nube).");
             ShowScreen(_screenMain);
         }
@@ -837,6 +885,12 @@ namespace Code.UI
         private void HandleAuthLogout()
         {
             CloudAuthManager.Instance?.Logout();
+            string savedNick = PlayerPrefs.GetString("playerNickname", "Gaucho");
+            if (CloudAuthManager.Instance != null && CloudAuthManager.Instance.CurrentPlayer != null)
+            {
+                CloudAuthManager.Instance.CurrentPlayer.username = savedNick;
+            }
+            UpdateProfileUI(CloudAuthManager.Instance?.CurrentPlayer);
             ShowStatus(_lblAuthStatus, "Sesión cerrada. Ahora estás jugando como invitado.");
             ShowScreen(_screenMain);
         }
@@ -848,9 +902,11 @@ namespace Code.UI
             if (_lblProfileName != null)
                 _lblProfileName.text = player.username;
 
+            bool isGuest = player.isGuest || (CloudAuthManager.Instance != null && !CloudAuthManager.Instance.IsLoggedIn);
+
             if (_lblProfileStatus != null)
             {
-                if (player.isGuest)
+                if (isGuest)
                 {
                     _lblProfileStatus.text = "INVITADO";
                     _lblProfileStatus.RemoveFromClassList("profile-status--cloud");
@@ -875,11 +931,25 @@ namespace Code.UI
             if (_lblProfileWinrate != null)
                 _lblProfileWinrate.text = $"V: {player.gamesWon} | D: {player.gamesLost}";
 
-            // Sincronizar nombre en la tarjeta de multijugador
-            var lblMultiplayer = _root.Q<Label>("lbl-multiplayer-name");
-            if (lblMultiplayer != null)
+            // Multijugador: si es invitado puede cambiar de apodo libremente; si está en la nube, queda bloqueado a su cuenta.
+            if (_groupMultiplayerGuest != null)
+                _groupMultiplayerGuest.style.display = isGuest ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_groupMultiplayerLogged != null)
+                _groupMultiplayerLogged.style.display = isGuest ? DisplayStyle.None : DisplayStyle.Flex;
+
+            if (isGuest)
             {
-                lblMultiplayer.text = player.username;
+                if (_inputNickname != null && _inputNickname.value != player.username)
+                {
+                    _inputNickname.SetValueWithoutNotify(player.username);
+                }
+            }
+            else
+            {
+                if (_lblMultiplayer != null)
+                {
+                    _lblMultiplayer.text = player.username;
+                }
             }
         }
 

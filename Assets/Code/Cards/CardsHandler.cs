@@ -36,6 +36,24 @@ namespace Code.Cards
             }
         }
 
+        private void OnEnable()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += HandleSceneLoaded;
+        }
+
+        private void OnDisable()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= HandleSceneLoaded;
+        }
+
+        private void HandleSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            if (scene.name == "GameScene")
+            {
+                ClearCards();
+            }
+        }
+
         // [ClientRpc]
         private void DeckStatus(bool status)
         {
