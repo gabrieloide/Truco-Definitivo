@@ -166,8 +166,18 @@ namespace Code.Cards
         {
             var player = GetComponent<PhysicalCard3D>()?.owner;
             if (player == null) return;
+
+            // Un mismo click llega por dos rutas (OnMouseDown + PlayerInteract): sin
+            // este guard la carta se jugaba dos veces.
+            if (!_isOnHand) return;
             _isOnHand = false;
             isSelected = false;
+            isUp = false;
+
+            // Bloqueo optimista del turno: el servidor recién manda RpcSetTurn(false)
+            // tras TurnDelay, y en esa ventana se podía tirar una segunda carta que el
+            // servidor rechazaba en silencio (la carta desaparecía de la mano).
+            if (player.player != null) player.player.canPlayCard = false;
 
             if (player.cardsHandler != null && player.cardsHandler.mouseOutTexture != null)
                 Cursor.SetCursor(player.cardsHandler.mouseOutTexture, Vector2.zero, CursorMode.Auto);
@@ -184,6 +194,7 @@ namespace Code.Cards
                 var netSync = player.GetComponent<PlayerNetworkSync>();
                 if (netSync != null)
                 {
+                    netSync.RegisterPendingPlay(this);
                     netSync.CmdPlayCard(Card.dbId, Card.value, Card.suit, isBurned);
                     gameObject.SetActive(false);
                     return;
@@ -195,6 +206,20 @@ namespace Code.Cards
             playCommand.Execute();
 
             gameObject.SetActive(false); // Hide UI card
+        }
+
+        /// <summary>El servidor rechazó la jugada: la carta vuelve a la mano del cliente.</summary>
+        public void RestoreToHand()
+        {
+            var player = GetComponent<PhysicalCard3D>()?.owner;
+            _isOnHand = true;
+            isSelected = false;
+            isUp = false;
+            gameObject.SetActive(true);
+            transform.localPosition = _startPosition;
+            transform.localRotation = _startRotation;
+            if (player != null && player.cardsHandler != null && !player.cardsHandler.Cards.Contains(gameObject))
+                player.cardsHandler.Cards.Add(gameObject);
         }
 
         public void HandlePointerEnter()

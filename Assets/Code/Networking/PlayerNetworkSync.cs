@@ -405,6 +405,7 @@ namespace Code.Networking
         {
             if (NetworkServer.active) return; // host hand is dealt by the server loop itself
             if (_cardsHandler == null) return;
+            _pendingPlays.Clear();
             _cardsHandler.ClearCards();
             foreach (var nd in cards)
             {
@@ -518,23 +519,72 @@ namespace Code.Networking
             if (!isServer) return;
 
             var playerComp = GetComponent<Code.Player.Player>();
-            if (playerComp == null || !playerComp.canPlayCard) return;
+            bool announcementPending = GameManager.Instance != null && GameManager.Instance.isAnnouncementPending;
+            if (playerComp == null || !playerComp.canPlayCard || announcementPending)
+            {
+                RejectPlay(cardDbId, playerComp != null && playerComp.canPlayCard && !announcementPending);
+                return;
+            }
 
-            // Find the card in this player's dealt hand
+            // La carta tiene que seguir en la mano real de este jugador (la mano que el
+            // servidor renderiza). Antes, si no aparecía, se inventaba una carta nueva
+            // con los datos del cliente: se podía jugar una carta repetida o ajena.
             Card card = null;
             if (_cardsHandler != null)
             {
-                foreach (var c in _cardsHandler.InitialHand)
+                foreach (var c in _cardsHandler.GetCurrentCardsInHand())
                 {
-                    if (c.dbId == cardDbId) { card = c; break; }
+                    if (c != null && c.dbId == cardDbId) { card = c; break; }
                 }
             }
 
             if (card == null)
-                card = new Card { dbId = cardDbId, value = cardValue, suit = cardSuit };
+            {
+                Debug.LogWarning($"[PlayerNetworkSync] CmdPlayCard rechazado: la carta {cardDbId} no está en la mano de {playerName}.");
+                RejectPlay(cardDbId, playerComp.canPlayCard);
+                return;
+            }
 
             card.isBurned = isBurned;
             TableManager.Instance?.PlaceCard(card, gameObject);
+        }
+
+        [Server]
+        private void RejectPlay(int cardDbId, bool canPlay)
+        {
+            if (connectionToClient == null || connectionToClient is LocalConnectionToClient) return;
+            TargetRejectPlayCard(connectionToClient, cardDbId, canPlay);
+        }
+
+        // ──────────────────────── Pending play (pure client) ───────────────
+
+        private readonly Dictionary<int, CardInteraction> _pendingPlays = new Dictionary<int, CardInteraction>();
+
+        /// <summary>Client: remember a card sent to the server so it can be restored if rejected.</summary>
+        public void RegisterPendingPlay(CardInteraction interaction)
+        {
+            if (interaction == null || interaction.Card == null) return;
+            _pendingPlays[interaction.Card.dbId] = interaction;
+        }
+
+        /// <summary>Server→this client: the play was rejected; put the card back in the hand
+        /// and resync the turn flag with the server's real value.</summary>
+        [TargetRpc]
+        public void TargetRejectPlayCard(NetworkConnectionToClient target, int cardDbId, bool canPlay)
+        {
+            if (_pendingPlays.TryGetValue(cardDbId, out var interaction))
+            {
+                _pendingPlays.Remove(cardDbId);
+                if (interaction != null) interaction.RestoreToHand();
+            }
+
+            if (_playerLocal != null && _playerLocal.player != null)
+            {
+                _playerLocal.player.canPlayCard = canPlay;
+                if (isLocalPlayer) PlayerHUD.Instance?.UpdateTurnState(canPlay);
+            }
+
+            JuiceVFXManager.Instance?.DenyActionFeedback();
         }
 
         [Command]

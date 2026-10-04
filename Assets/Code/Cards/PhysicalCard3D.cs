@@ -245,9 +245,14 @@ namespace Code.Cards
 
         public void Interact(GameObject interactor)
         {
+            var cardInteraction = GetComponent<CardInteraction>();
+            if (cardInteraction != null)
+            {
+                cardInteraction.HandleClick();
+                return;
+            }
+
             PlayerLocal interactorPlayer = interactor.GetComponentInParent<PlayerLocal>();
-            
-            // Si no lo encontramos por jerarquía, lo buscamos en la escena (válido para Singleplayer)
             if (interactorPlayer == null)
             {
                 interactorPlayer = FindAnyObjectByType<PlayerLocal>();
@@ -271,20 +276,28 @@ namespace Code.Cards
                     return;
                 }
 
-                
-                // Logic to play the card
                 Card cardToPlay = cardReference;
                 if (cardToPlay == null)
                 {
                     cardToPlay = new Code.GameLogic.Card(cardValue, cardSuit) { dbId = cardDbId };
                 }
+
+                // In multiplayer pure client: route through server Command
+                if (Mirror.NetworkClient.active && !Mirror.NetworkServer.active)
+                {
+                    var netSync = owner.GetComponent<Code.Networking.PlayerNetworkSync>();
+                    if (netSync != null)
+                    {
+                        netSync.CmdPlayCard(cardToPlay.dbId, cardToPlay.value, cardToPlay.suit, false);
+                        gameObject.SetActive(false);
+                        return;
+                    }
+                }
+
                 Code.GameLogic.Architecture.ICommand playCommand = new Code.GameLogic.Architecture.PlayCardCommand(cardToPlay, owner.gameObject, transform.position);
                 playCommand.Execute();
                 
                 Destroy(gameObject);
-            }
-            else
-            {
             }
         }
     }
