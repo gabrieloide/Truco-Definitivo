@@ -5,9 +5,10 @@ using UnityEngine;
 namespace Code.Persistence
 {
     /// <summary>
-    /// Administrador central de perfil, autenticación y guardado en la nube/local.
+    /// Administrador central de perfil, autenticación y persistencia en la nube/local.
     /// Funciona en modo "Invitado / Sin Nube" automáticamente si el jugador no desea cuenta,
     /// o se sincroniza mediante la API RESTful de Firebase si el jugador inicia sesión.
+    /// Garantiza la persistencia indefinida mediante tokens de refresco (Remember Me permanente).
     /// </summary>
     public class CloudAuthManager : MonoBehaviour
     {
@@ -21,7 +22,7 @@ namespace Code.Persistence
         [SerializeField] private string firebaseDatabaseUrl = "https://venezuelan-truco-default-rtdb.firebaseio.com";
 
         public PlayerData CurrentPlayer { get; private set; }
-        public bool IsLoggedIn => CurrentPlayer != null && !CurrentPlayer.isGuest && !string.IsNullOrEmpty(_currentIdToken);
+        public bool IsLoggedIn => CurrentPlayer != null && !CurrentPlayer.isGuest && (!string.IsNullOrEmpty(_currentIdToken) || !string.IsNullOrEmpty(_currentRefreshToken));
         public bool IsGuest => CurrentPlayer == null || CurrentPlayer.isGuest;
 
         public event Action<PlayerData> OnProfileUpdated;
@@ -29,6 +30,7 @@ namespace Code.Persistence
 
         private FirebaseRestClient _restClient;
         private string _currentIdToken = "";
+        private string _currentRefreshToken = "";
         private string _currentLocalId = "";
 
         private void Awake()
@@ -59,26 +61,73 @@ namespace Code.Persistence
 
         private async void LoadInitialProfile()
         {
-            // 1. Cargar datos locales inmediatamente para disponibilidad instantánea
+            // 1. Cargar datos locales inmediatamente para disponibilidad instantánea (pantalla sin demoras)
             CurrentPlayer = LocalSaveProvider.Load();
 
-            // 2. Si tenía una sesión iniciada previamente, restaurarla en segundo plano
-            if (LocalSaveProvider.TryGetAuthSession(out string email, out string token, out string localId) && !LocalSaveProvider.IsGuestPreferred())
+            // 2. Si tenía una sesión iniciada previamente y no cerró sesión explícitamente, restaurarla
+            bool hasSession = LocalSaveProvider.TryGetAuthSession(
+                out string email,
+                out string token,
+                out string refreshToken,
+                out string localId);
+
+            if (hasSession && !LocalSaveProvider.IsExplicitGuest())
             {
                 _currentIdToken = token;
+                _currentRefreshToken = refreshToken;
                 _currentLocalId = localId;
 
-                // Intentar refrescar datos desde la nube
+                CurrentPlayer.userId = localId;
+                if (!string.IsNullOrEmpty(email) && string.IsNullOrEmpty(CurrentPlayer.email))
+                {
+                    CurrentPlayer.email = email;
+                }
+                CurrentPlayer.isGuest = false;
+
+                // Notificar de inmediato el estado autenticado local
+                OnProfileUpdated?.Invoke(CurrentPlayer);
+
+                // 3. Sincronización y refresco de token en la nube en segundo plano
                 if (!string.IsNullOrEmpty(firebaseApiKey) && !string.IsNullOrEmpty(firebaseDatabaseUrl))
                 {
-                    var (success, cloudData, err) = await _restClient.LoadPlayerDataAsync(localId, token);
+                    // Si tenemos refreshToken, renovar de inmediato para garantizar token vigente
+                    if (!string.IsNullOrEmpty(_currentRefreshToken))
+                    {
+                        await RefreshSessionTokenAsync();
+                    }
+
+                    var (success, cloudData, err, isExpired) = await _restClient.LoadPlayerDataAsync(_currentLocalId, _currentIdToken);
+
+                    // Si el token expiró y no se había refrescado, renovar y reintentar
+                    if (!success && isExpired)
+                    {
+                        bool refreshed = await RefreshSessionTokenAsync();
+                        if (refreshed)
+                        {
+                            (success, cloudData, err, _) = await _restClient.LoadPlayerDataAsync(_currentLocalId, _currentIdToken);
+                        }
+                    }
+
                     if (success && cloudData != null)
                     {
                         CurrentPlayer = cloudData;
                         CurrentPlayer.isGuest = false;
                         LocalSaveProvider.Save(CurrentPlayer);
                         Debug.Log($"[CloudAuthManager] Perfil cargado desde la nube: {CurrentPlayer.username} (Nivel {CurrentPlayer.level}, {CurrentPlayer.coins} fichas)");
+                        OnProfileUpdated?.Invoke(CurrentPlayer);
                     }
+                }
+                return;
+            }
+
+            // 4. Si no había tokens activos pero hay credenciales recordadas ("Recordar mis datos")
+            if (!LocalSaveProvider.IsExplicitGuest() && LocalSaveProvider.GetRememberedCredentials(out string remUser, out string remPass))
+            {
+                if (!string.IsNullOrEmpty(remUser) && !string.IsNullOrEmpty(remPass))
+                {
+                    Debug.Log("[CloudAuthManager] Restaurando sesión mediante credenciales recordadas...");
+                    _ = LoginAsync(remUser, remPass, rememberMe: true, silent: true);
+                    return;
                 }
             }
 
@@ -86,12 +135,64 @@ namespace Code.Persistence
         }
 
         /// <summary>
+        /// Renueva el ID token de Firebase usando el refresh token persistido.
+        /// </summary>
+        public async Task<bool> RefreshSessionTokenAsync()
+        {
+            if (string.IsNullOrEmpty(_currentRefreshToken))
+            {
+                return await TryAutoLoginWithSavedCredentialsAsync();
+            }
+
+            var (success, refreshResp, errMsg) = await _restClient.RefreshTokenAsync(_currentRefreshToken);
+            if (success && refreshResp != null && !string.IsNullOrEmpty(refreshResp.id_token))
+            {
+                _currentIdToken = refreshResp.id_token;
+                if (!string.IsNullOrEmpty(refreshResp.refresh_token))
+                {
+                    _currentRefreshToken = refreshResp.refresh_token;
+                }
+                if (!string.IsNullOrEmpty(refreshResp.user_id))
+                {
+                    _currentLocalId = refreshResp.user_id;
+                }
+
+                LocalSaveProvider.SaveAuthSession(CurrentPlayer?.email, _currentIdToken, _currentRefreshToken, _currentLocalId);
+                Debug.Log("[CloudAuthManager] Token de Firebase renovado exitosamente.");
+                return true;
+            }
+            else
+            {
+                Debug.LogWarning($"[CloudAuthManager] Falló renovación con refresh token ({errMsg}). Probando credenciales recordadas...");
+                return await TryAutoLoginWithSavedCredentialsAsync();
+            }
+        }
+
+        private async Task<bool> TryAutoLoginWithSavedCredentialsAsync()
+        {
+            if (!LocalSaveProvider.GetRememberedCredentials(out string savedUser, out string savedPass))
+            {
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(savedUser) || string.IsNullOrEmpty(savedPass))
+            {
+                return false;
+            }
+
+            Debug.Log("[CloudAuthManager] Intentando inicio de sesión automático silencioso...");
+            var (success, _) = await LoginAsync(savedUser, savedPass, rememberMe: true, silent: true);
+            return success;
+        }
+
+        /// <summary>
         /// Jugar como invitado sin guardar en la nube. Guarda exclusivamente de forma local.
         /// </summary>
         public void PlayAsGuest(string guestName = null)
         {
-            LocalSaveProvider.SetGuestPreferred(true);
+            LocalSaveProvider.SetExplicitGuest(true);
             _currentIdToken = "";
+            _currentRefreshToken = "";
             _currentLocalId = "";
 
             if (CurrentPlayer == null)
@@ -115,7 +216,7 @@ namespace Code.Persistence
         /// <summary>
         /// Registrar un nuevo usuario en la nube con usuario/email y contraseña.
         /// </summary>
-        public async Task<(bool success, string error)> RegisterAsync(string usernameOrEmail, string password, string displayName = null)
+        public async Task<(bool success, string error)> RegisterAsync(string usernameOrEmail, string password, string displayName = null, bool rememberMe = true)
         {
             if (string.IsNullOrWhiteSpace(usernameOrEmail) || string.IsNullOrWhiteSpace(password))
             {
@@ -135,7 +236,7 @@ namespace Code.Persistence
                 CurrentPlayer.email = usernameOrEmail;
                 CurrentPlayer.isGuest = false;
                 LocalSaveProvider.Save(CurrentPlayer);
-                LocalSaveProvider.SetGuestPreferred(false);
+                LocalSaveProvider.SetExplicitGuest(false);
                 OnProfileUpdated?.Invoke(CurrentPlayer);
                 OnAuthCompleted?.Invoke(true, null);
                 return (true, null);
@@ -149,6 +250,7 @@ namespace Code.Persistence
             }
 
             _currentIdToken = authResp.idToken;
+            _currentRefreshToken = authResp.refreshToken;
             _currentLocalId = authResp.localId;
 
             // Conservar progreso local previo o asignar perfil nuevo
@@ -159,15 +261,16 @@ namespace Code.Persistence
             CurrentPlayer.isGuest = false;
 
             // Guardar en nube
-            var (saveSuccess, saveErr) = await _restClient.SavePlayerDataAsync(_currentLocalId, _currentIdToken, CurrentPlayer);
+            var (saveSuccess, saveErr, _) = await _restClient.SavePlayerDataAsync(_currentLocalId, _currentIdToken, CurrentPlayer);
             if (!saveSuccess)
             {
                 Debug.LogWarning($"[CloudAuthManager] Cuenta creada pero fallo al sincronizar datos iniciales: {saveErr}");
             }
 
-            // Guardar sesión local
-            LocalSaveProvider.SaveAuthSession(authResp.email, _currentIdToken, _currentLocalId);
+            // Guardar sesión local con respaldo y soporte 'Recordarme'
+            LocalSaveProvider.SaveAuthSession(authResp.email, _currentIdToken, _currentRefreshToken, _currentLocalId, rememberMe, usernameOrEmail, password);
             LocalSaveProvider.Save(CurrentPlayer);
+            LocalSaveProvider.SetExplicitGuest(false);
 
             OnProfileUpdated?.Invoke(CurrentPlayer);
             OnAuthCompleted?.Invoke(true, null);
@@ -177,7 +280,7 @@ namespace Code.Persistence
         /// <summary>
         /// Iniciar sesión con usuario/email y contraseña.
         /// </summary>
-        public async Task<(bool success, string error)> LoginAsync(string usernameOrEmail, string password)
+        public async Task<(bool success, string error)> LoginAsync(string usernameOrEmail, string password, bool rememberMe = true, bool silent = false)
         {
             if (string.IsNullOrWhiteSpace(usernameOrEmail) || string.IsNullOrWhiteSpace(password))
             {
@@ -191,24 +294,25 @@ namespace Code.Persistence
                 CurrentPlayer.username = usernameOrEmail;
                 CurrentPlayer.isGuest = false;
                 LocalSaveProvider.Save(CurrentPlayer);
-                LocalSaveProvider.SetGuestPreferred(false);
+                LocalSaveProvider.SetExplicitGuest(false);
                 OnProfileUpdated?.Invoke(CurrentPlayer);
-                OnAuthCompleted?.Invoke(true, null);
+                if (!silent) OnAuthCompleted?.Invoke(true, null);
                 return (true, null);
             }
 
             var (success, authResp, errMsg) = await _restClient.SignInAsync(usernameOrEmail, password);
             if (!success)
             {
-                OnAuthCompleted?.Invoke(false, errMsg);
+                if (!silent) OnAuthCompleted?.Invoke(false, errMsg);
                 return (false, errMsg);
             }
 
             _currentIdToken = authResp.idToken;
+            _currentRefreshToken = authResp.refreshToken;
             _currentLocalId = authResp.localId;
 
             // Descargar perfil de la nube
-            var (loadSuccess, cloudData, loadErr) = await _restClient.LoadPlayerDataAsync(_currentLocalId, _currentIdToken);
+            var (loadSuccess, cloudData, loadErr, _) = await _restClient.LoadPlayerDataAsync(_currentLocalId, _currentIdToken);
             if (loadSuccess && cloudData != null)
             {
                 CurrentPlayer = cloudData;
@@ -224,11 +328,12 @@ namespace Code.Persistence
                 await _restClient.SavePlayerDataAsync(_currentLocalId, _currentIdToken, CurrentPlayer);
             }
 
-            LocalSaveProvider.SaveAuthSession(authResp.email, _currentIdToken, _currentLocalId);
+            LocalSaveProvider.SaveAuthSession(authResp.email, _currentIdToken, _currentRefreshToken, _currentLocalId, rememberMe, usernameOrEmail, password);
             LocalSaveProvider.Save(CurrentPlayer);
+            LocalSaveProvider.SetExplicitGuest(false);
 
             OnProfileUpdated?.Invoke(CurrentPlayer);
-            OnAuthCompleted?.Invoke(true, null);
+            if (!silent) OnAuthCompleted?.Invoke(true, null);
             return (true, null);
         }
 
@@ -239,6 +344,7 @@ namespace Code.Persistence
         {
             LocalSaveProvider.ClearAuthSession();
             _currentIdToken = "";
+            _currentRefreshToken = "";
             _currentLocalId = "";
 
             PlayAsGuest("Invitado");
@@ -246,18 +352,29 @@ namespace Code.Persistence
 
         /// <summary>
         /// Guarda el estado actual en local y en la nube (si el usuario está autenticado).
+        /// Si el token caduca durante la sesión de juego, se refresca automáticamente.
         /// </summary>
         public async Task SaveProfileAsync()
         {
             if (CurrentPlayer == null) return;
 
-            // Siempre guardar en local primero
+            // Siempre guardar en local primero (capa dual)
             LocalSaveProvider.Save(CurrentPlayer);
 
             // Sincronizar en la nube si tiene cuenta activa
-            if (!CurrentPlayer.isGuest && !string.IsNullOrEmpty(_currentIdToken) && !string.IsNullOrEmpty(_currentLocalId))
+            if (!CurrentPlayer.isGuest && !string.IsNullOrEmpty(_currentLocalId))
             {
-                var (success, err) = await _restClient.SavePlayerDataAsync(_currentLocalId, _currentIdToken, CurrentPlayer);
+                var (success, err, isExpired) = await _restClient.SavePlayerDataAsync(_currentLocalId, _currentIdToken, CurrentPlayer);
+                if (!success && isExpired)
+                {
+                    Debug.Log("[CloudAuthManager] Token caducado al guardar perfil. Renovando automáticamente...");
+                    bool renewed = await RefreshSessionTokenAsync();
+                    if (renewed)
+                    {
+                        (success, err, _) = await _restClient.SavePlayerDataAsync(_currentLocalId, _currentIdToken, CurrentPlayer);
+                    }
+                }
+
                 if (!success)
                 {
                     Debug.LogWarning($"[CloudAuthManager] Falló la sincronización con la nube: {err}. Los datos están seguros en local.");

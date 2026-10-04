@@ -247,6 +247,9 @@
                     <engine:Label text="Contraseña:" class="input-label"/>
                     <engine:TextField name="input-auth-pass" password="true" class="menu-input"/>
                 </engine:VisualElement>
+                <engine:VisualElement name="group-auth-remember" class="auth-remember-row">
+                    <engine:Toggle name="toggle-auth-remember" text="Recordar mi sesión en este dispositivo" value="true" class="auth-remember-toggle"/>
+                </engine:VisualElement>
                 <engine:Button name="btn-auth-submit" class="menu-btn menu-btn--primary">
                     <engine:Label name="lbl-auth-submit" text="INICIAR SESIÓN" class="menu-btn__text"/>
                 </engine:Button>

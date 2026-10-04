@@ -60,6 +60,7 @@ namespace Code.UI
         private TextField _inputAuthDisplayName;
         private Label _lblAuthSubmit;
         private Label _lblAuthStatus;
+        private Toggle _toggleAuthRemember;
         private bool _isRegisterMode;
 
         // Lobby UI labels
@@ -145,6 +146,15 @@ namespace Code.UI
             _inputAuthDisplayName = _root.Q<TextField>("input-auth-displayname");
             _lblAuthSubmit        = _root.Q<Label>("lbl-auth-submit");
             _lblAuthStatus        = _root.Q<Label>("lbl-auth-status");
+            _toggleAuthRemember   = _root.Q<Toggle>("toggle-auth-remember");
+            if (_toggleAuthRemember != null)
+            {
+                _toggleAuthRemember.value = LocalSaveProvider.IsRememberMeEnabled();
+                _toggleAuthRemember.RegisterValueChangedCallback(evt =>
+                {
+                    LocalSaveProvider.SetRememberMeEnabled(evt.newValue);
+                });
+            }
 
             // Lobby labels
             _lblRoomCode  = _root.Q<Label>("lbl-room-code");
@@ -781,6 +791,23 @@ namespace Code.UI
                 if (_panelProfileView != null) _panelProfileView.style.display = DisplayStyle.None;
                 if (_panelLoginView != null) _panelLoginView.style.display = DisplayStyle.Flex;
                 SetAuthMode(false);
+
+                // Pre-llenar credenciales recordadas si existen
+                if (LocalSaveProvider.GetRememberedCredentials(out string remUser, out string remPass))
+                {
+                    if (_inputAuthUser != null && !string.IsNullOrEmpty(remUser))
+                    {
+                        _inputAuthUser.SetValueWithoutNotify(remUser);
+                    }
+                    if (_inputAuthPass != null && !string.IsNullOrEmpty(remPass))
+                    {
+                        _inputAuthPass.SetValueWithoutNotify(remPass);
+                    }
+                    if (_toggleAuthRemember != null)
+                    {
+                        _toggleAuthRemember.SetValueWithoutNotify(true);
+                    }
+                }
             }
 
             ShowScreen(_screenAuth);
@@ -830,6 +857,7 @@ namespace Code.UI
             string user = _inputAuthUser != null ? _inputAuthUser.value?.Trim() : "";
             string pass = _inputAuthPass != null ? _inputAuthPass.value : "";
             string displayName = _inputAuthDisplayName != null ? _inputAuthDisplayName.value?.Trim() : "";
+            bool rememberMe = _toggleAuthRemember == null || _toggleAuthRemember.value;
 
             if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass))
             {
@@ -841,7 +869,7 @@ namespace Code.UI
 
             if (_isRegisterMode)
             {
-                var (success, error) = await CloudAuthManager.Instance.RegisterAsync(user, pass, displayName);
+                var (success, error) = await CloudAuthManager.Instance.RegisterAsync(user, pass, displayName, rememberMe);
                 if (success)
                 {
                     ShowStatus(_lblAuthStatus, "¡Cuenta creada y guardada con éxito!");
@@ -855,7 +883,7 @@ namespace Code.UI
             }
             else
             {
-                var (success, error) = await CloudAuthManager.Instance.LoginAsync(user, pass);
+                var (success, error) = await CloudAuthManager.Instance.LoginAsync(user, pass, rememberMe);
                 if (success)
                 {
                     ShowStatus(_lblAuthStatus, "¡Sesión iniciada con éxito!");
