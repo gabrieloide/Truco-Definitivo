@@ -2,36 +2,38 @@
     <Style src="project://database/Assets/UI/PlayerHUD/PlayerHUD.uss" />
     <engine:VisualElement class="hud-container" picking-mode="Ignore">
         <engine:VisualElement class="hud-top-bar" picking-mode="Ignore">
-            <engine:VisualElement class="hud-score-panel central-banner">
-                <engine:Label name="team-label" text="EQUIPO" class="hud-team__text" />
-                <engine:Label name="score-label" text="0 | 0" class="hud-score__text" />
+            <engine:Button name="score-button" class="hud-score-panel central-banner score-banner-btn">
+                <engine:Label name="team-label" text="EQUIPO" class="hud-team__text" picking-mode="Ignore" />
+                <engine:Label name="score-label" text="0 | 0" class="hud-score__text" picking-mode="Ignore" />
                 
-                <engine:VisualElement class="tricks-dots-container">
-                    <engine:VisualElement name="t1-dots" class="team-dots">
-                        <engine:VisualElement class="trick-dot" />
-                        <engine:VisualElement class="trick-dot" />
-                        <engine:VisualElement class="trick-dot" />
+                <engine:VisualElement class="tricks-dots-container" picking-mode="Ignore">
+                    <engine:VisualElement name="t1-dots" class="team-dots" picking-mode="Ignore">
+                        <engine:VisualElement class="trick-dot" picking-mode="Ignore" />
+                        <engine:VisualElement class="trick-dot" picking-mode="Ignore" />
+                        <engine:VisualElement class="trick-dot" picking-mode="Ignore" />
                     </engine:VisualElement>
                     
-                    <engine:VisualElement class="dots-separator" />
+                    <engine:VisualElement class="dots-separator" picking-mode="Ignore" />
 
-                    <engine:VisualElement name="t2-dots" class="team-dots">
-                        <engine:VisualElement class="trick-dot" />
-                        <engine:VisualElement class="trick-dot" />
-                        <engine:VisualElement class="trick-dot" />
+                    <engine:VisualElement name="t2-dots" class="team-dots" picking-mode="Ignore">
+                        <engine:VisualElement class="trick-dot" picking-mode="Ignore" />
+                        <engine:VisualElement class="trick-dot" picking-mode="Ignore" />
+                        <engine:VisualElement class="trick-dot" picking-mode="Ignore" />
                     </engine:VisualElement>
                 </engine:VisualElement>
 
-                <engine:Label name="envido-stake-label" text="ENVIDO: 2 PTS" class="envido-stake-chip" style="display: none;" />
+                <engine:Label name="envido-stake-label" text="ENVIDO: 2 PTS" class="envido-stake-chip" picking-mode="Ignore" style="display: none;" />
 
                 <engine:VisualElement name="hud-turn-indicator" class="hud-turn-indicator" picking-mode="Ignore">
-                    <engine:Label name="turn-label" text="TU TURNO" class="hud-turn__text" />
+                    <engine:Label name="turn-label" text="TU TURNO" class="hud-turn__text" picking-mode="Ignore" />
                 </engine:VisualElement>
 
                 <engine:VisualElement name="hud-waiting-indicator" class="hud-waiting-indicator" picking-mode="Ignore" style="display: none;">
-                    <engine:Label name="waiting-label" text="ESPERANDO RIVAL..." class="hud-waiting__text" />
+                    <engine:Label name="waiting-label" text="ESPERANDO RIVAL..." class="hud-waiting__text" picking-mode="Ignore" />
                 </engine:VisualElement>
-            </engine:VisualElement>
+
+                <engine:Label name="score-btn-hint" text="HISTORIAL [F]" class="score-banner-hint" picking-mode="Ignore" />
+            </engine:Button>
 
             <engine:VisualElement class="hud-top-right-bar" picking-mode="Ignore">
                 <engine:Button name="look-button" class="hud-btn-icon hud-btn-look">
@@ -127,6 +129,23 @@
                 </engine:ScrollView>
                 <engine:Button name="close-hierarchy-button" class="hud-btn hud-btn--decline modal-close-btn">
                     <engine:Label text="CERRAR" class="hud-btn__text" />
+                </engine:Button>
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <!-- SCORE HISTORY MODAL -->
+        <engine:VisualElement name="score-history-modal" class="hierarchy-modal-overlay">
+            <engine:VisualElement class="hierarchy-panel score-history-panel">
+                <engine:VisualElement class="score-history-header">
+                    <engine:Label text="HISTORIAL DE LA PARTIDA" class="hierarchy-title score-history-title" />
+                    <engine:Label name="score-history-match-summary" text="0 | 0" class="score-history-summary" />
+                </engine:VisualElement>
+                <engine:ScrollView name="score-history-scroll" class="hierarchy-scroll score-history-scroll">
+                    <engine:Label name="score-history-empty" text="No hay cantos ni puntos registrados aún en esta partida." class="score-history-empty-label" />
+                    <engine:VisualElement name="score-history-list" class="score-history-list" />
+                </engine:ScrollView>
+                <engine:Button name="close-score-history-button" class="hud-btn hud-btn--decline modal-close-btn score-history-close-btn">
+                    <engine:Label name="close-score-history-label" text="CERRAR [F]" class="hud-btn__text" />
                 </engine:Button>
             </engine:VisualElement>
         </engine:VisualElement>
