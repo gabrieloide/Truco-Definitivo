@@ -415,12 +415,12 @@ namespace Code.Editor
             bool aLeyCalled = false;
             bool hasFlor = false;
 
-            Card vira = new Card(1, "Sword");
+            Card vira = new Card(1, "Espada");
             List<Card> responderHand = new List<Card>
             {
-                new Card(7, "Gold"),
-                new Card(6, "Gold"),
-                new Card(2, "Cup")
+                new Card(7, "Oro"),
+                new Card(6, "Oro"),
+                new Card(2, "Copa")
             };
 
             int envidoScore = TrucoRules.CalculateEnvidoScore(responderHand, vira);

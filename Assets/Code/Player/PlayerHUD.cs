@@ -84,29 +84,6 @@ namespace Code.Player
         private Button _matchEndRematchBtn;
         private Button _matchEndExitBtn;
 
-        [Header("Score History Modal")]
-        private Button _scoreButton;
-        private Label _scoreBtnHint;
-        private VisualElement _scoreHistoryModal;
-        private Label _scoreHistorySummary;
-        private ScrollView _scoreHistoryScroll;
-        private VisualElement _scoreHistoryList;
-        private Label _scoreHistoryEmpty;
-        private Button _closeScoreHistoryButton;
-        private Label _closeScoreHistoryLabel;
-
-        [System.Serializable]
-        public struct ScoreHistoryEntry
-        {
-            public string message;
-            public string subtext;
-            public string badge;
-            public string category;
-            public string timestamp;
-        }
-
-        private readonly System.Collections.Generic.List<ScoreHistoryEntry> _historyEntries = new System.Collections.Generic.List<ScoreHistoryEntry>();
-
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -136,8 +113,6 @@ namespace Code.Player
             {
                 InitializeUI();
                 RefreshTeamLabel();
-                _historyEntries.Clear();
-                AddScoreHistoryEntry("¡PARTIDA INICIADA!", "system", "INICIO");
                 
                 if (GameManager.Instance != null && GameManager.Instance.teams.Count >= 2)
                 {
@@ -149,10 +124,6 @@ namespace Code.Player
         private void Start()
         {
             RefreshTeamLabel();
-            if (_historyEntries.Count == 0)
-            {
-                AddScoreHistoryEntry("¡PARTIDA INICIADA!", "system", "INICIO");
-            }
             if (GameManager.Instance != null && GameManager.Instance.teams.Count >= 2)
             {
                 UpdateScore(GameManager.Instance.teams[0].teamScore, GameManager.Instance.teams[1].teamScore);
@@ -193,9 +164,6 @@ namespace Code.Player
             // Auto-hide after duration
             CancelInvoke("HideNotification");
             Invoke("HideNotification", duration);
-
-            // Registrar en el historial si corresponde a cantos o puntuación
-            TryLogToHistory(message);
         }
 
         private void HideNotification()
@@ -206,19 +174,6 @@ namespace Code.Player
 
         private void Update()
         {
-            // Atajo de teclado (F) para abrir/cerrar historial de cantos y score en PC
-            if (Keyboard.current != null)
-            {
-                if (Keyboard.current.fKey.wasPressedThisFrame)
-                {
-                    ToggleScoreHistory();
-                }
-                else if (Keyboard.current.escapeKey.wasPressedThisFrame && IsScoreHistoryOpen())
-                {
-                    ToggleScoreHistory();
-                }
-            }
-
             if (_cardActionMenu == null) return;
             
             bool shouldShow = false;
@@ -346,35 +301,6 @@ namespace Code.Player
             _closeHierarchyButton = _root.Q<Button>("close-hierarchy-button");
             SetupButton(_closeHierarchyButton, HideCardHierarchy);
 
-            // Score Button (Opens Score History)
-            _scoreButton = _root.Q<Button>("score-button");
-            _scoreBtnHint = _root.Q<Label>("score-btn-hint");
-            if (_scoreBtnHint != null)
-            {
-                _scoreBtnHint.text = Application.isMobilePlatform ? "HISTORIAL" : "HISTORIAL [F]";
-            }
-            SetupButton(_scoreButton, ToggleScoreHistory);
-
-            // Score History Modal
-            _scoreHistoryModal = _root.Q<VisualElement>("score-history-modal");
-            _scoreHistorySummary = _root.Q<Label>("score-history-match-summary");
-            _scoreHistoryScroll = _root.Q<ScrollView>("score-history-scroll");
-            _scoreHistoryList = _root.Q<VisualElement>("score-history-list");
-            _scoreHistoryEmpty = _root.Q<Label>("score-history-empty");
-            _closeScoreHistoryButton = _root.Q<Button>("close-score-history-button");
-            _closeScoreHistoryLabel = _root.Q<Label>("close-score-history-label");
-            if (_closeScoreHistoryLabel != null)
-            {
-                _closeScoreHistoryLabel.text = Application.isMobilePlatform ? "CERRAR" : "CERRAR [F]";
-            }
-            SetupButton(_closeScoreHistoryButton, ToggleScoreHistory);
-
-            if (_scoreHistoryModal != null)
-            {
-                _scoreHistoryModal.UnregisterCallback<ClickEvent>(OnScoreHistoryOverlayClicked);
-                _scoreHistoryModal.RegisterCallback<ClickEvent>(OnScoreHistoryOverlayClicked);
-            }
-
             // Pause Modal
             _pauseModal = _root.Q<VisualElement>("pause-modal");
             _resumeButton = _root.Q<Button>("resume-button");
@@ -457,12 +383,6 @@ namespace Code.Player
             CleanupButton(_moreButton, OnMoreClicked);
             
             CleanupButton(_closeHierarchyButton, HideCardHierarchy);
-            CleanupButton(_scoreButton, ToggleScoreHistory);
-            CleanupButton(_closeScoreHistoryButton, ToggleScoreHistory);
-            if (_scoreHistoryModal != null)
-            {
-                _scoreHistoryModal.UnregisterCallback<ClickEvent>(OnScoreHistoryOverlayClicked);
-            }
             CleanupButton(_resumeButton, TogglePauseMenu);
             CleanupButton(_quitButton, ShowQuitConfirm);
             CleanupButton(_confirmYesButton, ConfirmQuitGame);
@@ -527,11 +447,6 @@ namespace Code.Player
             
             UpdateDots(_t1DotsContainer, roundsTeam1);
             UpdateDots(_t2DotsContainer, roundsTeam2);
-
-            if (IsScoreHistoryOpen())
-            {
-                UpdateHistorySummaryText();
-            }
         }
 
         private void UpdateDots(VisualElement container, int score)
@@ -1229,227 +1144,6 @@ namespace Code.Player
             {
                 AudioManager.Instance.PlaySFX("ui_button_click_press");
             }
-        }
-
-        // =========================================================
-        // HISTORIAL DE CANTOS Y PUNTOS
-        // =========================================================
-
-        private void OnScoreHistoryOverlayClicked(ClickEvent evt)
-        {
-            if (evt.target == _scoreHistoryModal)
-            {
-                ToggleScoreHistory();
-            }
-        }
-
-        public bool IsScoreHistoryOpen()
-        {
-            return _scoreHistoryModal != null && _scoreHistoryModal.ClassListContains("visible");
-        }
-
-        public void ToggleScoreHistory()
-        {
-            if (_scoreHistoryModal == null) return;
-
-            bool isVisible = _scoreHistoryModal.ClassListContains("visible");
-            if (isVisible)
-            {
-                _scoreHistoryModal.RemoveFromClassList("visible");
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.PlaySFX("modal_close_whoosh");
-                }
-            }
-            else
-            {
-                if (_hierarchyModal != null) _hierarchyModal.RemoveFromClassList("visible");
-                if (_pauseModal != null) _pauseModal.RemoveFromClassList("visible");
-
-                RefreshScoreHistoryUI();
-                _scoreHistoryModal.AddToClassList("visible");
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.PlaySFX("modal_open_whoosh");
-                }
-            }
-        }
-
-        private void UpdateHistorySummaryText()
-        {
-            if (_scoreHistorySummary != null)
-            {
-                string tNames = _teamLabel != null && !string.IsNullOrEmpty(_teamLabel.text) ? _teamLabel.text : "EQUIPO 1    -    EQUIPO 2";
-                string sText = _scoreLabel != null ? _scoreLabel.text : "0 | 0";
-                _scoreHistorySummary.text = $"{tNames}   [ {sText} ]";
-            }
-        }
-
-        public void RefreshScoreHistoryUI()
-        {
-            UpdateHistorySummaryText();
-
-            if (_scoreHistoryList == null) return;
-            _scoreHistoryList.Clear();
-
-            if (_historyEntries.Count == 0)
-            {
-                if (_scoreHistoryEmpty != null) _scoreHistoryEmpty.style.display = DisplayStyle.Flex;
-            }
-            else
-            {
-                if (_scoreHistoryEmpty != null) _scoreHistoryEmpty.style.display = DisplayStyle.None;
-
-                // Mostramos en orden inverso (lo último que se ha cantado o ganado al principio)
-                for (int i = _historyEntries.Count - 1; i >= 0; i--)
-                {
-                    var record = _historyEntries[i];
-
-                    var item = new VisualElement();
-                    item.AddToClassList("score-history-item");
-                    item.AddToClassList($"score-history-item--{record.category}");
-
-                    var leftCol = new VisualElement();
-                    leftCol.AddToClassList("score-item-left");
-
-                    var titleLbl = new Label(record.message);
-                    titleLbl.AddToClassList("score-item-title");
-
-                    string sub = string.IsNullOrEmpty(record.subtext)
-                        ? record.timestamp
-                        : $"{record.timestamp}  •  {record.subtext}";
-                    var subLbl = new Label(sub);
-                    subLbl.AddToClassList("score-item-sub");
-
-                    leftCol.Add(titleLbl);
-                    leftCol.Add(subLbl);
-                    item.Add(leftCol);
-
-                    if (!string.IsNullOrEmpty(record.badge))
-                    {
-                        var badgeLbl = new Label(record.badge);
-                        badgeLbl.AddToClassList("score-item-badge");
-                        badgeLbl.AddToClassList($"score-item-badge--{record.category}");
-                        item.Add(badgeLbl);
-                    }
-
-                    _scoreHistoryList.Add(item);
-                }
-            }
-        }
-
-        public void AddScoreHistoryEntry(string message, string category = null, string badge = null)
-        {
-            if (string.IsNullOrWhiteSpace(message)) return;
-
-            string upper = message.ToUpperInvariant();
-
-            if (category == null)
-            {
-                if (upper.Contains("CANTA") || upper.Contains("PIDE") || upper.Contains("FLOR") || upper.Contains("A LEY"))
-                {
-                    category = "chant";
-                    if (upper.Contains("TRUCO")) badge = "TRUCO";
-                    else if (upper.Contains("RETRUCO")) badge = "RETRUCO";
-                    else if (upper.Contains("VALE 9")) badge = "VALE 9";
-                    else if (upper.Contains("VALE PARTIDA")) badge = "VALE PARTIDA";
-                    else if (upper.Contains("ENVIDO")) badge = "ENVIDO";
-                    else if (upper.Contains("FLOR")) badge = "FLOR";
-                    else if (upper.Contains("A LEY")) badge = "A LEY";
-                    else badge = "CANTO";
-                }
-                else if (upper.Contains("QUIERE") || upper.Contains("QUIERO"))
-                {
-                    category = "response";
-                    badge = upper.Contains("NO") ? "NO QUIERO" : "QUIERO";
-                }
-                else if (upper.Contains("GANA") || upper.Contains("PIEDRA") || upper.Contains("MANO") || upper.Contains("ENVIDO:"))
-                {
-                    category = "points";
-                    badge = ExtractPointsBadge(message);
-                }
-                else
-                {
-                    category = "system";
-                    badge = "INFO";
-                }
-            }
-
-            string currentScore = _scoreLabel != null ? $"Marcador: {_scoreLabel.text}" : "";
-            string timeString = System.DateTime.Now.ToString("HH:mm:ss");
-
-            var entry = new ScoreHistoryEntry
-            {
-                message = message,
-                subtext = currentScore,
-                badge = badge ?? "",
-                category = category,
-                timestamp = timeString
-            };
-
-            _historyEntries.Add(entry);
-            if (_historyEntries.Count > 60)
-            {
-                _historyEntries.RemoveAt(0);
-            }
-
-            if (IsScoreHistoryOpen())
-            {
-                RefreshScoreHistoryUI();
-            }
-        }
-
-        private void TryLogToHistory(string message)
-        {
-            if (string.IsNullOrWhiteSpace(message)) return;
-
-            string upper = message.ToUpperInvariant();
-
-            // Filtrar avisos efímeros o de UI
-            if (upper.Contains("TURNO") ||
-                upper.Contains("NO TIENES ENVIDO") ||
-                upper.Contains("TU EQUIPO TIENE EL TRUCO") ||
-                upper.Contains("ERROR:") ||
-                upper.Contains("RECONECTADO") ||
-                upper.Contains("DESCONECTADO") ||
-                upper.Contains("REVANCHA") ||
-                upper.Contains("DESCONEXIÓN") ||
-                upper.Contains("ABANDONÓ"))
-            {
-                return;
-            }
-
-            if (upper.Contains("CANTA") ||
-                upper.Contains("PIDE") ||
-                upper.Contains("QUIERE") ||
-                upper.Contains("QUIERO") ||
-                upper.Contains("GANA") ||
-                upper.Contains("ENVIDO") ||
-                upper.Contains("FLOR") ||
-                upper.Contains("A LEY") ||
-                upper.Contains("PIEDRA") ||
-                upper.Contains("MANO"))
-            {
-                AddScoreHistoryEntry(message);
-            }
-        }
-
-        private string ExtractPointsBadge(string text)
-        {
-            var matchParen = System.Text.RegularExpressions.Regex.Match(text, @"\(\+(\d+)\)");
-            if (matchParen.Success) return $"+{matchParen.Groups[1].Value} PTS";
-
-            var matchGana = System.Text.RegularExpressions.Regex.Match(text, @"(?:GANA\s+|GANA\s+\+?)(\d+)\s+PIEDRA", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            if (matchGana.Success) return $"+{matchGana.Groups[1].Value} PTS";
-
-            var matchPlus = System.Text.RegularExpressions.Regex.Match(text, @"\+(\d+)\s+PIEDRA", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            if (matchPlus.Success) return $"+{matchPlus.Groups[1].Value} PTS";
-
-            if (text.Contains("PARTIDA", StringComparison.OrdinalIgnoreCase)) return "VICTORIA";
-            if (text.Contains("MANO", StringComparison.OrdinalIgnoreCase)) return "MANO";
-            if (text.Contains("ENVIDO", StringComparison.OrdinalIgnoreCase)) return "ENVIDO";
-
-            return "+PTS";
         }
     }
 }
